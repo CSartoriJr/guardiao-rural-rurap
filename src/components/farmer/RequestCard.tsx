@@ -64,7 +64,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Link href={APP_ROUTES.FARMER_VIEW_REQUEST(request.id)} passHref legacyBehavior>
+        <Link href={APP_ROUTES.FARMER_VIEW_REQUEST(request.id)}>
           <Button variant="outline" className="w-full">
             <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
           </Button>

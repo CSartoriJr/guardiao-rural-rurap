@@ -4,7 +4,7 @@ import type { AgriRequest } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, User, CalendarDays, MessageSquare } from 'lucide-react';
+import { Eye, User, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -43,7 +43,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
         </div>
       </CardContent>
       <CardFooter>
-        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} passHref legacyBehavior>
+        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)}>
           <Button variant="default" className="w-full bg-primary hover:bg-primary/90">
             <Eye className="mr-2 h-4 w-4" /> Ver e Responder
           </Button>
