@@ -15,8 +15,9 @@ import { Loader2, Send, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
+import { mockRequests } from '@/lib/mockData'; // Import mockRequests to update it
 
-// Mock function to simulate updating the request
+
 const updateRequestStatus = async (
   requestId: string,
   technicianId: string,
@@ -24,13 +25,11 @@ const updateRequestStatus = async (
   recommendation: string,
   status: RequestStatus
 ): Promise<AgriRequest> => {
-  console.log("Updating request:", { requestId, technicianId, recommendation, status });
-  await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
+  await new Promise(resolve => setTimeout(resolve, 1500)); 
   
-  // In a real app, find and update the request in the backend.
-  // For mock, we'd find in mockRequests and update it.
   const existingRequest = mockRequests.find(r => r.id === requestId);
-  if (!existingRequest) throw new Error("Request not found for update");
+  if (!existingRequest) throw new Error("Pedido não encontrado para atualização");
 
   const updatedRequest: AgriRequest = {
     ...existingRequest,
@@ -40,7 +39,6 @@ const updateRequestStatus = async (
     status,
     responseDate: new Date().toISOString(),
   };
-  // Update mockRequests array
   const index = mockRequests.findIndex(r => r.id === requestId);
   if (index !== -1) mockRequests[index] = updatedRequest;
   
@@ -48,8 +46,8 @@ const updateRequestStatus = async (
 };
 
 const responseFormSchema = z.object({
-  recommendation: z.string().min(10, { message: 'Recommendation must be at least 10 characters.' }),
-  status: z.enum(['Positive', 'Negative', 'Inconclusive'], { required_error: "Status is required." }),
+  recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
+  status: z.enum(['Positive', 'Negative', 'Inconclusive'], { required_error: "O status é obrigatório." }),
 });
 
 type ResponseFormValues = z.infer<typeof responseFormSchema>;
@@ -58,11 +56,23 @@ interface ResponseFormProps {
   request: AgriRequest;
 }
 
+interface StatusOption {
+  value: RequestStatus;
+  label: string;
+}
+
+const statusOptions: StatusOption[] = [
+  { value: 'Positive', label: 'Positivo' },
+  { value: 'Negative', label: 'Negativo' },
+  { value: 'Inconclusive', label: 'Inconclusivo' },
+];
+
+
 export default function ResponseForm({ request }: ResponseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const { toast } = useToast();
-  const { user: technicianUser } = useAuth(); // Assuming this is the technician
+  const { user: technicianUser } = useAuth(); 
   const router = useRouter();
 
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<ResponseFormValues>({
@@ -86,10 +96,10 @@ export default function ResponseForm({ request }: ResponseFormProps) {
       };
       const result = await generateRecommendation(aiInput);
       setValue('recommendation', result.recommendation, { shouldValidate: true });
-      toast({ title: 'AI Suggestion Generated!', description: 'Recommendation has been updated.' });
+      toast({ title: 'Sugestão da IA Gerada!', description: 'A recomendação foi atualizada.' });
     } catch (error) {
-      console.error("AI suggestion error:", error);
-      toast({ title: "AI Error", description: "Could not generate AI suggestion.", variant: "destructive" });
+      console.error("Erro na sugestão da IA:", error);
+      toast({ title: "Erro da IA", description: "Não foi possível gerar a sugestão da IA.", variant: "destructive" });
     } finally {
       setIsAiLoading(false);
     }
@@ -97,20 +107,20 @@ export default function ResponseForm({ request }: ResponseFormProps) {
 
   const onSubmit: SubmitHandler<ResponseFormValues> = async (data) => {
     if (!technicianUser) {
-      toast({ title: "Error", description: "Technician not logged in.", variant: "destructive" });
+      toast({ title: "Erro", description: "Técnico não está logado.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
     try {
       await updateRequestStatus(request.id, technicianUser.id, technicianUser.name, data.recommendation, data.status);
       toast({
-        title: 'Response Submitted!',
-        description: `Your response for request ID ${request.id} has been saved.`,
+        title: 'Resposta Enviada!',
+        description: `Sua resposta para o pedido ID ${request.id} foi salva.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error) {
-      console.error("Failed to submit response:", error);
-      toast({ title: "Submission Failed", description: "Could not submit response. Please try again.", variant: "destructive" });
+      console.error("Falha ao enviar resposta:", error);
+      toast({ title: "Falha no Envio", description: "Não foi possível enviar a resposta. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -119,7 +129,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
   return (
     <Card className="w-full shadow-lg mt-6">
       <CardHeader>
-        <CardTitle className="font-headline text-xl">Submit Your Recommendation</CardTitle>
+        <CardTitle className="font-headline text-xl">Envie Sua Recomendação</CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
@@ -130,9 +140,9 @@ export default function ResponseForm({ request }: ResponseFormProps) {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
               )}
-              Get AI Suggestion
+              Obter Sugestão da IA
             </Button>
-            <Label htmlFor="recommendation">Recommendation Text</Label>
+            <Label htmlFor="recommendation">Texto da Recomendação</Label>
             <Controller
               name="recommendation"
               control={control}
@@ -140,7 +150,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
                 <Textarea
                   id="recommendation"
                   rows={8}
-                  placeholder="Provide detailed recommendations based on the images and cassava type..."
+                  placeholder="Forneça recomendações detalhadas com base nas imagens e no tipo de mandioca..."
                   {...field}
                   className="mt-1"
                 />
@@ -150,7 +160,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
           </div>
 
           <div>
-            <Label>Diagnosis Status</Label>
+            <Label>Status do Diagnóstico</Label>
             <Controller
               name="status"
               control={control}
@@ -160,10 +170,10 @@ export default function ResponseForm({ request }: ResponseFormProps) {
                   value={field.value}
                   className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 mt-1"
                 >
-                  {(['Positive', 'Negative', 'Inconclusive'] as RequestStatus[]).map((statusVal) => (
-                    <div key={statusVal} className="flex items-center space-x-2">
-                      <RadioGroupItem value={statusVal} id={`status-${statusVal.toLowerCase()}`} />
-                      <Label htmlFor={`status-${statusVal.toLowerCase()}`} className="font-normal">{statusVal}</Label>
+                  {statusOptions.map((option) => (
+                    <div key={option.value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={option.value} id={`status-${option.value.toLowerCase()}`} />
+                      <Label htmlFor={`status-${option.value.toLowerCase()}`} className="font-normal">{option.label}</Label>
                     </div>
                   ))}
                 </RadioGroup>
@@ -179,7 +189,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Submit Response
+            Enviar Resposta
           </Button>
         </CardFooter>
       </form>

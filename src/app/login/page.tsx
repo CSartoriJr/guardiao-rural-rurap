@@ -10,15 +10,15 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline">Welcome Back!</CardTitle>
-          <CardDescription>Please sign in to continue to AgriAssist.</CardDescription>
+          <CardTitle className="text-2xl font-headline">Bem-vindo(a) de volta!</CardTitle>
+          <CardDescription>Por favor, faça login para continuar no AgriAssist.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
         </CardContent>
       </Card>
        <p className="mt-8 text-center text-sm text-muted-foreground">
-        Helping farmers grow better, together.
+        Ajudando agricultores a cultivar melhor, juntos.
       </p>
     </div>
   );

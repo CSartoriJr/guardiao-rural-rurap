@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { APP_ROUTES } from '@/config/routes';
 import { Eye, CheckCircle2, XCircle, HelpCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface RequestCardProps {
   request: AgriRequest;
@@ -15,13 +16,13 @@ interface RequestCardProps {
 const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
   switch (status) {
     case 'Positive':
-      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positive</Badge>;
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
     case 'Negative':
-      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negative</Badge>;
+      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
     case 'Inconclusive':
-      return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusive</Badge>;
+      return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusivo</Badge>;
     default: // Pending
-      return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pending</Badge>;
+      return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pendente</Badge>;
   }
 };
 
@@ -30,11 +31,11 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="font-headline text-lg leading-tight">Cassava: {request.cassavaType}</CardTitle>
+          <CardTitle className="font-headline text-lg leading-tight">Mandioca: {request.cassavaType}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <CardDescription className="text-xs">
-          Submitted: {format(new Date(request.submissionDate), "MMM d, yyyy 'at' h:mm a")}
+          Enviado: {format(new Date(request.submissionDate), "d 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR })}
         </CardDescription>
       </CardHeader>
       <CardContent className="py-2">
@@ -43,7 +44,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
             <div key={index} className="inline-block h-16 w-16 rounded-full ring-2 ring-card bg-muted overflow-hidden" data-ai-hint="cassava plant">
               <Image
                 src={uri}
-                alt={`Cassava photo ${index + 1}`}
+                alt={`Foto da mandioca ${index + 1}`}
                 width={64}
                 height={64}
                 className="object-cover h-full w-full"
@@ -53,19 +54,19 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
         </div>
         {request.status !== 'Pending' && request.recommendation && (
           <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-            <strong>Recommendation:</strong> {request.recommendation}
+            <strong>Recomendação:</strong> {request.recommendation}
           </p>
         )}
          {request.status === 'Pending' && (
           <p className="text-sm text-muted-foreground mt-2">
-            Awaiting technician review.
+            Aguardando revisão do técnico.
           </p>
         )}
       </CardContent>
       <CardFooter>
         <Link href={APP_ROUTES.FARMER_VIEW_REQUEST(request.id)} passHref legacyBehavior>
           <Button variant="outline" className="w-full">
-            <Eye className="mr-2 h-4 w-4" /> View Details
+            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
           </Button>
         </Link>
       </CardFooter>

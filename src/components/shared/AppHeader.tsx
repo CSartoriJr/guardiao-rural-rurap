@@ -18,6 +18,8 @@ export default function AppHeader() {
 
   if (!user) return null;
 
+  const userRoleDisplay = user.role === 'farmer' ? 'Agricultor' : 'Técnico';
+
   return (
     <header className="bg-card shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -27,32 +29,32 @@ export default function AppHeader() {
         <nav className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground hidden sm:inline">
             <UserCircle className="inline h-4 w-4 mr-1" />
-            {user.name} ({user.role})
+            {user.name} ({userRoleDisplay})
           </span>
           {user.role === 'farmer' && (
             <Link href={APP_ROUTES.FARMER_DASHBOARD} passHref>
               <Button variant="ghost" size="sm">
-                <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
               </Button>
             </Link>
           )}
            {user.role === 'farmer' && (
             <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
               <Button variant="ghost" size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" /> New Request
+                <PlusCircle className="mr-2 h-4 w-4" /> Novo Pedido
               </Button>
             </Link>
           )}
           {user.role === 'technician' && (
              <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD} passHref>
               <Button variant="ghost" size="sm">
-                <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
               </Button>
             </Link>
           )}
           <Button variant="outline" size="sm" onClick={handleLogout} className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
             <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            Sair
           </Button>
         </nav>
       </div>

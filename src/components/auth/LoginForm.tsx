@@ -21,12 +21,12 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast({ title: "Validation Error", description: "Email is required.", variant: "destructive" });
+      toast({ title: "Erro de Validação", description: "O email é obrigatório.", variant: "destructive" });
       return;
     }
     const user = await login(email, role);
     if (user) {
-      toast({ title: "Login Successful", description: `Welcome back, ${user.name}!` });
+      toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${user.name}!` });
       if (user.role === 'farmer') {
         router.push(APP_ROUTES.FARMER_DASHBOARD);
       } else {
@@ -34,8 +34,8 @@ export default function LoginForm() {
       }
     } else {
       toast({
-        title: 'Login Failed',
-        description: 'Invalid email or role. Please try again.',
+        title: 'Falha no Login',
+        description: 'Email ou função inválidos. Por favor, tente novamente.',
         variant: 'destructive',
       });
     }
@@ -50,12 +50,12 @@ export default function LoginForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder="voce@exemplo.com"
           required
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Senha</Label>
         <Input
           id="password"
           type="password"
@@ -64,10 +64,10 @@ export default function LoginForm() {
           placeholder="••••••••"
           required
         />
-         <p className="text-xs text-muted-foreground">Note: For demo, any password works. Email and role must match mock data.</p>
+         <p className="text-xs text-muted-foreground">Nota: Para demonstração, qualquer senha funciona. Email e função devem corresponder aos dados fictícios.</p>
       </div>
       <div className="space-y-2">
-        <Label>Role</Label>
+        <Label>Função</Label>
         <RadioGroup
           value={role}
           onValueChange={(value: 'farmer' | 'technician') => setRole(value)}
@@ -75,11 +75,11 @@ export default function LoginForm() {
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="farmer" id="role-farmer" />
-            <Label htmlFor="role-farmer" className="font-normal">Farmer</Label>
+            <Label htmlFor="role-farmer" className="font-normal">Agricultor</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="technician" id="role-technician" />
-            <Label htmlFor="role-technician" className="font-normal">Technician</Label>
+            <Label htmlFor="role-technician" className="font-normal">Técnico</Label>
           </div>
         </RadioGroup>
       </div>
@@ -89,7 +89,7 @@ export default function LoginForm() {
         ) : (
           <LogIn className="mr-2 h-4 w-4" />
         )}
-        Sign In
+        Entrar
       </Button>
     </form>
   );

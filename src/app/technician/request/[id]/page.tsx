@@ -11,14 +11,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
   await new Promise(resolve => setTimeout(resolve, 500));
-  // Technicians can view any pending request or requests they responded to.
-  // For simplicity, allow viewing any request by ID for now.
   return mockRequests.find(req => req.id === requestId);
 };
 
@@ -39,22 +38,19 @@ export default function TechnicianViewRequestPage() {
       fetchRequestByIdForTechnician(requestId)
         .then(data => {
           if (data) {
-            // Optionally, pre-fetch AI suggestion if not already done or if request is still pending
-            // This logic could be more complex, e.g., store AI suggestion in request object
-            // For now, ResponseForm will handle AI fetching on demand
             setRequest(data);
           } else {
-            setError("Request not found.");
+            setError("Pedido não encontrado.");
           }
           setIsLoading(false);
         })
         .catch(err => {
-          console.error("Failed to fetch request:", err);
-          setError("Failed to load request details.");
+          console.error("Falha ao buscar pedido:", err);
+          setError("Falha ao carregar detalhes do pedido.");
           setIsLoading(false);
         });
     } else if (!requestId) {
-      setError("Invalid request ID.");
+      setError("ID do pedido inválido.");
       setIsLoading(false);
     }
   }, [requestId, user]);
@@ -96,7 +92,7 @@ export default function TechnicianViewRequestPage() {
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
           <Button onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Go to Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
       </PageWrapper>
@@ -106,7 +102,7 @@ export default function TechnicianViewRequestPage() {
   if (!request) {
     return (
       <PageWrapper allowedRoles={['technician']}>
-        <p>Request details could not be loaded.</p>
+        <p>Não foi possível carregar os detalhes do pedido.</p>
       </PageWrapper>
     );
   }
@@ -115,35 +111,35 @@ export default function TechnicianViewRequestPage() {
     <PageWrapper allowedRoles={['technician']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
-          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
+          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
         </Button>
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Farmer Request Details</CardTitle>
+            <CardTitle className="font-headline text-2xl">Detalhes do Pedido do Agricultor</CardTitle>
             <CardDescription>ID: {request.id}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><User className="h-4 w-4 mr-2 text-primary" />Farmer</h3>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><User className="h-4 w-4 mr-2 text-primary" />Agricultor</h3>
               <p className="text-lg text-foreground">{request.farmerName || request.farmerId}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Cassava Type</h3>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Tipo de Mandioca</h3>
               <p className="text-lg text-foreground">{request.cassavaType}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Submitted On</h3>
-              <p className="text-lg text-foreground">{format(new Date(request.submissionDate), "EEEE, MMMM d, yyyy 'at' h:mm a")}</p>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
+              <p className="text-lg text-foreground">{format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
             </div>
              <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Submitted Photos</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {request.photoDataUris.map((uri, index) => (
                   <div key={index} className="rounded-lg overflow-hidden border border-border aspect-square bg-muted" data-ai-hint="cassava plant">
                     <Image
                       src={uri}
-                      alt={`Submitted photo ${index + 1}`}
+                      alt={`Foto enviada ${index + 1}`}
                       width={300}
                       height={300}
                       className="object-cover h-full w-full hover:scale-105 transition-transform duration-300"
@@ -155,21 +151,20 @@ export default function TechnicianViewRequestPage() {
           </CardContent>
         </Card>
 
-        {/* Conditionally render ResponseForm or display existing response */}
         {request.status === 'Pending' ? (
           <ResponseForm request={request} />
         ) : (
           <Card className="mt-6 bg-card/80">
             <CardHeader>
-              <CardTitle className="font-headline text-xl">Response Submitted</CardTitle>
+              <CardTitle className="font-headline text-xl">Resposta Enviada</CardTitle>
             </CardHeader>
             <CardContent>
-              <p><strong>Status:</strong> {request.status}</p>
-              <p className="mt-2"><strong>Recommendation:</strong></p>
+              <p><strong>Status:</strong> {request.status === 'Positive' ? 'Positivo' : request.status === 'Negative' ? 'Negativo' : request.status === 'Inconclusive' ? 'Inconclusivo' : 'Pendente'}</p>
+              <p className="mt-2"><strong>Recomendação:</strong></p>
               <p className="whitespace-pre-wrap bg-muted p-3 rounded-md mt-1">{request.recommendation}</p>
               {request.technicianName && request.responseDate && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  By You ({request.technicianName}) on {format(new Date(request.responseDate), "MMM d, yyyy")}
+                  Por Você ({request.technicianName}) em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
                 </p>
               )}
             </CardContent>

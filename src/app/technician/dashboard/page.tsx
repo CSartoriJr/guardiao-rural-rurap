@@ -27,7 +27,7 @@ export default function TechnicianDashboard() {
           setIsLoading(false);
         })
         .catch(error => {
-          console.error("Failed to fetch technician requests:", error);
+          console.error("Falha ao buscar pedidos do técnico:", error);
           setIsLoading(false);
         });
     }
@@ -36,10 +36,10 @@ export default function TechnicianDashboard() {
   return (
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-headline text-gray-800">Technician Dashboard</h1>
+        <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
         <div className="flex items-center text-primary">
           <ClipboardList className="h-6 w-6 mr-2"/>
-          <span>{requests.length} Pending Request{requests.length !== 1 && 's'}</span>
+          <span>{requests.length} Pedido{requests.length !== 1 ? 's' : ''} Pendente{requests.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
@@ -58,8 +58,8 @@ export default function TechnicianDashboard() {
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">No Pending Requests</h2>
-          <p className="text-muted-foreground">All farmer requests have been addressed. Great job!</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Pedido Pendente</h2>
+          <p className="text-muted-foreground">Todos os pedidos dos agricultores foram atendidos. Ótimo trabalho!</p>
         </div>
       )}
     </PageWrapper>
