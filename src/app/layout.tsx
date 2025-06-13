@@ -4,8 +4,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'AgriAssist',
-  description: 'Assistência Agrícola Potencializada por IA',
+  title: 'Caça Bruxa',
+  description: 'Um aplicativo misterioso para caçar bruxas.',
 };
 
 export default function RootLayout({

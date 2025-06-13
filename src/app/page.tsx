@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { APP_ROUTES } from '@/config/routes';
-import { AgriAssistLogo } from '@/components/shared/Logo';
+import { CacaBruxaLogo } from '@/components/shared/Logo';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
@@ -28,9 +28,9 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-      <AgriAssistLogo />
+      <CacaBruxaLogo />
       <Loader2 className="animate-spin h-8 w-8 text-primary mt-6" />
-      <p className="text-muted-foreground mt-2">Carregando AgriAssist...</p>
+      <p className="text-muted-foreground mt-2">Carregando Caça Bruxa...</p>
     </div>
   );
 }

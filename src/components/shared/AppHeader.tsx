@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { AgriAssistLogo } from './Logo';
+import { CacaBruxaLogo } from './Logo';
 import { APP_ROUTES } from '@/config/routes';
 import { LogOut, UserCircle, LayoutDashboard, PlusCircle } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export default function AppHeader() {
     <header className="bg-card shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href={user.role === 'farmer' ? APP_ROUTES.FARMER_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD} passHref>
-          <AgriAssistLogo />
+          <CacaBruxaLogo />
         </Link>
         <nav className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground hidden sm:inline">
