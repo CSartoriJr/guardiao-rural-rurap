@@ -3,6 +3,10 @@ import type { User, AgriRequest } from '@/types';
 export const mockUsers: User[] = [
   { id: 'farmer1', email: 'farmer1@example.com', role: 'farmer', name: 'John Farmer' },
   { id: 'tech1', email: 'tech1@example.com', role: 'technician', name: 'Alice Technician' },
+  { id: 'farmer2', email: 'farmer2@example.com', role: 'farmer', name: 'Maria Garcia' },
+  { id: 'farmer3', email: 'farmer3@example.com', role: 'farmer', name: 'Chen Wei' },
+  { id: 'tech2', email: 'tech2@example.com', role: 'technician', name: 'David Miller' },
+  { id: 'tech3', email: 'tech3@example.com', role: 'technician', name: 'Fatima Khan' },
 ];
 
 // Placeholder data URIs for images (replace with actual placeholders or leave empty if not needed for mock)
@@ -33,3 +37,4 @@ export const mockRequests: AgriRequest[] = [
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
+
