@@ -6,4 +6,5 @@ export const APP_ROUTES = {
   FARMER_VIEW_REQUEST: (id: string) => `/farmer/request/${id}`,
   TECHNICIAN_DASHBOARD: '/technician/dashboard',
   TECHNICIAN_VIEW_REQUEST: (id: string) => `/technician/request/${id}`,
+  TECHNICIAN_ANALYTICS_PANEL: '/technician/analytics',
 };
