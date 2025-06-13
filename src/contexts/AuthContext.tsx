@@ -13,6 +13,8 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'cacabruxa-user';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -20,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Check for saved user in localStorage on initial load
-    const savedUser = localStorage.getItem('agriassist-user');
+    const savedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -35,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     if (foundUser) {
       setUser(foundUser);
-      localStorage.setItem('agriassist-user', JSON.stringify(foundUser));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(foundUser));
       setLoading(false);
       return foundUser;
     }
@@ -45,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('agriassist-user');
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   return (
