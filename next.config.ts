@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'rurap.portal.ap.gov.br', // Added new domain
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
