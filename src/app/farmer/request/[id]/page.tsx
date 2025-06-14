@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -143,6 +143,7 @@ export default function FarmerViewRequestPage() {
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
               <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
+              <Skeleton className="h-5 w-1/3" /> {/* Location */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -216,6 +217,12 @@ export default function FarmerViewRequestPage() {
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangleIcon className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
                 <p className="text-lg text-foreground">{request.infectedArea} ha</p>
+              </div>
+            )}
+             {(typeof request.latitude === 'number' && typeof request.longitude === 'number') && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (Simulada)</h3>
+                <p className="text-lg text-foreground">Lat: {request.latitude}, Long: {request.longitude}</p>
               </div>
             )}
             <div>

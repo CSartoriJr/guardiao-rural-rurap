@@ -27,5 +27,7 @@ export interface AgriRequest {
   municipality?: string;
   plantedArea?: number; // Área plantada em hectares
   infectedArea?: number; // Área infectada em hectares
+  latitude?: number; // Latitude from panoramic image
+  longitude?: number; // Longitude from panoramic image
 }
 

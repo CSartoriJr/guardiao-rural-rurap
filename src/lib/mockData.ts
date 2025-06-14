@@ -53,6 +53,8 @@ const defaultMockRequests: AgriRequest[] = [
     municipality: 'Macapá',
     plantedArea: 10,
     infectedArea: 1,
+    latitude: 0.0349, // Mock
+    longitude: -51.0694, // Mock
   },
   {
     id: 'req2',
@@ -70,6 +72,7 @@ const defaultMockRequests: AgriRequest[] = [
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Santana',
     plantedArea: 5,
+    // No GPS data for this one
   },
    {
     id: 'req3',
@@ -83,6 +86,8 @@ const defaultMockRequests: AgriRequest[] = [
     submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Laranjal do Jari',
     infectedArea: 0.5,
+    latitude: -0.5000,
+    longitude: -52.5167,
   },
   {
     id: 'req4',
@@ -113,6 +118,8 @@ const defaultMockRequests: AgriRequest[] = [
     status: 'Pending',
     submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Oiapoque',
+    latitude: 3.8439,
+    longitude: -51.8339,
   },
   {
     id: 'req6',
@@ -162,6 +169,8 @@ const defaultMockRequests: AgriRequest[] = [
     municipality: 'Pedra Branca do Amapari',
     plantedArea: 7,
     infectedArea: 2.5,
+    latitude: 0.7716,
+    longitude: -51.9502,
   },
   {
     id: 'req9',
@@ -328,7 +337,7 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
     submissionDate: new Date().toISOString(),
     status: 'Pending',
   };
-  mockRequests.unshift(newRequest);
+  mockRequests.unshift(newRequest); // Add to the beginning of the array
   persistRequests();
   console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
@@ -355,4 +364,3 @@ export const amapaMunicipalities: string[] = [
   "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
   "Itaubal", "Pracuúba", "Serra do Navio"
 ];
-

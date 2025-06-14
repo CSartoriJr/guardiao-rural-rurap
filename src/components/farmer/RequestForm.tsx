@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest } from '@/types';
 import { addMockRequest } from '@/lib/mockData';
-import { Loader2, Send, LandPlot, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, Navigation } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -27,6 +27,8 @@ const requestFormSchema = z.object({
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -48,11 +50,14 @@ type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 export default function RequestForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtractingLocation, setIsExtractingLocation] = useState(false);
+  const [extractedLatitude, setExtractedLatitude] = useState<number | null>(null);
+  const [extractedLongitude, setExtractedLongitude] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
 
-  const { control, handleSubmit, setValue, formState: { errors } } = useForm<RequestFormValues>({
+  const { control, handleSubmit, setValue, formState: { errors }, watch } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
       cassavaVariety: '',
@@ -65,6 +70,39 @@ export default function RequestForm() {
       infectedArea: '',
     },
   });
+
+  const photo1Value = watch('photo1');
+
+  useEffect(() => {
+    if (photo1Value) {
+      setIsExtractingLocation(true);
+      setExtractedLatitude(null);
+      setExtractedLongitude(null);
+      // Simulate EXIF data extraction
+      setTimeout(() => {
+        // Simulate finding GPS data (or not)
+        const hasGpsData = Math.random() > 0.3; // 70% chance of having GPS data for simulation
+        if (hasGpsData) {
+          const mockLat = (Math.random() * (0.5 - (-0.5)) + (-0.5)); // Amapá-like latitude
+          const mockLng = (Math.random() * (-51.0 - (-52.5)) + (-52.5)); // Amapá-like longitude
+          setExtractedLatitude(parseFloat(mockLat.toFixed(6)));
+          setExtractedLongitude(parseFloat(mockLng.toFixed(6)));
+          setValue('latitude', parseFloat(mockLat.toFixed(6)));
+          setValue('longitude', parseFloat(mockLng.toFixed(6)));
+          toast({ title: "Localização Simulada", description: "Coordenadas GPS (simuladas) extraídas da imagem." });
+        } else {
+          toast({ title: "Localização Não Encontrada", description: "Não foram encontrados dados GPS (simulados) na imagem.", variant: "default" });
+        }
+        setIsExtractingLocation(false);
+      }, 1500); // Simulate 1.5 seconds processing time
+    } else {
+      setExtractedLatitude(null);
+      setExtractedLongitude(null);
+      setValue('latitude', undefined);
+      setValue('longitude', undefined);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photo1Value]); // Removed setValue from dependencies to avoid potential loops if not careful
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user) {
@@ -82,6 +120,8 @@ export default function RequestForm() {
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
+        latitude: extractedLatitude ?? undefined,
+        longitude: extractedLongitude ?? undefined,
       };
       const newRequest = await addMockRequest(requestData as AgriRequest); 
       
@@ -107,7 +147,7 @@ export default function RequestForm() {
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Enviar Novo Pedido</CardTitle>
-        <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas.</CardDescription>
+        <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas. A localização será simuladamente extraída da foto panorâmica.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
@@ -174,7 +214,7 @@ export default function RequestForm() {
               {errors.photo3 && <p className="text-sm text-destructive mt-1">{errors.photo3.message}</p>}
             </div>
           </div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             <div className="space-y-2">
                 <Label htmlFor="plantedArea" className="flex items-center">
@@ -217,9 +257,36 @@ export default function RequestForm() {
             </div>
           </div>
 
+          <div className="space-y-2 pt-4">
+            <Label className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (da Foto Panorâmica)</Label>
+            {isExtractingLocation && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Extraindo localização (simulado)...
+              </div>
+            )}
+            {!isExtractingLocation && extractedLatitude && extractedLongitude && (
+              <div className="text-sm text-foreground p-2 border rounded-md bg-muted/50">
+                <p><span className="font-semibold">Latitude:</span> {extractedLatitude}</p>
+                <p><span className="font-semibold">Longitude:</span> {extractedLongitude}</p>
+                <p className="text-xs text-muted-foreground italic mt-1">Esta é uma localização simulada. Em produção, seria extraída da imagem.</p>
+              </div>
+            )}
+            {!isExtractingLocation && !extractedLatitude && photo1Value && (
+               <div className="text-sm text-muted-foreground p-2 border rounded-md bg-muted/50">
+                Localização não encontrada na imagem (simulado).
+               </div>
+            )}
+             {!photo1Value && (
+               <div className="text-sm text-muted-foreground p-2 border rounded-md border-dashed">
+                Envie a foto panorâmica para tentar extrair a localização.
+               </div>
+            )}
+          </div>
+
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
+          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting || isExtractingLocation}>
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

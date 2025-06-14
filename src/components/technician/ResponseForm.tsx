@@ -94,6 +94,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
         infectedArea: request.infectedArea,
+        latitude: request.latitude,
+        longitude: request.longitude,
       };
       const result = await generateRecommendation(aiInput);
       setValue('recommendation', result.recommendation, { shouldValidate: true });
