@@ -25,5 +25,7 @@ export interface AgriRequest {
   responseDate?: string; // ISO date string
   aiSuggestedRecommendation?: string;
   municipality?: string;
+  plantedArea?: number; // Área plantada em hectares
+  infectedArea?: number; // Área infectada em hectares
 }
 

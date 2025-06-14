@@ -10,29 +10,28 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { AgriRequest, RequestStatus } from '@/types'; // Removed User type, not directly used
+import type { AgriRequest, RequestStatus } from '@/types'; 
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import { Loader2, Send, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-import { updateMockRequest } from '@/lib/mockData'; // Import updateMockRequest
+import { updateMockRequest } from '@/lib/mockData'; 
 
-// This function now uses updateMockRequest from mockData.ts
 const submitTechnicianResponse = async (
   requestId: string,
   technicianId: string,
   technicianName: string,
   recommendation: string,
   status: RequestStatus,
-  originalRequest: AgriRequest // Pass the original request to maintain other fields
+  originalRequest: AgriRequest 
 ): Promise<AgriRequest | null> => {
   console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
-  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
+  await new Promise(resolve => setTimeout(resolve, 100)); 
   
   const updatedRequest: AgriRequest = {
-    ...originalRequest, // Preserve existing fields
-    id: requestId, // Ensure ID is correct
+    ...originalRequest, 
+    id: requestId, 
     technicianId,
     technicianName,
     recommendation,
@@ -40,7 +39,7 @@ const submitTechnicianResponse = async (
     responseDate: new Date().toISOString(),
   };
   
-  return updateMockRequest(updatedRequest); // Use the new function to update and persist
+  return updateMockRequest(updatedRequest); 
 };
 
 const responseFormSchema = z.object({
@@ -93,6 +92,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         photoDataUri1: request.photoDataUris[0],
         photoDataUri2: request.photoDataUris[1],
         photoDataUri3: request.photoDataUris[2],
+        plantedArea: request.plantedArea,
+        infectedArea: request.infectedArea,
       };
       const result = await generateRecommendation(aiInput);
       setValue('recommendation', result.recommendation, { shouldValidate: true });
@@ -112,7 +113,6 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      // Pass the original request to submitTechnicianResponse
       await submitTechnicianResponse(request.id, technicianUser.id, technicianUser.name, data.recommendation, data.status, request);
       toast({
         title: 'Resposta Enviada!',

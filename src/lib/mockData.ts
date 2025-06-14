@@ -51,6 +51,8 @@ const defaultMockRequests: AgriRequest[] = [
     status: 'Pending',
     submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
+    plantedArea: 10,
+    infectedArea: 1,
   },
   {
     id: 'req2',
@@ -67,6 +69,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'Alice Técnica',
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Santana',
+    plantedArea: 5,
   },
    {
     id: 'req3',
@@ -79,6 +82,7 @@ const defaultMockRequests: AgriRequest[] = [
     status: 'Pending',
     submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Laranjal do Jari',
+    infectedArea: 0.5,
   },
   {
     id: 'req4',
@@ -95,6 +99,8 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'David Moleiro',
     responseDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
+    plantedArea: 20,
+    infectedArea: 8,
   },
   {
     id: 'req5',
@@ -123,6 +129,8 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'Ricardo Neves',
     responseDate: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Mazagão',
+    plantedArea: 12.5,
+    infectedArea: 0,
   },
   {
     id: 'req7',
@@ -139,6 +147,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'Lúcia Ferreira',
     responseDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Porto Grande',
+    plantedArea: 3,
   },
   {
     id: 'req8',
@@ -151,6 +160,8 @@ const defaultMockRequests: AgriRequest[] = [
     status: 'Pending',
     submissionDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Pedra Branca do Amapari',
+    plantedArea: 7,
+    infectedArea: 2.5,
   },
   {
     id: 'req9',
@@ -172,10 +183,10 @@ const defaultMockRequests: AgriRequest[] = [
 
 // --- Initialization and Persistence Logic ---
 let R_MOCK_USERS_INITIALIZED = false;
-export let mockUsers: User[] = []; // Initialize as empty, will be populated by loadMockData
+export let mockUsers: User[] = []; 
 
 let R_MOCK_REQUESTS_INITIALIZED = false;
-export let mockRequests: AgriRequest[] = []; // Initialize as empty, will be populated by loadMockData
+export let mockRequests: AgriRequest[] = []; 
 
 
 const loadMockData = () => {
@@ -241,7 +252,6 @@ const loadMockData = () => {
    console.log('[MockData] Data loading complete. Users:', mockUsers.length, 'Requests:', mockRequests.length);
 };
 
-// Call loadMockData on script initialization when window is available
 if (typeof window !== 'undefined') {
   loadMockData();
 }
@@ -264,7 +274,7 @@ const persistRequests = () => {
 
 // --- Mutating Functions for Users ---
 export const addMockUser = (newUser: User): User => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
   mockUsers.push(newUser);
   persistUsers();
   console.log('[MockData] Added user:', newUser.id, 'Total users:', mockUsers.length);
@@ -272,7 +282,7 @@ export const addMockUser = (newUser: User): User => {
 };
 
 export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
   const userIndex = mockUsers.findIndex(u => u.id === userId);
   if (userIndex === -1) {
     console.warn('[MockData] Update failed: User not found', userId);
@@ -297,7 +307,7 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
 };
 
 export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
   const userIndex = mockUsers.findIndex(u => u.id === userId);
   if (userIndex > -1) {
     mockUsers.splice(userIndex, 1);
@@ -311,7 +321,7 @@ export const deleteUserFromMockData = async (userId: string): Promise<boolean> =
 
 // --- Mutating Functions for Requests ---
 export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>): Promise<AgriRequest> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); 
   const newRequest: AgriRequest = {
     ...newRequestData,
     id: `req${Date.now()}`,
@@ -325,10 +335,9 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
 };
 
 export const updateMockRequest = async (updatedRequestData: AgriRequest): Promise<AgriRequest | null> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); 
     const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
     if (index !== -1) {
-        // Preserve fields that might not be in updatedRequestData if it's a partial update in some contexts
         mockRequests[index] = { ...mockRequests[index], ...updatedRequestData };
         persistRequests();
         console.log('[MockData] Updated request:', updatedRequestData.id);

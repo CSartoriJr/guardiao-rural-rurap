@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest } from '@/types';
 import { addMockRequest } from '@/lib/mockData';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -25,9 +25,23 @@ const requestFormSchema = z.object({
   photo1: z.string().nullable().refine(val => val !== null, { message: "A foto Panorâmica é obrigatória." }),
   photo2: z.string().nullable().refine(val => val !== null, { message: "A foto de Envassoramento é obrigatória." }),
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
-}).refine(data => data.isMandioca || data.isMacaxeira, {
+  plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
+  infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
+})
+.refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
-  path: ["isMandioca"], // You can attach this error to one of the checkboxes or a general form error
+  path: ["isMandioca"], 
+})
+.refine(data => {
+  const planted = typeof data.plantedArea === 'number' ? data.plantedArea : undefined;
+  const infected = typeof data.infectedArea === 'number' ? data.infectedArea : undefined;
+  if (planted !== undefined && infected !== undefined) {
+    return infected <= planted;
+  }
+  return true;
+}, {
+  message: "A área infectada não pode ser maior que a área plantada.",
+  path: ["infectedArea"],
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
@@ -47,6 +61,8 @@ export default function RequestForm() {
       photo1: null,
       photo2: null,
       photo3: null,
+      plantedArea: '',
+      infectedArea: '',
     },
   });
 
@@ -60,13 +76,14 @@ export default function RequestForm() {
       const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
         farmerId: user.id,
         farmerName: user.name,
-        cassavaType: data.cassavaVariety, // Renamed from cassavaType to cassavaVariety in form
+        cassavaType: data.cassavaVariety,
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
-        // Municipality could be added here if collected. For now, it's not in the form.
+        plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
+        infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
       };
-      const newRequest = await addMockRequest(requestData as AgriRequest); // Cast as AgriRequest
+      const newRequest = await addMockRequest(requestData as AgriRequest); 
       
       const plantTypes = [];
       if (data.isMandioca) plantTypes.push('Mandioca');
@@ -127,7 +144,6 @@ export default function RequestForm() {
               />
             </div>
             {errors.isMandioca && <p className="text-sm text-destructive">{errors.isMandioca.message}</p>}
-             {/* Display general form error for refine if not attached to a specific field */}
             {errors.root?.message && !errors.isMandioca && <p className="text-sm text-destructive">{errors.root.message}</p>}
           </div>
 
@@ -158,6 +174,49 @@ export default function RequestForm() {
               {errors.photo3 && <p className="text-sm text-destructive mt-1">{errors.photo3.message}</p>}
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <div className="space-y-2">
+                <Label htmlFor="plantedArea" className="flex items-center">
+                    <LandPlot className="h-4 w-4 mr-2 text-primary" />
+                    Área Plantada (em hectares)
+                </Label>
+                <Controller
+                name="plantedArea"
+                control={control}
+                render={({ field }) => (
+                    <div className="flex items-center">
+                    <Input id="plantedArea" type="number" step="any" min="0" placeholder="Ex: 5.5" {...field} className="rounded-r-none" />
+                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground text-sm h-10">
+                        ha
+                    </span>
+                    </div>
+                )}
+                />
+                {errors.plantedArea && <p className="text-sm text-destructive">{errors.plantedArea.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="infectedArea" className="flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
+                    Área Infectada (em hectares)
+                </Label>
+                <Controller
+                name="infectedArea"
+                control={control}
+                render={({ field }) => (
+                    <div className="flex items-center">
+                    <Input id="infectedArea" type="number" step="any" min="0" placeholder="Ex: 1.2" {...field} className="rounded-r-none" />
+                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground text-sm h-10">
+                        ha
+                    </span>
+                    </div>
+                )}
+                />
+                {errors.infectedArea && <p className="text-sm text-destructive">{errors.infectedArea.message}</p>}
+            </div>
+          </div>
+
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>

@@ -10,7 +10,7 @@ import { mockRequests } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -29,7 +29,7 @@ const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriReq
 export default function TechnicianViewRequestPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, initializing: authInitializing } = useAuth(); // Technician user
+  const { user, initializing: authInitializing } = useAuth(); 
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +41,11 @@ export default function TechnicianViewRequestPage() {
   useEffect(() => {
     if (authInitializing) {
       console.log('[TechnicianViewRequestPage] Auth still initializing, waiting...');
-      return; // Wait for auth to initialize
+      return; 
     }
 
     if (!user) {
       console.log('[TechnicianViewRequestPage] No user found, redirecting to login.');
-      // router.replace(APP_ROUTES.LOGIN); // This might be handled by PageWrapper
       return;
     }
     
@@ -91,17 +90,19 @@ export default function TechnicianViewRequestPage() {
     return (
        <PageWrapper allowedRoles={['technician']}>
         <div className="max-w-3xl mx-auto">
-          <Skeleton className="h-8 w-1/4 mb-6" /> {/* Back button */}
+          <Skeleton className="h-8 w-1/4 mb-6" /> 
           <Card>
             <CardHeader>
-              <Skeleton className="h-7 w-3/4 mb-2" /> {/* Title */}
-              <Skeleton className="h-4 w-1/2" /> {/* Description */}
+              <Skeleton className="h-7 w-3/4 mb-2" /> 
+              <Skeleton className="h-4 w-1/2" /> 
             </CardHeader>
             <CardContent className="space-y-4">
-              <Skeleton className="h-5 w-1/3" /> {/* Farmer */}
-              <Skeleton className="h-5 w-1/3" /> {/* Plant Type */}
-              <Skeleton className="h-5 w-1/3" /> {/* Cassava Variety */}
-              <Skeleton className="h-5 w-1/3" /> {/* Submission Date */}
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
+              <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -111,7 +112,7 @@ export default function TechnicianViewRequestPage() {
           </Card>
           <Card className="mt-6">
             <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-            <CardContent><Skeleton className="h-40 w-full" /></CardContent> {/* For ResponseForm placeholder */}
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent> 
           </Card>
         </div>
       </PageWrapper>
@@ -176,6 +177,18 @@ export default function TechnicianViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
             </div>
+            {typeof request.plantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.plantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.infectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangleIcon className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.infectedArea} ha</p>
+              </div>
+            )}
              <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

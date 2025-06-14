@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -59,7 +59,7 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
     <Card className="mt-6 bg-background/50">
       <CardHeader>
         <div className="flex items-center">
-          <IconComponent className={`h-8 w-8 mr-3 ${badgeClass.split(' ')[1]}`} /> {/* Use text color from badgeClass */}
+          <IconComponent className={`h-8 w-8 mr-3 ${badgeClass.split(' ')[1]}`} />
           <CardTitle className="font-headline text-xl">{title}</CardTitle>
         </div>
         <Badge variant="outline" className={`mt-1 ${badgeClass}`}>{statusText}</Badge>
@@ -131,16 +131,18 @@ export default function FarmerViewRequestPage() {
     return (
       <PageWrapper allowedRoles={['farmer']}>
         <div className="max-w-3xl mx-auto">
-          <Skeleton className="h-8 w-1/4 mb-6" /> {/* Back button */}
+          <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
             <CardHeader>
-              <Skeleton className="h-7 w-3/4 mb-2" /> {/* Title */}
-              <Skeleton className="h-4 w-1/2" /> {/* Description */}
+              <Skeleton className="h-7 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
             </CardHeader>
             <CardContent className="space-y-4">
-              <Skeleton className="h-5 w-1/3" /> {/* Plant Type */}
-              <Skeleton className="h-5 w-1/3" /> {/* Cassava Variety */}
-              <Skeleton className="h-5 w-1/3" /> {/* Submission Date */}
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
+              <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -204,7 +206,18 @@ export default function FarmerViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
             </div>
-            
+             {typeof request.plantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.plantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.infectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangleIcon className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.infectedArea} ha</p>
+              </div>
+            )}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
