@@ -37,8 +37,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline">Bem-vindo(a) de volta!</CardTitle>
-          <CardDescription>Por favor, faça login para continuar no Caça Bruxa.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-accent">Caça Bruxa</CardTitle>
+          <CardDescription>Por favor, faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
