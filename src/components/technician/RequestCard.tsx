@@ -20,7 +20,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
           <CardDescription className="text-xs">ID do Pedido: {request.id}</CardDescription>
         </div>
-        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)}>
+        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} passHref>
           <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 ml-auto">
             <Eye className="mr-1 h-4 w-4" /> Ver
           </Button>

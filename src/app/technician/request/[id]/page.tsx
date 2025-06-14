@@ -100,9 +100,20 @@ export default function TechnicianViewRequestPage() {
   }
 
   if (!request) {
+    // This case should ideally be covered by isLoading or error state.
+    // If reached, it means request is null after loading and without an error being set.
+    // This might happen if fetchRequestByIdForTechnician resolves with undefined and setError isn't called for that.
+    // The current logic *does* set an error if data is undefined.
     return (
       <PageWrapper allowedRoles={['technician']}>
-        <p>Não foi possível carregar os detalhes do pedido.</p>
+         <div className="text-center py-10">
+          <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">Pedido não encontrado</h2>
+          <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido ou o pedido não existe.</p>
+          <Button onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
+          </Button>
+        </div>
       </PageWrapper>
     );
   }
