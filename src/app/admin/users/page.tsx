@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
-import type { User, AgriRequest } from '@/types';
+import type { User } from '@/types';
 import { mockUsers, mockRequests, updateUserInMockData, deleteUserFromMockData } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Frown, ListFilter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon } from 'lucide-react'; // Added UserCheck, UsersIcon, TractorIcon
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 
@@ -17,10 +18,9 @@ const fetchAllUsers = async (): Promise<User[]> => {
   return [...mockUsers]; 
 };
 
-// Define an extended user type for this page context
 export type UserWithActivityCount = User & { 
-  requestCount?: number; // For farmers
-  responseCount?: number; // For technicians
+  requestCount?: number; 
+  responseCount?: number; 
 };
 
 export default function ManageUsersPage() {
@@ -118,6 +118,15 @@ export default function ManageUsersPage() {
     return users.filter(user => user.role === roleFilter);
   }, [users, roleFilter]);
 
+  const totalCounts = useMemo(() => {
+    return {
+      farmers: users.filter(u => u.role === 'farmer').length,
+      technicians: users.filter(u => u.role === 'technician').length,
+      admins: users.filter(u => u.role === 'admin').length,
+    };
+  }, [users]);
+
+
   return (
     <PageWrapper allowedRoles={['admin']}>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -134,13 +143,44 @@ export default function ManageUsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Funções</SelectItem>
-              <SelectItem value="admin">Administradores</SelectItem>
-              <SelectItem value="technician">Técnicos</SelectItem>
-              <SelectItem value="farmer">Agricultores</SelectItem>
+              <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
+              <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
+              <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
+
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Agricultores</CardTitle>
+            <TractorIcon className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCounts.farmers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Técnicos</CardTitle>
+            <UserCheck className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCounts.technicians}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Administradores</CardTitle>
+            <UsersIcon className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCounts.admins}</div>
+          </CardContent>
+        </Card>
+      </div>
+
 
       {isLoading ? (
         <div className="space-y-4">
