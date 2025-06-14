@@ -99,7 +99,7 @@ export default function TechnicianViewRequestPage() {
 
   if (isLoading || authInitializing) {
     return (
-       <PageWrapper allowedRoles={['technician']}>
+       <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" /> 
           <Card>
@@ -133,7 +133,7 @@ export default function TechnicianViewRequestPage() {
 
   if (error) {
      return (
-      <PageWrapper allowedRoles={['technician']}>
+      <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
@@ -147,7 +147,7 @@ export default function TechnicianViewRequestPage() {
 
   if (!request) {
     return (
-      <PageWrapper allowedRoles={['technician']}>
+      <PageWrapper allowedRoles={['technician', 'admin']}>
          <div className="text-center py-10">
           <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
           <h2 className="text-xl font-semibold text-foreground">Carregando pedido...</h2>
@@ -161,7 +161,7 @@ export default function TechnicianViewRequestPage() {
   }
   
   return (
-    <PageWrapper allowedRoles={['technician']}>
+    <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
@@ -231,7 +231,7 @@ export default function TechnicianViewRequestPage() {
           </CardContent>
         </Card>
 
-        {request.status === 'Pending' ? (
+        {request.status === 'Pending' && user?.role === 'technician' ? ( // Only show response form if user is technician and status is pending
           <ResponseForm request={request} />
         ) : (
           <Card className="mt-6 bg-card/80">
@@ -244,7 +244,7 @@ export default function TechnicianViewRequestPage() {
               <p className="whitespace-pre-wrap bg-muted p-3 rounded-md mt-1">{request.recommendation}</p>
               {request.technicianName && request.responseDate && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  Por Você ({request.technicianName}) em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
+                   {request.technicianId === user?.id ? `Por Você (${request.technicianName})` : `Por ${request.technicianName}`} em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
                 </p>
               )}
             </CardContent>

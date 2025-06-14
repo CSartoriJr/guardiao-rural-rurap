@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent } from '@/components/ui/dialog'; // Removed DialogClose from direct import
+import { Dialog, DialogContent } from '@/components/ui/dialog'; 
 
 // Mock function to fetch a single request
 const fetchRequestById = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -102,7 +102,7 @@ export default function FarmerViewRequestPage() {
       setIsLoading(true);
       fetchRequestById(requestId)
         .then(data => {
-          if (data && data.farmerId === user.id) {
+          if (data && (data.farmerId === user.id || user.role === 'admin')) { // Admin can also view
             setRequest(data);
           } else if (data) {
             setError("Você não tem autorização para ver este pedido.");
@@ -139,7 +139,7 @@ export default function FarmerViewRequestPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper allowedRoles={['farmer']}>
+      <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
@@ -172,7 +172,7 @@ export default function FarmerViewRequestPage() {
 
   if (error) {
     return (
-      <PageWrapper allowedRoles={['farmer']}>
+      <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
@@ -186,14 +186,14 @@ export default function FarmerViewRequestPage() {
 
   if (!request) {
     return (
-      <PageWrapper allowedRoles={['farmer']}>
+      <PageWrapper allowedRoles={['farmer', 'admin']}>
         <p>Não foi possível carregar os detalhes do pedido.</p>
       </PageWrapper>
     );
   }
 
   return (
-    <PageWrapper allowedRoles={['farmer']}>
+    <PageWrapper allowedRoles={['farmer', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
@@ -278,10 +278,10 @@ export default function FarmerViewRequestPage() {
                     objectFit="contain" 
                 />
             </div>
-            {/* The explicit DialogClose button is removed here, relying on the default X from DialogContent */}
           </DialogContent>
         </Dialog>
       )}
     </PageWrapper>
   );
 }
+
