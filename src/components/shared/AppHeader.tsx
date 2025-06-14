@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { CacaBruxaLogo } from './Logo';
 import { APP_ROUTES } from '@/config/routes';
-import { LogOut, UserCircle, LayoutDashboard, PlusCircle, BarChart3, UserPlus, Users } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, PlusCircle, BarChart3, Users } from 'lucide-react';
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
@@ -77,7 +77,6 @@ export default function AppHeader() {
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Painel Admin
                 </Button>
               </Link>
-              {/* Link "Criar Técnico" removido */}
               <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
                 <Button variant="ghost" size="sm">
                   <Users className="mr-2 h-4 w-4" /> Usuários

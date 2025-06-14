@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, UserX, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -90,7 +90,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         u => u.id !== editingUser.id && u.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase()
       );
       if (cpfExists) {
-        alert('Este CPF já está cadastrado para outro usuário.');
+        // This should ideally use toast, but alert is simpler for now in this component.
+        alert('Este CPF já está cadastrado para outro usuário.'); 
         return;
       }
     }
@@ -130,8 +131,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     variant="destructive" 
                     size="sm" 
                     onClick={() => handleDeleteClick(user)}
-                    disabled={user.id === currentAdminId}
-                    title={user.id === currentAdminId ? "Você não pode remover seu próprio usuário." : "Remover usuário"}
+                    disabled={user.id === currentAdminId || (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1)}
+                    title={user.id === currentAdminId ? "Você não pode remover seu próprio usuário." : (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ? "Não é possível remover o único administrador." : "Remover usuário"}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Remover
                   </Button>
@@ -143,7 +144,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       </Card>
 
       {editingUser && (
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {setIsEditDialogOpen(open); if(!open) setEditingUser(null);}}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
@@ -240,7 +241,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}
+      className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className || ''}`}
       {...props}
     />
   )

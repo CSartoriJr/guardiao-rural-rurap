@@ -35,7 +35,16 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
   if (loading || initializing || !user || (user && !allowedRoles.includes(user.role))) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <Skeleton className="h-16 w-full" /> {/* Header placeholder */}
+        {/* Render a simplified header skeleton if AppHeader might cause issues or isn't needed */}
+        <div className="bg-card shadow-md sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-3 flex justify-between items-center h-16">
+                <Skeleton className="h-8 w-32" />
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-8 w-20" />
+                </div>
+            </div>
+        </div>
         <div className="flex flex-1 items-center justify-center container mx-auto px-4 py-8">
            <div className="space-y-4 w-full max-w-md">
             <Skeleton className="h-8 w-3/4" />
