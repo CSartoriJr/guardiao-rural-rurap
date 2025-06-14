@@ -54,7 +54,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         </Link>
       </div>
        <p className="mt-8 text-center text-sm text-muted-foreground">
-        Descubra os segredos e desvende os mistérios.
+        Desenvolvido por Claudemir Sartori Junior
       </p>
     </div>
   );
