@@ -57,9 +57,12 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
 
 // Function to delete a user from the mockUsers array
 export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  const initialLength = mockUsers.length;
-  mockUsers = mockUsers.filter(u => u.id !== userId);
-  return mockUsers.length < initialLength;
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex > -1) {
+    mockUsers.splice(userIndex, 1); // Mutate the array in place
+    return true; // User was found and removed
+  }
+  return false; // User not found
 };
 
 
