@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, ListChecks, MessageSquareText } from 'lucide-react';
+import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -42,6 +42,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
+  const [showPasswordInModal, setShowPasswordInModal] = useState(false);
 
   const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
@@ -54,6 +55,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       cpf: user.cpf,
       role: user.role,
     });
+    setShowPasswordInModal(false); // Reset password visibility
     setIsEditDialogOpen(true);
   };
 
@@ -64,7 +66,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const confirmDelete = async () => {
     if (userToDelete) {
       await onUserDelete(userToDelete.id, userToDelete.name);
-      setUserToDelete(null); 
+      setUserToDelete(null);
     }
   };
 
@@ -93,11 +95,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       );
       if (cpfExists) {
         // This should ideally use toast, but alert is simpler for now in this component.
-        alert('Este CPF já está cadastrado para outro usuário.'); 
+        alert('Este CPF já está cadastrado para outro usuário.');
         return;
       }
     }
-    
+
     await onUserUpdate(editingUser.id, {
       name: data.name,
       cpf: data.cpf,
@@ -131,8 +133,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
                 <TableCell className="text-center">
-                  {user.role === 'farmer' 
-                    ? (user.requestCount !== undefined ? user.requestCount : '-') 
+                  {user.role === 'farmer'
+                    ? (user.requestCount !== undefined ? user.requestCount : '-')
                     : user.role === 'technician'
                     ? (user.responseCount !== undefined ? user.responseCount : '-')
                     : 'N/A'}
@@ -141,9 +143,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
                     <Pencil className="mr-2 h-4 w-4" /> Editar
                   </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleDeleteClick(user)}
                     disabled={user.id === currentAdminId || (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1)}
                     title={user.id === currentAdminId ? "Você não pode remover seu próprio usuário." : (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ? "Não é possível remover o único administrador." : "Remover usuário"}
@@ -183,9 +185,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     name="cpf"
                     control={control}
                     render={({ field }) => (
-                      <Input 
-                        id="edit-cpf" 
-                        {...field} 
+                      <Input
+                        id="edit-cpf"
+                        {...field}
                         onChange={(e) => handleCpfInputChange(e, field.onChange)}
                         maxLength={14}
                       />
@@ -212,6 +214,30 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     )}
                   />
                   {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="view-password">Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="view-password"
+                      type={showPasswordInModal ? "text" : "password"}
+                      value={editingUser.password || ""}
+                      readOnly
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setShowPasswordInModal(!showPasswordInModal)}
+                      tabIndex={-1} 
+                    >
+                      {showPasswordInModal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <span className="sr-only">{showPasswordInModal ? "Esconder senha" : "Mostrar senha"}</span>
+                    </Button>
+                  </div>
+                   <p className="text-xs text-muted-foreground">Este campo é apenas para visualização.</p>
                 </div>
               </div>
               <DialogFooter>
