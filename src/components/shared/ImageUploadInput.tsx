@@ -3,7 +3,7 @@ import React, { useState, ChangeEvent, useRef } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { X, UploadCloud } from 'lucide-react'; // Removed ImageIcon as it's no longer used for the button
 import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploadInputProps {
@@ -91,11 +91,6 @@ export default function ImageUploadInput({ onImageUpload, id, currentImageUrl }:
           <X className="mr-2 h-4 w-4" /> Remover Imagem
         </Button>
       )}
-       {!preview && (
-         <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="w-full">
-            <ImageIcon className="mr-2 h-4 w-4" /> Selecionar Imagem
-        </Button>
-       )}
     </div>
   );
 }
