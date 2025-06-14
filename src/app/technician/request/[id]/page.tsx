@@ -6,16 +6,21 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData';
+import { mockRequests, deleteMockRequest } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+
 
 // Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -31,10 +36,16 @@ export default function TechnicianViewRequestPage() {
   const params = useParams();
   const router = useRouter();
   const { user, initializing: authInitializing } = useAuth(); 
+  const { toast } = useToast();
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
   console.log('[TechnicianViewRequestPage] Page loaded. Request ID from params:', requestId, "Auth Initializing:", authInitializing, "User:", user);
@@ -46,13 +57,13 @@ export default function TechnicianViewRequestPage() {
       return; 
     }
 
-    if (!user) {
-      console.log('[TechnicianViewRequestPage] No user found, redirecting to login.');
-      // router.replace(APP_ROUTES.LOGIN); // This was commented out, keeping it as is.
-      return;
+    if (!user && !authInitializing) { // Check authInitializing to prevent redirect during initial load
+        console.log('[TechnicianViewRequestPage] No user found after auth init, redirecting to login.');
+        router.replace(APP_ROUTES.LOGIN);
+        return;
     }
     
-    if (requestId) {
+    if (requestId && user) { // Ensure user is available before fetching
       console.log('[TechnicianViewRequestPage] Request ID and user available. Fetching request data.');
       setIsLoading(true);
       setError(null);
@@ -97,6 +108,37 @@ export default function TechnicianViewRequestPage() {
     setExpandedImageUri(null);
   };
 
+  const handleOpenDeleteDialog = () => {
+    setAdminPassword('');
+    setShowPassword(false);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!user || user.role !== 'admin' || !request) return;
+
+    setIsDeleting(true);
+    if (adminPassword === user.password) {
+      try {
+        const success = await deleteMockRequest(request.id);
+        if (success) {
+          toast({ title: 'Pedido Removido', description: `O pedido ID ${request.id} foi removido com sucesso.` });
+          router.push(APP_ROUTES.ADMIN_DASHBOARD);
+        } else {
+          toast({ title: 'Erro na Remoção', description: 'Não foi possível encontrar o pedido para remover.', variant: 'destructive' });
+        }
+      } catch (e) {
+        toast({ title: 'Erro na Remoção', description: 'Ocorreu um erro ao tentar remover o pedido.', variant: 'destructive' });
+      }
+    } else {
+      toast({ title: 'Senha Incorreta', description: 'A senha de administrador está incorreta.', variant: 'destructive' });
+    }
+    setIsDeleting(false);
+    setIsDeleteDialogOpen(false);
+    setAdminPassword('');
+  };
+
+
   if (isLoading || authInitializing) {
     return (
        <PageWrapper allowedRoles={['technician', 'admin']}>
@@ -137,7 +179,7 @@ export default function TechnicianViewRequestPage() {
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
-          <Button onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
+          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -152,7 +194,7 @@ export default function TechnicianViewRequestPage() {
           <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
           <h2 className="text-xl font-semibold text-foreground">Carregando pedido...</h2>
            <p className="text-muted-foreground">Se esta mensagem persistir, o pedido pode não ter sido encontrado.</p>
-          <Button onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
+          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -163,9 +205,61 @@ export default function TechnicianViewRequestPage() {
   return (
     <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
-        <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
-          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
-        </Button>
+        <div className="flex justify-between items-center mb-6">
+            <Button variant="outline" onClick={() => router.back()} className="group">
+            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar
+            </Button>
+            {user?.role === 'admin' && (
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" onClick={handleOpenDeleteDialog}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Remover Pedido
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar Remoção do Pedido</AlertDialogTitle>
+                    <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Para confirmar a remoção do pedido ID <span className="font-semibold">{request.id}</span>, por favor, digite sua senha de administrador.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 my-4">
+                    <Label htmlFor="admin-password">Senha do Administrador</Label>
+                    <div className="relative">
+                        <Input 
+                            id="admin-password" 
+                            type={showPassword ? "text" : "password"} 
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            placeholder="Digite sua senha"
+                        />
+                        <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                            <span className="sr-only">{showPassword ? "Esconder senha" : "Mostrar senha"}</span>
+                        </Button>
+                    </div>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setAdminPassword('')}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleConfirmDelete} 
+                        disabled={isDeleting || adminPassword.length === 0}
+                        className="bg-destructive hover:bg-destructive/90"
+                    >
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Confirmar Remoção
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            )}
+        </div>
 
         <Card className="shadow-lg">
           <CardHeader>
@@ -231,9 +325,9 @@ export default function TechnicianViewRequestPage() {
           </CardContent>
         </Card>
 
-        {request.status === 'Pending' && user?.role === 'technician' ? ( // Only show response form if user is technician and status is pending
+        {request.status === 'Pending' && user?.role === 'technician' ? ( 
           <ResponseForm request={request} />
-        ) : (
+        ) : request.status !== 'Pending' ? (
           <Card className="mt-6 bg-card/80">
             <CardHeader>
               <CardTitle className="font-headline text-xl">Resposta Enviada</CardTitle>
@@ -249,7 +343,7 @@ export default function TechnicianViewRequestPage() {
               )}
             </CardContent>
           </Card>
-        )}
+        ) : null }
       </div>
 
       {expandedImageUri && (
@@ -259,8 +353,8 @@ export default function TechnicianViewRequestPage() {
                 <Image 
                     src={expandedImageUri} 
                     alt="Imagem expandida" 
-                    layout="fill"
-                    objectFit="contain" 
+                    fill // Changed from layout="fill" objectFit="contain"
+                    style={{ objectFit: 'contain' }}
                 />
             </div>
           </DialogContent>

@@ -53,8 +53,8 @@ const defaultMockRequests: AgriRequest[] = [
     municipality: 'Macapá',
     plantedArea: 10,
     infectedArea: 1,
-    latitude: 0.0349, // Mock
-    longitude: -51.0694, // Mock
+    latitude: 0.0349, 
+    longitude: -51.0694, 
   },
   {
     id: 'req2',
@@ -72,7 +72,6 @@ const defaultMockRequests: AgriRequest[] = [
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Santana',
     plantedArea: 5,
-    // No GPS data for this one
   },
    {
     id: 'req3',
@@ -354,6 +353,19 @@ export const updateMockRequest = async (updatedRequestData: AgriRequest): Promis
     }
     console.warn(`[MockData] Update request failed: Request with id ${updatedRequestData.id} not found.`);
     return null;
+};
+
+export const deleteMockRequest = async (requestId: string): Promise<boolean> => {
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
+  const initialLength = mockRequests.length;
+  mockRequests = mockRequests.filter(req => req.id !== requestId);
+  if (mockRequests.length < initialLength) {
+    persistRequests();
+    console.log('[MockData] Deleted request:', requestId, 'Remaining requests:', mockRequests.length);
+    return true;
+  }
+  console.warn('[MockData] Delete failed: Request not found', requestId);
+  return false;
 };
 
 
