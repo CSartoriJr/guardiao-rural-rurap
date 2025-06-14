@@ -11,8 +11,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { AgriRequest, RequestStatus } from '@/types'; 
-import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
-import { Loader2, Send, Sparkles } from 'lucide-react';
+import { generateRecommendation, type GenerateRecommendationOutput } from '@/ai/flows/generate-recommendation-from-image';
+import { Loader2, Send, Sparkles, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
@@ -24,9 +24,11 @@ const submitTechnicianResponse = async (
   technicianName: string,
   recommendation: string,
   status: RequestStatus,
-  originalRequest: AgriRequest 
+  originalRequest: AgriRequest,
+  extractedLat?: number,
+  extractedLng?: number,
 ): Promise<AgriRequest | null> => {
-  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
+  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status, extractedLat, extractedLng });
   await new Promise(resolve => setTimeout(resolve, 100)); 
   
   const updatedRequest: AgriRequest = {
@@ -37,6 +39,8 @@ const submitTechnicianResponse = async (
     recommendation,
     status,
     responseDate: new Date().toISOString(),
+    latitude: extractedLat ?? originalRequest.latitude, // Update if AI provided, else keep original
+    longitude: extractedLng ?? originalRequest.longitude, // Update if AI provided, else keep original
   };
   
   return updateMockRequest(updatedRequest); 
@@ -68,6 +72,8 @@ const statusOptions: StatusOption[] = [
 export default function ResponseForm({ request }: ResponseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiExtractedLat, setAiExtractedLat] = useState<number | undefined>(request.latitude);
+  const [aiExtractedLng, setAiExtractedLng] = useState<number | undefined>(request.longitude);
   const { toast } = useToast();
   const { user: technicianUser } = useAuth(); 
   const router = useRouter();
@@ -84,6 +90,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
 
   const handleGetAiSuggestion = async () => {
     setIsAiLoading(true);
+    setAiExtractedLat(undefined); // Reset before new extraction attempt
+    setAiExtractedLng(undefined);
     try {
       const aiInput = {
         cassavaType: request.cassavaType,
@@ -94,12 +102,19 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
         infectedArea: request.infectedArea,
-        latitude: request.latitude,
-        longitude: request.longitude,
+        // Latitude and Longitude are NOT sent to AI; AI will try to extract them
       };
-      const result = await generateRecommendation(aiInput);
+      const result: GenerateRecommendationOutput = await generateRecommendation(aiInput);
       setValue('recommendation', result.recommendation, { shouldValidate: true });
-      toast({ title: 'Sugestão da IA Gerada!', description: 'A recomendação foi atualizada.' });
+      
+      if (result.extractedLatitude && result.extractedLongitude) {
+        setAiExtractedLat(result.extractedLatitude);
+        setAiExtractedLng(result.extractedLongitude);
+        toast({ title: 'Sugestão da IA Gerada!', description: 'Recomendação e coordenadas GPS (se encontradas) atualizadas.' });
+      } else {
+        toast({ title: 'Sugestão da IA Gerada!', description: 'Recomendação atualizada. Coordenadas GPS não encontradas/extraídas pela IA.' });
+      }
+
     } catch (error) {
       console.error("Erro na sugestão da IA:", error);
       toast({ title: "Erro da IA", description: "Não foi possível gerar a sugestão da IA.", variant: "destructive" });
@@ -115,7 +130,16 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      await submitTechnicianResponse(request.id, technicianUser.id, technicianUser.name, data.recommendation, data.status, request);
+      await submitTechnicianResponse(
+        request.id, 
+        technicianUser.id, 
+        technicianUser.name, 
+        data.recommendation, 
+        data.status, 
+        request,
+        aiExtractedLat, // Pass AI extracted (and potentially technician confirmed) lat
+        aiExtractedLng  // Pass AI extracted (and potentially technician confirmed) lng
+      );
       toast({
         title: 'Resposta Enviada!',
         description: `Sua resposta para o pedido ID ${request.id} foi salva.`,
@@ -161,6 +185,22 @@ export default function ResponseForm({ request }: ResponseFormProps) {
             />
             {errors.recommendation && <p className="text-sm text-destructive mt-1">{errors.recommendation.message}</p>}
           </div>
+
+          {(aiExtractedLat !== undefined && aiExtractedLng !== undefined) && (
+            <div className="space-y-1 rounded-md border bg-muted/50 p-3">
+              <Label className="flex items-center text-sm font-medium"><MapPin className="h-4 w-4 mr-2 text-primary" />Coordenadas GPS Extraídas pela IA:</Label>
+              <p className="text-sm">Latitude: {aiExtractedLat}</p>
+              <p className="text-sm">Longitude: {aiExtractedLng}</p>
+              <p className="text-xs text-muted-foreground italic">Esta localização foi sugerida pela IA com base nas imagens. Será salva com sua resposta.</p>
+            </div>
+          )}
+           {isAiLoading && (aiExtractedLat === undefined || aiExtractedLng === undefined) && (
+             <div className="flex items-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Tentando extrair coordenadas GPS da imagem...
+              </div>
+           )}
+
 
           <div>
             <Label>Status do Diagnóstico</Label>
