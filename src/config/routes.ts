@@ -12,3 +12,4 @@ export const APP_ROUTES = {
   ADMIN_CREATE_TECHNICIAN: '/admin/create-technician',
   ADMIN_MANAGE_USERS: '/admin/users',
 };
+
