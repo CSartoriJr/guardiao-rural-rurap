@@ -17,7 +17,7 @@ export let mockUsers: User[] = [
   { id: 'farmer7', cpf: '000.000.000-03', role: 'farmer', name: 'Sofia Costa', password: 'password123' },
   { id: 'tech6', cpf: '000.000.000-04', role: 'technician', name: 'Ricardo Neves', password: 'password123' },
   { id: 'tech7', cpf: '000.000.000-05', role: 'technician', name: 'Lúcia Ferreira', password: 'password123' },
-  { id: 'admin1', cpf: '000.000.000-00', role: 'admin', name: 'Admin Mestre', password: 'adminpassword' },
+  { id: 'admin1', cpf: '000.000.000-00', role: 'admin', name: 'Admin Adicional', password: 'adminpassword' },
   { id: 'farmer8', cpf: '000.000.000-06', role: 'farmer', name: 'Carlos Silva', password: 'password123' },
   { id: 'farmer9', cpf: '000.000.000-07', role: 'farmer', name: 'Ana Pereira', password: 'password123' },
   { id: 'tech8', cpf: '000.000.000-08', role: 'technician', name: 'Roberto Dias', password: 'password123' },
@@ -30,7 +30,7 @@ export let mockUsers: User[] = [
   { id: 'farmer13', cpf: '151.515.151-51', role: 'farmer', name: 'Agricultora Nova 2', password: 'password123' },
   { id: 'tech12', cpf: '161.616.161-61', role: 'technician', name: 'Técnico Novo 1', password: 'password123' },
   { id: 'tech13', cpf: '171.717.171-71', role: 'technician', name: 'Técnica Nova 2', password: 'password123' },
-  { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Adicional', password: '23jr02cs' },
+  { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
 ];
 
 // Function to update a user in the mockUsers array
@@ -187,3 +187,4 @@ export let mockRequests: AgriRequest[] = [
     municipality: 'Vitória do Jari',
   },
 ];
+
