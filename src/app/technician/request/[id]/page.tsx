@@ -193,8 +193,8 @@ export default function TechnicianViewRequestPage() {
             )}
              {(typeof request.latitude === 'number' && typeof request.longitude === 'number') && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (Simulada)</h3>
-                <p className="text-lg text-foreground">Lat: {request.latitude}, Long: {request.longitude}</p>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (Extraída pela IA)</h3>
+                <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
               </div>
             )}
              <div>
