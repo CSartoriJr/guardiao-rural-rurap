@@ -77,11 +77,7 @@ export default function AppHeader() {
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Painel Admin
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
-                <Button variant="ghost" size="sm">
-                  <UserPlus className="mr-2 h-4 w-4" /> Criar Técnico
-                </Button>
-              </Link>
+              {/* Link "Criar Técnico" removido */}
               <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
                 <Button variant="ghost" size="sm">
                   <Users className="mr-2 h-4 w-4" /> Usuários
@@ -99,4 +95,3 @@ export default function AppHeader() {
     </header>
   );
 }
-
