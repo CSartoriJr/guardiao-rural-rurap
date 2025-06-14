@@ -46,12 +46,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       </Card>
       <div className="mt-6 text-center w-full max-w-md">
         <p className="text-sm text-muted-foreground mb-2">Não tem uma conta de agricultor?</p>
-        <Link href={APP_ROUTES.FARMER_REGISTER} passHref>
-          <Button variant="outline" className="w-full">
+        <Button asChild variant="outline" className="w-full">
+          <Link href={APP_ROUTES.FARMER_REGISTER}>
             <UserPlus className="mr-2 h-4 w-4" />
             Cadastrar como Agricultor
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
        <p className="mt-8 text-center text-sm text-muted-foreground">
         Desenvolvido por Claudemir Sartori Junior
