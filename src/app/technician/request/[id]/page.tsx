@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog'; // Import Dialog components
 
 // Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -33,6 +34,7 @@ export default function TechnicianViewRequestPage() {
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
   console.log('[TechnicianViewRequestPage] Page loaded. Request ID from params:', requestId, "Auth Initializing:", authInitializing, "User:", user);
@@ -85,6 +87,14 @@ export default function TechnicianViewRequestPage() {
     if (req.isMandioca) types.push('Mandioca');
     if (req.isMacaxeira) types.push('Macaxeira');
     return types.length > 0 ? types.join(' e ') : 'Não especificado';
+  };
+
+  const handleImageClick = (uri: string) => {
+    setExpandedImageUri(uri);
+  };
+
+  const closeImageModal = () => {
+    setExpandedImageUri(null);
   };
 
   if (isLoading || authInitializing) {
@@ -201,7 +211,12 @@ export default function TechnicianViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {request.photoDataUris.map((uri, index) => (
-                  <div key={index} className="rounded-lg overflow-hidden border border-border aspect-square bg-muted" data-ai-hint="cassava plant">
+                  <div 
+                    key={index} 
+                    className="rounded-lg overflow-hidden border border-border aspect-square bg-muted cursor-pointer"
+                    onClick={() => handleImageClick(uri)}
+                    data-ai-hint="cassava plant"
+                  >
                     <Image
                       src={uri}
                       alt={`Foto enviada ${index + 1}`}
@@ -236,6 +251,32 @@ export default function TechnicianViewRequestPage() {
           </Card>
         )}
       </div>
+
+      {expandedImageUri && (
+        <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
+          <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
+            <div className="relative w-full h-[85vh]">
+                <Image 
+                    src={expandedImageUri} 
+                    alt="Imagem expandida" 
+                    layout="fill"
+                    objectFit="contain" 
+                />
+            </div>
+            <DialogClose asChild>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-3 right-3 text-foreground bg-background/70 hover:bg-background/90"
+                    onClick={closeImageModal}
+                    aria-label="Fechar imagem expandida"
+                >
+                    <XCircle className="h-6 w-6" />
+                </Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
+      )}
     </PageWrapper>
   );
 }
