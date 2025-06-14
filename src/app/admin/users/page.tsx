@@ -18,12 +18,15 @@ const fetchAllUsers = async (): Promise<User[]> => {
 };
 
 // Define an extended user type for this page context
-type UserWithRequestCount = User & { requestCount?: number };
+export type UserWithActivityCount = User & { 
+  requestCount?: number; // For farmers
+  responseCount?: number; // For technicians
+};
 
 export default function ManageUsersPage() {
   const { user: adminUser } = useAuth();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserWithRequestCount[]>([]);
+  const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<User['role'] | 'all'>('all');
 
@@ -33,11 +36,15 @@ export default function ManageUsersPage() {
       fetchAllUsers()
         .then(data => {
           const usersWithCounts = data.map(u => {
+            let activityCount: Partial<UserWithActivityCount> = {};
             if (u.role === 'farmer') {
               const count = mockRequests.filter(req => req.farmerId === u.id).length;
-              return { ...u, requestCount: count };
+              activityCount = { requestCount: count };
+            } else if (u.role === 'technician') {
+              const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
+              activityCount = { responseCount: count };
             }
-            return u;
+            return { ...u, ...activityCount };
           });
           setUsers(usersWithCounts);
           setIsLoading(false);
@@ -56,17 +63,17 @@ export default function ManageUsersPage() {
       if (updatedUser) {
         setUsers(prevUsers => prevUsers.map(u => {
           if (u.id === userId) {
-            const baseUpdatedUser = { ...u, ...updatedUser };
-            if (baseUpdatedUser.role === 'farmer') {
-              // Recalculate request count if role changed to farmer or if it was already a farmer
-              const count = mockRequests.filter(req => req.farmerId === baseUpdatedUser.id).length;
-              return { ...baseUpdatedUser, requestCount: count };
-            } else if (u.requestCount !== undefined) {
-              // If role changed from farmer, remove requestCount
-              const { requestCount, ...rest } = baseUpdatedUser;
-              return rest;
+            let activityCount: Partial<UserWithActivityCount> = {};
+            if (updatedData.role === 'farmer' || (u.role === 'farmer' && !updatedData.role)) {
+              const count = mockRequests.filter(req => req.farmerId === u.id).length;
+              activityCount = { requestCount: count, responseCount: undefined };
+            } else if (updatedData.role === 'technician' || (u.role === 'technician' && !updatedData.role)) {
+              const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
+              activityCount = { responseCount: count, requestCount: undefined };
+            } else {
+                 activityCount = { requestCount: undefined, responseCount: undefined };
             }
-            return baseUpdatedUser;
+            return { ...u, ...updatedUser, ...activityCount };
           }
           return u;
         }));
@@ -157,7 +164,7 @@ export default function ManageUsersPage() {
           <p className="text-muted-foreground">
             {roleFilter === 'all' 
               ? "Não há usuários cadastrados no sistema além de você." 
-              : `Não há usuários com a função "${getRoleDisplayName(roleFilter)}" cadastrados.`}
+              : `Não há usuários com a função "${getRoleDisplayName(roleFilter as User['role'])}" cadastrados.`}
           </p>
         </div>
       )}

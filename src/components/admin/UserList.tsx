@@ -2,24 +2,23 @@
 'use client';
 import React, { useState } from 'react';
 import type { User } from '@/types';
+import type { UserWithActivityCount } from '@/app/admin/users/page'; // Import the extended type
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, ListChecks } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Pencil, Trash2, ListChecks, MessageSquareText } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mockUsers } from '@/lib/mockData'; // For CPF validation
 
-// User type for this component, possibly with requestCount
-type UserListItem = User & { requestCount?: number };
 
 interface UserListProps {
-  users: UserListItem[];
+  users: UserWithActivityCount[];
   currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<User>) => Promise<void>;
   onUserDelete: (userId: string, userName: string) => Promise<void>;
@@ -41,14 +40,14 @@ type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
 export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
-  const [userToDelete, setUserToDelete] = useState<UserListItem | null>(null);
+  const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
 
-  const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
+  const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
   });
 
-  const handleEditClick = (user: UserListItem) => {
+  const handleEditClick = (user: UserWithActivityCount) => {
     setEditingUser(user);
     reset({
       name: user.name,
@@ -58,7 +57,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (user: UserListItem) => {
+  const handleDeleteClick = (user: UserWithActivityCount) => {
     setUserToDelete(user);
   };
 
@@ -118,7 +117,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead>CPF</TableHead>
               <TableHead>Função</TableHead>
               <TableHead className="text-center">
-                <ListChecks className="inline-block mr-1 h-4 w-4" /> Nº Pedidos
+                <div className="flex items-center justify-center">
+                  <ListChecks className="inline-block mr-1 h-4 w-4" /> Pedidos / <MessageSquareText className="inline-block ml-1 mr-1 h-4 w-4" /> Respostas
+                </div>
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -130,7 +131,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
                 <TableCell className="text-center">
-                  {user.role === 'farmer' ? (user.requestCount !== undefined ? user.requestCount : '-') : 'N/A'}
+                  {user.role === 'farmer' 
+                    ? (user.requestCount !== undefined ? user.requestCount : '-') 
+                    : user.role === 'technician'
+                    ? (user.responseCount !== undefined ? user.responseCount : '-')
+                    : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
