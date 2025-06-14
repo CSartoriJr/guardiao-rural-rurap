@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { CacaBruxaLogo } from './Logo';
 import { APP_ROUTES } from '@/config/routes';
-import { LogOut, UserCircle, LayoutDashboard, PlusCircle, BarChart3, UserPlus } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, PlusCircle, BarChart3, UserPlus, Users } from 'lucide-react';
 
 export default function AppHeader() {
   const { user, logout } = useAuth();
@@ -42,12 +42,12 @@ export default function AppHeader() {
           {/* Farmer Links */}
           {user.role === 'farmer' && (
             <>
-              <Link href={APP_ROUTES.FARMER_DASHBOARD} passHref>
+              <Link href={APP_ROUTES.FARMER_DASHBOARD}>
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
+              <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST}>
                 <Button variant="ghost" size="sm">
                   <PlusCircle className="mr-2 h-4 w-4" /> Novo Pedido
                 </Button>
@@ -58,7 +58,7 @@ export default function AppHeader() {
           {/* Technician Links */}
            {user.role === 'technician' && (
             <>
-              <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD} passHref>
+              <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD}>
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
                 </Button>
@@ -72,14 +72,19 @@ export default function AppHeader() {
           {/* Admin Links */}
           {user.role === 'admin' && (
             <>
-              <Link href={APP_ROUTES.ADMIN_DASHBOARD} passHref>
+              <Link href={APP_ROUTES.ADMIN_DASHBOARD}>
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Painel Admin
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN} passHref>
+              <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
                 <Button variant="ghost" size="sm">
                   <UserPlus className="mr-2 h-4 w-4" /> Criar Técnico
+                </Button>
+              </Link>
+              <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
+                <Button variant="ghost" size="sm">
+                  <Users className="mr-2 h-4 w-4" /> Gerenciar Usuários
                 </Button>
               </Link>
             </>

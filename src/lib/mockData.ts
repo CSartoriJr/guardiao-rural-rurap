@@ -33,6 +33,29 @@ export let mockUsers: User[] = [
   { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Adicional', password: '23jr02cs' },
 ];
 
+// Function to update a user in the mockUsers array
+export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return null;
+  }
+
+  // Check for CPF uniqueness if CPF is being changed
+  if (updatedUserData.cpf) {
+    const normalizedNewCpf = updatedUserData.cpf.replace(/\D/g, '');
+    const existingUserWithCpf = mockUsers.find(
+      u => u.id !== userId && u.cpf.replace(/\D/g, '') === normalizedNewCpf
+    );
+    if (existingUserWithCpf) {
+      throw new Error("Este CPF já está cadastrado para outro usuário.");
+    }
+  }
+  
+  mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
+  return mockUsers[userIndex];
+};
+
+
 // Placeholder data URIs for images (replace with actual placeholders or leave empty if not needed for mock)
 const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const placeholderImage2 = 'https://placehold.co/300x300.png';
@@ -157,4 +180,3 @@ export let mockRequests: AgriRequest[] = [
     municipality: 'Vitória do Jari',
   },
 ];
-
