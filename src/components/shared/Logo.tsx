@@ -14,10 +14,10 @@ export function CacaBruxaLogo({ className, ...props }: CacaBruxaLogoProps) {
       )}
       {...props}
     >
-      <span className="text-[45px] font-bold text-accent leading-none">
+      <span className="text-3xl sm:text-[45px] font-bold text-accent leading-none">
         RURAP
       </span>
-      <span className="text-[0.625rem] text-muted-foreground uppercase mt-1 whitespace-nowrap tracking-wide font-bold">
+      <span className="hidden sm:block text-[0.625rem] text-muted-foreground uppercase mt-1 whitespace-nowrap tracking-wide font-bold">
         INSTITUTO DE EXTENSÃO, ASSISTÊNCIA E DESENVOLVIMENTO RURAL DO AMAPÁ
       </span>
     </div>

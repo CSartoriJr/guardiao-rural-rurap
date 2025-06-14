@@ -33,9 +33,9 @@ export default function AppHeader() {
         <Link href={homeDashboardLink}>
           <CacaBruxaLogo />
         </Link>
-        <nav className="flex items-center gap-2 sm:gap-4">
-          <span className="text-sm text-muted-foreground hidden sm:inline">
-            <UserCircle className="inline h-4 w-4 mr-1" />
+        <nav className="flex items-center gap-1 sm:gap-2">
+          <span className="text-sm text-muted-foreground hidden md:inline-flex items-center">
+            <UserCircle className="inline h-5 w-5 mr-1" />
             {user.name} ({userRoleDisplay})
           </span>
           
@@ -44,12 +44,14 @@ export default function AppHeader() {
             <>
               <Link href={APP_ROUTES.FARMER_DASHBOARD}>
                 <Button variant="ghost" size="sm">
-                  <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
+                  <LayoutDashboard className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Painel</span>
                 </Button>
               </Link>
               <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST}>
                 <Button variant="ghost" size="sm">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Novo Pedido
+                  <PlusCircle className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Novo Pedido</span>
                 </Button>
               </Link>
             </>
@@ -60,11 +62,15 @@ export default function AppHeader() {
             <>
               <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD}>
                 <Button variant="ghost" size="sm">
-                  <LayoutDashboard className="mr-2 h-4 w-4" /> Painel
+                  <LayoutDashboard className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Painel</span>
                 </Button>
               </Link>
               <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
-                <Button variant="ghost" size="sm"><BarChart3 className="mr-2 h-4 w-4" /> Análise</Button>
+                <Button variant="ghost" size="sm">
+                  <BarChart3 className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Análise</span>
+                </Button>
               </Link>
             </>
           )}
@@ -74,20 +80,22 @@ export default function AppHeader() {
             <>
               <Link href={APP_ROUTES.ADMIN_DASHBOARD}>
                 <Button variant="ghost" size="sm">
-                  <LayoutDashboard className="mr-2 h-4 w-4" /> Painel Admin
+                  <LayoutDashboard className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Painel Admin</span>
                 </Button>
               </Link>
               <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
                 <Button variant="ghost" size="sm">
-                  <Users className="mr-2 h-4 w-4" /> Usuários
+                  <Users className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Usuários</span>
                 </Button>
               </Link>
             </>
           )}
 
           <Button variant="outline" size="sm" onClick={handleLogout} className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
+            <LogOut className="h-5 w-5 md:mr-2" />
+            <span className="hidden md:inline">Sair</span>
           </Button>
         </nav>
       </div>
