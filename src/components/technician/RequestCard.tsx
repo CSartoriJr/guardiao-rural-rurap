@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AgriRequest } from '@/types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { APP_ROUTES } from '@/config/routes';
 import { Eye, User, CalendarDays } from 'lucide-react';
@@ -15,9 +15,16 @@ interface TechnicianRequestCardProps {
 export default function TechnicianRequestCard({ request }: TechnicianRequestCardProps) {
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-      <CardHeader>
-        <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
-        <CardDescription className="text-xs">ID do Pedido: {request.id}</CardDescription>
+      <CardHeader className="flex flex-row justify-between items-start pb-2">
+        <div>
+          <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
+          <CardDescription className="text-xs">ID do Pedido: {request.id}</CardDescription>
+        </div>
+        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)}>
+          <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 ml-auto">
+            <Eye className="mr-1 h-4 w-4" /> Ver
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent className="space-y-3 py-3">
         <div className="flex items-center text-sm text-muted-foreground">
@@ -42,13 +49,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           ))}
         </div>
       </CardContent>
-      <CardFooter>
-        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)}>
-          <Button variant="default" className="w-full bg-primary hover:bg-primary/90">
-            <Eye className="mr-2 h-4 w-4" /> Ver e Responder
-          </Button>
-        </Link>
-      </CardFooter>
+      {/* CardFooter has been removed */}
     </Card>
   );
 }
