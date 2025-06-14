@@ -27,7 +27,6 @@ const requestFormSchema = z.object({
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
-  // Latitude and longitude are now optional and will be populated by AI later
   latitude: z.number().optional(), 
   longitude: z.number().optional(),
 })
@@ -66,8 +65,8 @@ export default function RequestForm() {
       photo3: null,
       plantedArea: '',
       infectedArea: '',
-      latitude: undefined, // Will be set by AI later
-      longitude: undefined, // Will be set by AI later
+      latitude: undefined,
+      longitude: undefined,
     },
   });
 
@@ -88,7 +87,6 @@ export default function RequestForm() {
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
-        // Latitude and longitude will be undefined here, AI will extract them later
         latitude: undefined, 
         longitude: undefined,
       };
@@ -228,9 +226,9 @@ export default function RequestForm() {
 
           <div className="space-y-2 pt-2">
             <Label className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</Label>
-            <div className="text-sm text-muted-foreground p-2 border rounded-md border-dashed">
-                A localização (Latitude/Longitude) será extraída pela Inteligência Artificial se estiver visível na imagem panorâmica.
-                O técnico revisará essa informação.
+            <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-md bg-muted/30">
+                A localização (Latitude/Longitude) será extraída pela Inteligência Artificial se estiver visível na imagem panorâmica (Foto1).
+                O técnico revisará essa informação. Certifique-se que as coordenadas estejam nítidas na foto.
             </div>
           </div>
 
