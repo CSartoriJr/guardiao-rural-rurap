@@ -1,8 +1,11 @@
 
 import type { User, AgriRequest } from '@/types';
 
-// CPFs fictícios para demonstração
-export let mockUsers: User[] = [
+const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
+const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
+
+// --- Default Data ---
+const defaultMockUsers: User[] = [
   { id: 'farmer1', cpf: '111.111.111-11', role: 'farmer', name: 'João Agricultor', password: 'password123' },
   { id: 'tech1', cpf: '222.222.222-22', role: 'technician', name: 'Alice Técnica', password: 'password123' },
   { id: 'farmer2', cpf: '333.333.333-33', role: 'farmer', name: 'Maria Garcia', password: 'password123' },
@@ -33,52 +36,10 @@ export let mockUsers: User[] = [
   { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
 ];
 
-// Function to update a user in the mockUsers array
-export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  if (userIndex === -1) {
-    return null;
-  }
-
-  // Check for CPF uniqueness if CPF is being changed
-  if (updatedUserData.cpf) {
-    const normalizedNewCpf = updatedUserData.cpf.replace(/\D/g, '');
-    const existingUserWithCpf = mockUsers.find(
-      u => u.id !== userId && u.cpf.replace(/\D/g, '') === normalizedNewCpf
-    );
-    if (existingUserWithCpf) {
-      throw new Error("Este CPF já está cadastrado para outro usuário.");
-    }
-  }
-  
-  mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
-  return mockUsers[userIndex];
-};
-
-// Function to delete a user from the mockUsers array
-export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  if (userIndex > -1) {
-    mockUsers.splice(userIndex, 1); // Mutate the array in place
-    return true; // User was found and removed
-  }
-  return false; // User not found
-};
-
-
-// Placeholder data URIs for images (replace with actual placeholders or leave empty if not needed for mock)
 const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
-
-export const amapaMunicipalities: string[] = [
-  "Macapá", "Santana", "Laranjal do Jari", "Oiapoque", "Mazagão",
-  "Porto Grande", "Tartarugalzinho", "Pedra Branca do Amapari",
-  "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
-  "Itaubal", "Pracuúba", "Serra do Navio"
-];
-
-export let mockRequests: AgriRequest[] = [
+const defaultMockRequests: AgriRequest[] = [
   {
     id: 'req1',
     farmerId: 'farmer1',
@@ -86,7 +47,7 @@ export let mockRequests: AgriRequest[] = [
     cassavaType: 'TMS 30572',
     photoDataUris: [placeholderImage, placeholderImage2, placeholderImage],
     status: 'Pending',
-    submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
   },
   {
@@ -97,7 +58,7 @@ export let mockRequests: AgriRequest[] = [
     photoDataUris: [placeholderImage2, placeholderImage, placeholderImage],
     status: 'Positive',
     recommendation: 'A planta parece saudável. Continue com as práticas atuais. Monitore para pragas.',
-    submissionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    submissionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     technicianId: 'tech1',
     technicianName: 'Alice Técnica',
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -110,7 +71,7 @@ export let mockRequests: AgriRequest[] = [
     cassavaType: 'BRA fortitude',
     photoDataUris: [placeholderImage, placeholderImage, placeholderImage2],
     status: 'Pending',
-    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
     municipality: 'Laranjal do Jari',
   },
   {
@@ -191,3 +152,133 @@ export let mockRequests: AgriRequest[] = [
   },
 ];
 
+// --- Initialization and Persistence Logic ---
+let R_MOCK_USERS_INITIALIZED = false;
+export let mockUsers: User[] = [...defaultMockUsers];
+
+if (typeof window !== 'undefined' && !R_MOCK_USERS_INITIALIZED) {
+  const storedUsers = localStorage.getItem(MOCK_USERS_STORAGE_KEY);
+  if (storedUsers) {
+    try {
+      const parsedUsers = JSON.parse(storedUsers);
+      if (Array.isArray(parsedUsers)) {
+        mockUsers = parsedUsers;
+      } else {
+        mockUsers = [...defaultMockUsers];
+        localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+      }
+    } catch (e) {
+      console.error("Failed to parse mock users from localStorage, resetting to default.", e);
+      mockUsers = [...defaultMockUsers];
+      localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+    }
+  } else {
+    mockUsers = [...defaultMockUsers];
+    localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+  }
+  R_MOCK_USERS_INITIALIZED = true;
+}
+
+const persistUsers = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+  }
+};
+
+let R_MOCK_REQUESTS_INITIALIZED = false;
+export let mockRequests: AgriRequest[] = [...defaultMockRequests];
+
+if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
+  const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
+  if (storedRequests) {
+    try {
+      const parsedRequests = JSON.parse(storedRequests);
+      if (Array.isArray(parsedRequests)) {
+        mockRequests = parsedRequests;
+      } else {
+        mockRequests = [...defaultMockRequests];
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+      }
+    } catch (e) {
+      console.error("Failed to parse mock requests from localStorage, resetting to default.", e);
+      mockRequests = [...defaultMockRequests];
+      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+    }
+  } else {
+    mockRequests = [...defaultMockRequests];
+    localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+  }
+  R_MOCK_REQUESTS_INITIALIZED = true;
+}
+
+const persistRequests = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+  }
+};
+
+
+// --- Mutating Functions for Users ---
+export const addMockUser = (newUser: User): User => {
+  mockUsers.push(newUser);
+  persistUsers();
+  return newUser;
+};
+
+export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return null;
+  }
+
+  if (updatedUserData.cpf) {
+    const normalizedNewCpf = updatedUserData.cpf.replace(/\D/g, '');
+    const existingUserWithCpf = mockUsers.find(
+      u => u.id !== userId && u.cpf.replace(/\D/g, '') === normalizedNewCpf
+    );
+    if (existingUserWithCpf) {
+      throw new Error("Este CPF já está cadastrado para outro usuário.");
+    }
+  }
+  
+  mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
+  persistUsers();
+  return mockUsers[userIndex];
+};
+
+export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex > -1) {
+    mockUsers.splice(userIndex, 1);
+    persistUsers();
+    return true;
+  }
+  return false;
+};
+
+// --- Mutating Functions for Requests ---
+export const addMockRequest = (newRequest: AgriRequest): AgriRequest => {
+  mockRequests.unshift(newRequest); // Add to the beginning to show newest first
+  persistRequests();
+  return newRequest;
+};
+
+export const updateMockRequest = (updatedRequestData: AgriRequest): AgriRequest | null => {
+    const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
+    if (index !== -1) {
+        mockRequests[index] = updatedRequestData;
+        persistRequests();
+        return updatedRequestData;
+    }
+    console.error(`Request with id ${updatedRequestData.id} not found for update.`);
+    return null;
+};
+
+
+// --- Non-mutating Data ---
+export const amapaMunicipalities: string[] = [
+  "Macapá", "Santana", "Laranjal do Jari", "Oiapoque", "Mazagão",
+  "Porto Grande", "Tartarugalzinho", "Pedra Branca do Amapari",
+  "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
+  "Itaubal", "Pracuúba", "Serra do Navio"
+];

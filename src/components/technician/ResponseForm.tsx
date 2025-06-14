@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -9,40 +10,37 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import type { AgriRequest, User, RequestStatus } from '@/types';
+import type { AgriRequest, RequestStatus } from '@/types'; // Removed User type, not directly used
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import { Loader2, Send, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-import { mockRequests } from '@/lib/mockData'; // Import mockRequests to update it
+import { updateMockRequest } from '@/lib/mockData'; // Import updateMockRequest
 
-
-const updateRequestStatus = async (
+// This function now uses updateMockRequest from mockData.ts
+const submitTechnicianResponse = async (
   requestId: string,
   technicianId: string,
   technicianName: string,
   recommendation: string,
-  status: RequestStatus
-): Promise<AgriRequest> => {
+  status: RequestStatus,
+  originalRequest: AgriRequest // Pass the original request to maintain other fields
+): Promise<AgriRequest | null> => {
   console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
-  await new Promise(resolve => setTimeout(resolve, 1500)); 
+  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
   
-  const existingRequest = mockRequests.find(r => r.id === requestId);
-  if (!existingRequest) throw new Error("Pedido não encontrado para atualização");
-
   const updatedRequest: AgriRequest = {
-    ...existingRequest,
+    ...originalRequest, // Preserve existing fields
+    id: requestId, // Ensure ID is correct
     technicianId,
     technicianName,
     recommendation,
     status,
     responseDate: new Date().toISOString(),
   };
-  const index = mockRequests.findIndex(r => r.id === requestId);
-  if (index !== -1) mockRequests[index] = updatedRequest;
   
-  return updatedRequest;
+  return updateMockRequest(updatedRequest); // Use the new function to update and persist
 };
 
 const responseFormSchema = z.object({
@@ -112,7 +110,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      await updateRequestStatus(request.id, technicianUser.id, technicianUser.name, data.recommendation, data.status);
+      // Pass the original request to submitTechnicianResponse
+      await submitTechnicianResponse(request.id, technicianUser.id, technicianUser.name, data.recommendation, data.status, request);
       toast({
         title: 'Resposta Enviada!',
         description: `Sua resposta para o pedido ID ${request.id} foi salva.`,

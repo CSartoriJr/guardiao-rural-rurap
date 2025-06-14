@@ -11,24 +11,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { User } from '@/types'; 
-import { mockUsers } from '@/lib/mockData'; // To add the new user
+import { mockUsers, addMockUser } from '@/lib/mockData'; // Import addMockUser
 import { Loader2, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
+// This function now uses addMockUser from mockData.ts
 const saveTechnicianUser = async (userData: Pick<User, 'name' | 'cpf' | 'password'>): Promise<User> => {
-  console.log("Salvando novo técnico:", { name: userData.name, cpf: userData.cpf }); // Don't log password
-  await new Promise(resolve => setTimeout(resolve, 1500)); 
+  console.log("Salvando novo técnico:", { name: userData.name, cpf: userData.cpf });
+  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
   
   const newTechnician: User = {
     id: `tech${Date.now()}`,
     name: userData.name,
     cpf: userData.cpf,
-    password: userData.password, // Store the password
+    password: userData.password,
     role: 'technician',
   };
-  mockUsers.push(newTechnician);
-  return newTechnician;
+  return addMockUser(newTechnician); // Use the new function to add and persist
 };
 
 const cpfValidation = z.string().refine(cpf => {
@@ -75,6 +75,7 @@ export default function CreateTechnicianForm() {
     setIsSubmitting(true);
     try {
       const normalizedNewCpf = data.cpf.replace(/\D/g, '');
+      // Check against the current mockUsers array which is loaded from localStorage
       const cpfExists = mockUsers.some(user => user.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase());
       if (cpfExists) {
         toast({

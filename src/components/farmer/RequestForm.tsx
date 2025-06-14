@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -6,29 +7,33 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; 
+// import { Textarea } from '@/components/ui/textarea'; No longer used
 import ImageUploadInput from '@/components/shared/ImageUploadInput';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest } from '@/types'; 
+import { addMockRequest } from '@/lib/mockData'; // Import addMockRequest
 import { Loader2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
 
-// Mock function to simulate saving the request
+// This function now uses addMockRequest from mockData.ts
 const saveRequest = async (requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'farmerName'>): Promise<AgriRequest> => {
   console.log("Salvando pedido:", requestData);
-  await new Promise(resolve => setTimeout(resolve, 1500)); 
+  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
+  
   const newRequest: AgriRequest = {
     ...requestData,
     id: `req${Date.now()}`,
     submissionDate: new Date().toISOString(),
     status: 'Pending',
-    farmerName: requestData.farmerId, 
+    farmerName: requestData.farmerId, // This might need adjustment if user.name is preferred
+                                    // For now, assumes farmerId is sufficient or user.name is fetched/passed differently
   };
-  return newRequest;
+  // mockRequests.push(newRequest); // Old way
+  return addMockRequest(newRequest); // Use new function to add and persist
 };
 
 
@@ -65,11 +70,13 @@ export default function RequestForm() {
     setIsSubmitting(true);
     try {
       const requestData = {
-        farmerId: user.id,
+        farmerId: user.id, 
+        farmerName: user.name, // Add farmer's name
         cassavaType: data.cassavaType,
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!] as [string, string, string], 
+        // Municipality could be added here if collected. For now, it's not in the form.
       };
-      const newRequest = await saveRequest(requestData);
+      const newRequest = await saveRequest(requestData as any); // Cast if farmerName makes it not strictly Omit<>
       toast({
         title: 'Pedido Enviado!',
         description: `Seu pedido para ${data.cassavaType} foi enviado. ID: ${newRequest.id}`,
