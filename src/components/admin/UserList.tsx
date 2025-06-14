@@ -9,14 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ListChecks } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mockUsers } from '@/lib/mockData'; // For CPF validation
 
+// User type for this component, possibly with requestCount
+type UserListItem = User & { requestCount?: number };
+
 interface UserListProps {
-  users: User[];
+  users: UserListItem[];
   currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<User>) => Promise<void>;
   onUserDelete: (userId: string, userName: string) => Promise<void>;
@@ -38,14 +41,14 @@ type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
 export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserListItem | null>(null);
 
   const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
   });
 
-  const handleEditClick = (user: User) => {
+  const handleEditClick = (user: UserListItem) => {
     setEditingUser(user);
     reset({
       name: user.name,
@@ -55,7 +58,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (user: User) => {
+  const handleDeleteClick = (user: UserListItem) => {
     setUserToDelete(user);
   };
 
@@ -114,6 +117,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead>Nome</TableHead>
               <TableHead>CPF</TableHead>
               <TableHead>Função</TableHead>
+              <TableHead className="text-center">
+                <ListChecks className="inline-block mr-1 h-4 w-4" /> Nº Pedidos
+              </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -123,6 +129,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
+                <TableCell className="text-center">
+                  {user.role === 'farmer' ? (user.requestCount !== undefined ? user.requestCount : '-') : 'N/A'}
+                </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
                     <Pencil className="mr-2 h-4 w-4" /> Editar

@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
-import type { User } from '@/types';
-import { mockUsers, updateUserInMockData, deleteUserFromMockData } from '@/lib/mockData';
+import type { User, AgriRequest } from '@/types';
+import { mockUsers, mockRequests, updateUserInMockData, deleteUserFromMockData } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,10 +17,13 @@ const fetchAllUsers = async (): Promise<User[]> => {
   return [...mockUsers]; 
 };
 
+// Define an extended user type for this page context
+type UserWithRequestCount = User & { requestCount?: number };
+
 export default function ManageUsersPage() {
   const { user: adminUser } = useAuth();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserWithRequestCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<User['role'] | 'all'>('all');
 
@@ -29,7 +32,14 @@ export default function ManageUsersPage() {
       setIsLoading(true);
       fetchAllUsers()
         .then(data => {
-          setUsers(data);
+          const usersWithCounts = data.map(u => {
+            if (u.role === 'farmer') {
+              const count = mockRequests.filter(req => req.farmerId === u.id).length;
+              return { ...u, requestCount: count };
+            }
+            return u;
+          });
+          setUsers(usersWithCounts);
           setIsLoading(false);
         })
         .catch(error => {
@@ -44,7 +54,22 @@ export default function ManageUsersPage() {
     try {
       const updatedUser = await updateUserInMockData(userId, updatedData);
       if (updatedUser) {
-        setUsers(prevUsers => prevUsers.map(u => (u.id === userId ? updatedUser : u)));
+        setUsers(prevUsers => prevUsers.map(u => {
+          if (u.id === userId) {
+            const baseUpdatedUser = { ...u, ...updatedUser };
+            if (baseUpdatedUser.role === 'farmer') {
+              // Recalculate request count if role changed to farmer or if it was already a farmer
+              const count = mockRequests.filter(req => req.farmerId === baseUpdatedUser.id).length;
+              return { ...baseUpdatedUser, requestCount: count };
+            } else if (u.requestCount !== undefined) {
+              // If role changed from farmer, remove requestCount
+              const { requestCount, ...rest } = baseUpdatedUser;
+              return rest;
+            }
+            return baseUpdatedUser;
+          }
+          return u;
+        }));
         toast({ title: "Usuário Atualizado", description: `Os dados de ${updatedUser.name} foram atualizados.` });
       } else {
         toast({ title: "Erro na Atualização", description: "Não foi possível encontrar o usuário para atualizar.", variant: "destructive" });
