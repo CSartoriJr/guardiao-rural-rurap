@@ -27,8 +27,7 @@ const requestFormSchema = z.object({
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
-  latitude: z.number().optional(), 
-  longitude: z.number().optional(),
+  // Latitude and Longitude are not farmer inputs; they are handled by AI extraction and technician review.
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -65,8 +64,6 @@ export default function RequestForm() {
       photo3: null,
       plantedArea: '',
       infectedArea: '',
-      latitude: undefined,
-      longitude: undefined,
     },
   });
 
@@ -78,7 +75,7 @@ export default function RequestForm() {
     }
     setIsSubmitting(true);
     try {
-      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
+      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'latitude' | 'longitude'> = {
         farmerId: user.id,
         farmerName: user.name,
         cassavaType: data.cassavaVariety,
@@ -87,8 +84,8 @@ export default function RequestForm() {
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
-        latitude: undefined, 
-        longitude: undefined,
+        // Latitude and longitude will be undefined here initially.
+        // They get populated by the AI flow later.
       };
       const newRequest = await addMockRequest(requestData as AgriRequest); 
       
