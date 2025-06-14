@@ -9,15 +9,15 @@ export function CacaBruxaLogo({ className, ...props }: CacaBruxaLogoProps) {
   return (
     <div
       className={cn(
-        "flex flex-col", // Allows text to stack vertically
+        "flex flex-col items-center", // Centering content
         className
       )}
       {...props}
     >
-      <span className="text-xl font-bold text-accent">
+      <span className="text-[45px] font-bold text-accent leading-none">
         RURAP
       </span>
-      <span className="text-[0.5rem] text-muted-foreground lowercase leading-tight max-w-[150px]">
+      <span className="text-[0.625rem] text-muted-foreground uppercase mt-1 whitespace-nowrap tracking-wide">
         INSTITUTO DE EXTENSÃO, ASSISTÊNCIA E DESENVOLVIMENTO RURAL DO AMAPÁ
       </span>
     </div>
