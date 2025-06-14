@@ -26,6 +26,11 @@ export let mockUsers: User[] = [
   { id: 'farmer11', cpf: '111.011.011-01', role: 'farmer', name: 'Beatriz Almeida' },
   { id: 'tech10', cpf: '121.212.121-21', role: 'technician', name: 'André Sousa' },
   { id: 'tech11', cpf: '131.313.131-31', role: 'technician', name: 'Camila Santos' },
+  { id: 'farmer12', cpf: '141.414.141-41', role: 'farmer', name: 'Agricultor Novo 1' },
+  { id: 'farmer13', cpf: '151.515.151-51', role: 'farmer', name: 'Agricultora Nova 2' },
+  { id: 'tech12', cpf: '161.616.161-61', role: 'technician', name: 'Técnico Novo 1' },
+  { id: 'tech13', cpf: '171.717.171-71', role: 'technician', name: 'Técnica Nova 2' },
+  { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Adicional' },
 ];
 
 // Placeholder data URIs for images (replace with actual placeholders or leave empty if not needed for mock)
@@ -152,3 +157,4 @@ export let mockRequests: AgriRequest[] = [
     municipality: 'Vitória do Jari',
   },
 ];
+
