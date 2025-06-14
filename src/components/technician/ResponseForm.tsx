@@ -11,8 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { AgriRequest, RequestStatus } from '@/types'; 
-import { generateRecommendation, type GenerateRecommendationOutput } from '@/ai/flows/generate-recommendation-from-image';
-import { Loader2, Send, Sparkles, MapPin } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
@@ -24,11 +23,9 @@ const submitTechnicianResponse = async (
   technicianName: string,
   recommendation: string,
   status: RequestStatus,
-  originalRequest: AgriRequest,
-  extractedLat?: number,
-  extractedLng?: number,
+  originalRequest: AgriRequest
 ): Promise<AgriRequest | null> => {
-  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status, extractedLat, extractedLng });
+  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
   await new Promise(resolve => setTimeout(resolve, 100)); 
   
   const updatedRequest: AgriRequest = {
@@ -39,8 +36,9 @@ const submitTechnicianResponse = async (
     recommendation,
     status,
     responseDate: new Date().toISOString(),
-    latitude: extractedLat ?? originalRequest.latitude, // Update if AI provided, else keep original
-    longitude: extractedLng ?? originalRequest.longitude, // Update if AI provided, else keep original
+    // Latitude and longitude from the original request are preserved
+    latitude: originalRequest.latitude, 
+    longitude: originalRequest.longitude,
   };
   
   return updateMockRequest(updatedRequest); 
@@ -71,57 +69,17 @@ const statusOptions: StatusOption[] = [
 
 export default function ResponseForm({ request }: ResponseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiExtractedLat, setAiExtractedLat] = useState<number | undefined>(request.latitude);
-  const [aiExtractedLng, setAiExtractedLng] = useState<number | undefined>(request.longitude);
   const { toast } = useToast();
   const { user: technicianUser } = useAuth(); 
   const router = useRouter();
 
-  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<ResponseFormValues>({
+  const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
     defaultValues: {
-      recommendation: request.aiSuggestedRecommendation || '',
+      recommendation: request.aiSuggestedRecommendation || '', // This field might be empty if AI suggestion was never generated
       status: request.status !== 'Pending' ? request.status : undefined,
     },
   });
-
-  const currentRecommendation = watch('recommendation');
-
-  const handleGetAiSuggestion = async () => {
-    setIsAiLoading(true);
-    setAiExtractedLat(undefined); // Reset before new extraction attempt
-    setAiExtractedLng(undefined);
-    try {
-      const aiInput = {
-        cassavaType: request.cassavaType,
-        isMandioca: request.isMandioca,
-        isMacaxeira: request.isMacaxeira,
-        photoDataUri1: request.photoDataUris[0],
-        photoDataUri2: request.photoDataUris[1],
-        photoDataUri3: request.photoDataUris[2],
-        plantedArea: request.plantedArea,
-        infectedArea: request.infectedArea,
-        // Latitude and Longitude are NOT sent to AI; AI will try to extract them
-      };
-      const result: GenerateRecommendationOutput = await generateRecommendation(aiInput);
-      setValue('recommendation', result.recommendation, { shouldValidate: true });
-      
-      if (result.extractedLatitude && result.extractedLongitude) {
-        setAiExtractedLat(result.extractedLatitude);
-        setAiExtractedLng(result.extractedLongitude);
-        toast({ title: 'Sugestão da IA Gerada!', description: 'Recomendação e coordenadas GPS (se encontradas) atualizadas.' });
-      } else {
-        toast({ title: 'Sugestão da IA Gerada!', description: 'Recomendação atualizada. Coordenadas GPS não encontradas/extraídas pela IA.' });
-      }
-
-    } catch (error) {
-      console.error("Erro na sugestão da IA:", error);
-      toast({ title: "Erro da IA", description: "Não foi possível gerar a sugestão da IA.", variant: "destructive" });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
 
   const onSubmit: SubmitHandler<ResponseFormValues> = async (data) => {
     if (!technicianUser) {
@@ -136,9 +94,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         technicianUser.name, 
         data.recommendation, 
         data.status, 
-        request,
-        aiExtractedLat, // Pass AI extracted (and potentially technician confirmed) lat
-        aiExtractedLng  // Pass AI extracted (and potentially technician confirmed) lng
+        request
       );
       toast({
         title: 'Resposta Enviada!',
@@ -161,14 +117,6 @@ export default function ResponseForm({ request }: ResponseFormProps) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
           <div>
-            <Button type="button" variant="outline" onClick={handleGetAiSuggestion} disabled={isAiLoading || isSubmitting} className="mb-2 w-full sm:w-auto">
-              {isAiLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
-              )}
-              Obter Sugestão da IA
-            </Button>
             <Label htmlFor="recommendation">Texto da Recomendação</Label>
             <Controller
               name="recommendation"
@@ -185,22 +133,6 @@ export default function ResponseForm({ request }: ResponseFormProps) {
             />
             {errors.recommendation && <p className="text-sm text-destructive mt-1">{errors.recommendation.message}</p>}
           </div>
-
-          {(aiExtractedLat !== undefined && aiExtractedLng !== undefined) && (
-            <div className="space-y-1 rounded-md border bg-muted/50 p-3">
-              <Label className="flex items-center text-sm font-medium"><MapPin className="h-4 w-4 mr-2 text-primary" />Coordenadas GPS Extraídas pela IA:</Label>
-              <p className="text-sm">Latitude: {aiExtractedLat}</p>
-              <p className="text-sm">Longitude: {aiExtractedLng}</p>
-              <p className="text-xs text-muted-foreground italic">Esta localização foi sugerida pela IA com base nas imagens. Será salva com sua resposta.</p>
-            </div>
-          )}
-           {isAiLoading && (aiExtractedLat === undefined || aiExtractedLng === undefined) && (
-             <div className="flex items-center text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Tentando extrair coordenadas GPS da imagem...
-              </div>
-           )}
-
 
           <div>
             <Label>Status do Diagnóstico</Label>
@@ -226,7 +158,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting || isAiLoading}>
+          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
              {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
