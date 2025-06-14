@@ -46,6 +46,7 @@ export default function ManageUsersPage() {
             }
             return { ...u, ...activityCount };
           });
+          usersWithCounts.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
           setUsers(usersWithCounts);
           setIsLoading(false);
         })
@@ -61,22 +62,26 @@ export default function ManageUsersPage() {
     try {
       const updatedUser = await updateUserInMockData(userId, updatedData);
       if (updatedUser) {
-        setUsers(prevUsers => prevUsers.map(u => {
-          if (u.id === userId) {
-            let activityCount: Partial<UserWithActivityCount> = {};
-            if (updatedData.role === 'farmer' || (u.role === 'farmer' && !updatedData.role)) {
-              const count = mockRequests.filter(req => req.farmerId === u.id).length;
-              activityCount = { requestCount: count, responseCount: undefined };
-            } else if (updatedData.role === 'technician' || (u.role === 'technician' && !updatedData.role)) {
-              const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
-              activityCount = { responseCount: count, requestCount: undefined };
-            } else {
-                 activityCount = { requestCount: undefined, responseCount: undefined };
+        setUsers(prevUsers => {
+          const updatedList = prevUsers.map(u => {
+            if (u.id === userId) {
+              let activityCount: Partial<UserWithActivityCount> = {};
+              if (updatedData.role === 'farmer' || (u.role === 'farmer' && !updatedData.role)) {
+                const count = mockRequests.filter(req => req.farmerId === u.id).length;
+                activityCount = { requestCount: count, responseCount: undefined };
+              } else if (updatedData.role === 'technician' || (u.role === 'technician' && !updatedData.role)) {
+                const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
+                activityCount = { responseCount: count, requestCount: undefined };
+              } else {
+                   activityCount = { requestCount: undefined, responseCount: undefined };
+              }
+              return { ...u, ...updatedUser, ...activityCount };
             }
-            return { ...u, ...updatedUser, ...activityCount };
-          }
-          return u;
-        }));
+            return u;
+          });
+          updatedList.sort((a, b) => a.name.localeCompare(b.name)); // Re-sort after update
+          return updatedList;
+        });
         toast({ title: "Usuário Atualizado", description: `Os dados de ${updatedUser.name} foram atualizados.` });
       } else {
         toast({ title: "Erro na Atualização", description: "Não foi possível encontrar o usuário para atualizar.", variant: "destructive" });
@@ -91,7 +96,7 @@ export default function ManageUsersPage() {
     try {
       const success = await deleteUserFromMockData(userId);
       if (success) {
-        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId)); // No need to re-sort here as filter preserves order
         toast({ title: "Usuário Removido", description: `O usuário ${userName} foi removido com sucesso.` });
       } else {
         toast({ title: "Erro na Remoção", description: "Não foi possível encontrar o usuário para remover.", variant: "destructive" });
@@ -116,6 +121,7 @@ export default function ManageUsersPage() {
       return users;
     }
     return users.filter(user => user.role === roleFilter);
+    // No need to sort here as `users` is already sorted
   }, [users, roleFilter]);
 
   const totalCounts = useMemo(() => {
@@ -211,3 +217,4 @@ export default function ManageUsersPage() {
     </PageWrapper>
   );
 }
+
