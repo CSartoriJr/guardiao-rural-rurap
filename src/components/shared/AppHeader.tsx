@@ -84,7 +84,7 @@ export default function AppHeader() {
               </Link>
               <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
                 <Button variant="ghost" size="sm">
-                  <Users className="mr-2 h-4 w-4" /> não consigo acessar esse menu
+                  <Users className="mr-2 h-4 w-4" /> Usuários
                 </Button>
               </Link>
             </>
