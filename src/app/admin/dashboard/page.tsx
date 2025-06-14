@@ -9,9 +9,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
-import { UserPlus, ClipboardList, Frown, Users } from 'lucide-react';
+import { UserPlus, ClipboardList, Frown, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 
 // Mock function to fetch all requests for admin
@@ -20,33 +20,17 @@ const fetchAllRequestsForAdmin = async (): Promise<AgriRequest[]> => {
   return mockRequests.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()); // Newest first
 };
 
-interface FarmerOption {
-  id: string;
-  name: string;
-}
-
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string | 'all'>('all');
-  const [farmerOptions, setFarmerOptions] = useState<FarmerOption[]>([]);
+  const [farmerSearchTerm, setFarmerSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (user && user.role === 'admin') {
       fetchAllRequestsForAdmin()
         .then(data => {
           setRequests(data);
-          
-          const uniqueFarmersMap = new Map<string, FarmerOption>();
-          data.forEach(req => {
-            if (!uniqueFarmersMap.has(req.farmerId)) {
-              uniqueFarmersMap.set(req.farmerId, { id: req.farmerId, name: req.farmerName || req.farmerId });
-            }
-          });
-          const sortedFarmers = Array.from(uniqueFarmersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-          setFarmerOptions(sortedFarmers);
-          
           setIsLoading(false);
         })
         .catch(error => {
@@ -57,15 +41,15 @@ export default function AdminDashboard() {
   }, [user]);
 
   const filteredRequests = useMemo(() => {
-    if (selectedFarmerId === 'all') {
+    if (!farmerSearchTerm.trim()) {
       return requests;
     }
-    return requests.filter(request => request.farmerId === selectedFarmerId);
-  }, [requests, selectedFarmerId]);
-
-  const getRequestCountForFarmer = (farmerId: string) => {
-    return requests.filter(req => req.farmerId === farmerId).length;
-  };
+    const lowercasedFilter = farmerSearchTerm.toLowerCase();
+    return requests.filter(request =>
+      (request.farmerName && request.farmerName.toLowerCase().includes(lowercasedFilter)) ||
+      request.farmerId.toLowerCase().includes(lowercasedFilter)
+    );
+  }, [requests, farmerSearchTerm]);
 
   return (
     <PageWrapper allowedRoles={['admin']}>
@@ -86,24 +70,18 @@ export default function AdminDashboard() {
 
       <div className="mb-6 flex flex-col sm:flex-row justify-start items-center gap-4">
         <div className="w-full sm:w-auto sm:min-w-[300px]">
-          <Label htmlFor="farmer-filter" className="text-sm font-medium text-foreground">Filtrar Pedidos por Agricultor</Label>
-          <Select
-            value={selectedFarmerId}
-            onValueChange={(value) => setSelectedFarmerId(value as string | 'all')}
-          >
-            <SelectTrigger id="farmer-filter" className="w-full mt-1 bg-card border-border">
-              <Users className="mr-2 h-4 w-4 text-primary" />
-              <SelectValue placeholder="Selecionar agricultor..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Agricultores ({requests.length} pedidos)</SelectItem>
-              {farmerOptions.map(farmer => (
-                <SelectItem key={farmer.id} value={farmer.id}>
-                  {farmer.name} ({getRequestCountForFarmer(farmer.id)} pedidos)
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="farmer-search" className="text-sm font-medium text-foreground">Buscar Pedidos por Agricultor</Label>
+          <div className="relative mt-1">
+            <Input
+              id="farmer-search"
+              type="text"
+              placeholder="Nome ou ID do agricultor..."
+              value={farmerSearchTerm}
+              onChange={(e) => setFarmerSearchTerm(e.target.value)}
+              className="w-full bg-card border-border pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </div>
       </div>
 
@@ -124,8 +102,8 @@ export default function AdminDashboard() {
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Pedido Encontrado</h2>
           <p className="text-muted-foreground">
-            {selectedFarmerId !== 'all' && requests.length > 0
-              ? 'O agricultor selecionado não possui pedidos ou não há pedidos que correspondam a este agricultor.'
+            {farmerSearchTerm.trim() && requests.length > 0
+              ? `Nenhum pedido encontrado para "${farmerSearchTerm}".`
               : 'Ainda não há pedidos registrados no sistema.'}
           </p>
         </div>
