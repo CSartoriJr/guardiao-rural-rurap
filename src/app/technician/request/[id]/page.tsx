@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -9,7 +10,7 @@ import { mockRequests } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -78,6 +79,14 @@ export default function TechnicianViewRequestPage() {
     }
   }, [requestId, user, authInitializing, router]);
 
+  const getPlantTypeDisplay = (req: AgriRequest | null): string => {
+    if (!req) return 'Não especificado';
+    const types = [];
+    if (req.isMandioca) types.push('Mandioca');
+    if (req.isMacaxeira) types.push('Macaxeira');
+    return types.length > 0 ? types.join(' e ') : 'Não especificado';
+  };
+
   if (isLoading || authInitializing) {
     return (
        <PageWrapper allowedRoles={['technician']}>
@@ -90,7 +99,8 @@ export default function TechnicianViewRequestPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Skeleton className="h-5 w-1/3" /> {/* Farmer */}
-              <Skeleton className="h-5 w-1/3" /> {/* Cassava Type */}
+              <Skeleton className="h-5 w-1/3" /> {/* Plant Type */}
+              <Skeleton className="h-5 w-1/3" /> {/* Cassava Variety */}
               <Skeleton className="h-5 w-1/3" /> {/* Submission Date */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -155,7 +165,11 @@ export default function TechnicianViewRequestPage() {
               <p className="text-lg text-foreground">{request.farmerName || request.farmerId}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Tipo de Mandioca</h3>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Sprout className="h-4 w-4 mr-2 text-primary" />Tipo de Planta</h3>
+              <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
               <p className="text-lg text-foreground">{request.cassavaType}</p>
             </div>
             <div>

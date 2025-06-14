@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI-powered recommendation generator for technicians based on cassava type and submitted photos.
@@ -11,7 +12,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateRecommendationInputSchema = z.object({
-  cassavaType: z.string().describe('The type of cassava.'),
+  cassavaType: z.string().describe('The variety of the cassava plant (e.g., BRS Formosa, Vassourinha).'),
+  isMandioca: z.boolean().optional().describe('Indicates if the plant is classified as Mandioca.'),
+  isMacaxeira: z.boolean().optional().describe('Indicates if the plant is classified as Macaxeira.'),
   photoDataUri1: z
     .string()
     .describe(
@@ -45,9 +48,11 @@ const prompt = ai.definePrompt({
   name: 'generateRecommendationPrompt',
   input: {schema: GenerateRecommendationInputSchema},
   output: {schema: GenerateRecommendationOutputSchema},
-  prompt: `You are an expert agricultural technician specializing in cassava plants. Based on the cassava type and submitted photos, provide a recommendation for the farmer.
+  prompt: `You are an expert agricultural technician specializing in cassava plants (mandioca/macaxeira).
+Based on the plant classification, variety, and submitted photos, provide a detailed recommendation for the farmer.
 
-Cassava Type: {{{cassavaType}}}
+Plant Classification: {{#if isMandioca}}Mandioca{{/if}}{{#if isMacaxeira}}{{#if isMandioca}} e {{/if}}Macaxeira{{/if}}{{^if isMandioca}}{{^if isMacaxeira}}Não especificado{{/if}}{{/if}}
+Plant Variety: {{{cassavaType}}}
 
 Photo 1: {{media url=photoDataUri1}}
 Photo 2: {{media url=photoDataUri2}}

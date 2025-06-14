@@ -13,7 +13,9 @@ export interface AgriRequest {
   id: string;
   farmerId: string;
   farmerName: string; // For display convenience
-  cassavaType: string;
+  cassavaType: string; // This will now be more like "Variety"
+  isMandioca?: boolean;
+  isMacaxeira?: boolean;
   photoDataUris: [string, string, string]; // Storing as data URIs for direct use with AI
   status: RequestStatus;
   recommendation?: string;

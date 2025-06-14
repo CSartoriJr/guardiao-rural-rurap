@@ -7,41 +7,27 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// import { Textarea } from '@/components/ui/textarea'; No longer used
+import { Checkbox } from '@/components/ui/checkbox';
 import ImageUploadInput from '@/components/shared/ImageUploadInput';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { AgriRequest } from '@/types'; 
-import { addMockRequest } from '@/lib/mockData'; // Import addMockRequest
+import type { AgriRequest } from '@/types';
+import { addMockRequest } from '@/lib/mockData';
 import { Loader2, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
-
-// This function now uses addMockRequest from mockData.ts
-const saveRequest = async (requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'farmerName'>): Promise<AgriRequest> => {
-  console.log("Salvando pedido:", requestData);
-  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
-  
-  const newRequest: AgriRequest = {
-    ...requestData,
-    id: `req${Date.now()}`,
-    submissionDate: new Date().toISOString(),
-    status: 'Pending',
-    farmerName: requestData.farmerId, // This might need adjustment if user.name is preferred
-                                    // For now, assumes farmerId is sufficient or user.name is fetched/passed differently
-  };
-  // mockRequests.push(newRequest); // Old way
-  return addMockRequest(newRequest); // Use new function to add and persist
-};
-
-
 const requestFormSchema = z.object({
-  cassavaType: z.string().min(3, { message: 'O tipo de mandioca deve ter pelo menos 3 caracteres.' }),
+  cassavaVariety: z.string().min(2, { message: 'A variedade deve ter pelo menos 2 caracteres.' }),
+  isMandioca: z.boolean().optional(),
+  isMacaxeira: z.boolean().optional(),
   photo1: z.string().nullable().refine(val => val !== null, { message: "A foto 1 é obrigatória." }),
   photo2: z.string().nullable().refine(val => val !== null, { message: "A foto 2 é obrigatória." }),
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto 3 é obrigatória." }),
+}).refine(data => data.isMandioca || data.isMacaxeira, {
+  message: "Selecione pelo menos Mandioca ou Macaxeira.",
+  path: ["isMandioca"], // You can attach this error to one of the checkboxes or a general form error
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
@@ -55,7 +41,9 @@ export default function RequestForm() {
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
-      cassavaType: '',
+      cassavaVariety: '',
+      isMandioca: false,
+      isMacaxeira: false,
       photo1: null,
       photo2: null,
       photo3: null,
@@ -69,19 +57,27 @@ export default function RequestForm() {
     }
     setIsSubmitting(true);
     try {
-      const requestData = {
-        farmerId: user.id, 
-        farmerName: user.name, // Add farmer's name
-        cassavaType: data.cassavaType,
-        photoDataUris: [data.photo1!, data.photo2!, data.photo3!] as [string, string, string], 
+      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
+        farmerId: user.id,
+        farmerName: user.name,
+        cassavaType: data.cassavaVariety, // Renamed from cassavaType to cassavaVariety in form
+        isMandioca: data.isMandioca,
+        isMacaxeira: data.isMacaxeira,
+        photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         // Municipality could be added here if collected. For now, it's not in the form.
       };
-      const newRequest = await saveRequest(requestData as any); // Cast if farmerName makes it not strictly Omit<>
+      const newRequest = await addMockRequest(requestData as AgriRequest); // Cast as AgriRequest
+      
+      const plantTypes = [];
+      if (data.isMandioca) plantTypes.push('Mandioca');
+      if (data.isMacaxeira) plantTypes.push('Macaxeira');
+      const plantTypeDisplay = plantTypes.join(' e ');
+
       toast({
         title: 'Pedido Enviado!',
-        description: `Seu pedido para ${data.cassavaType} foi enviado. ID: ${newRequest.id}`,
+        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado. ID: ${newRequest.id}`,
       });
-      router.push(APP_ROUTES.FARMER_DASHBOARD); 
+      router.push(APP_ROUTES.FARMER_DASHBOARD);
     } catch (error) {
       console.error("Falha ao enviar pedido:", error);
       toast({ title: "Falha no Envio", description: "Não foi possível enviar seu pedido. Por favor, tente novamente.", variant: "destructive" });
@@ -94,18 +90,55 @@ export default function RequestForm() {
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Enviar Novo Pedido</CardTitle>
-        <CardDescription>Forneça detalhes sobre sua planta de mandioca e envie três fotos nítidas.</CardDescription>
+        <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="cassavaType">Tipo de Mandioca</Label>
+            <Label>Tipo de Planta</Label>
+            <div className="flex items-center space-x-4">
+              <Controller
+                name="isMandioca"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isMandioca"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <Label htmlFor="isMandioca" className="font-normal">Mandioca</Label>
+                  </div>
+                )}
+              />
+              <Controller
+                name="isMacaxeira"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isMacaxeira"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <Label htmlFor="isMacaxeira" className="font-normal">Macaxeira</Label>
+                  </div>
+                )}
+              />
+            </div>
+            {errors.isMandioca && <p className="text-sm text-destructive">{errors.isMandioca.message}</p>}
+             {/* Display general form error for refine if not attached to a specific field */}
+            {errors.root?.message && !errors.isMandioca && <p className="text-sm text-destructive">{errors.root.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cassavaVariety">Variedade (ex: BRS Formosa, Vassourinha)</Label>
             <Controller
-              name="cassavaType"
+              name="cassavaVariety"
               control={control}
-              render={({ field }) => <Input id="cassavaType" placeholder="ex: TMS 30572, TME 419" {...field} />}
+              render={({ field }) => <Input id="cassavaVariety" placeholder="ex: TMS 30572, TME 419" {...field} />}
             />
-            {errors.cassavaType && <p className="text-sm text-destructive">{errors.cassavaType.message}</p>}
+            {errors.cassavaVariety && <p className="text-sm text-destructive">{errors.cassavaVariety.message}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -45,6 +45,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer1',
     farmerName: 'João Agricultor',
     cassavaType: 'TMS 30572',
+    isMandioca: true,
+    isMacaxeira: false,
     photoDataUris: [placeholderImage, placeholderImage2, placeholderImage],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -55,6 +57,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer1',
     farmerName: 'João Agricultor',
     cassavaType: 'TME 419',
+    isMandioca: false,
+    isMacaxeira: true,
     photoDataUris: [placeholderImage2, placeholderImage, placeholderImage],
     status: 'Positive',
     recommendation: 'A planta parece saudável. Continue com as práticas atuais. Monitore para pragas.',
@@ -69,9 +73,11 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer2',
     farmerName: 'Maria Garcia',
     cassavaType: 'BRA fortitude',
+    isMandioca: true,
+    isMacaxeira: true,
     photoDataUris: [placeholderImage, placeholderImage, placeholderImage2],
     status: 'Pending',
-    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
+    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Laranjal do Jari',
   },
   {
@@ -79,6 +85,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer4',
     farmerName: 'Bento Agricultor',
     cassavaType: 'IAC 90',
+    isMandioca: true,
+    isMacaxeira: false,
     photoDataUris: [placeholderImage, placeholderImage2, placeholderImage],
     status: 'Negative',
     recommendation: 'Parece ter a Doença do Mosaico da Mandioca. Recomenda-se remover as plantas infectadas e usar mudas certificadas para plantios futuros.',
@@ -93,6 +101,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer5',
     farmerName: 'Kenji Tanaka',
     cassavaType: 'BRS Kiriris',
+    isMandioca: false,
+    isMacaxeira: true,
     photoDataUris: [placeholderImage2, placeholderImage, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -103,6 +113,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer6',
     farmerName: 'Pedro Alvares',
     cassavaType: 'BRS Formosa',
+    isMandioca: true,
+    isMacaxeira: false,
     photoDataUris: [placeholderImage, placeholderImage, placeholderImage],
     status: 'Inconclusive',
     recommendation: 'Os sintomas não são claros. Sugiro monitorar a planta por mais uma semana e, se não houver melhora, enviar novas fotos com detalhes das folhas e do caule.',
@@ -117,6 +129,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer7',
     farmerName: 'Sofia Costa',
     cassavaType: 'Vassourinha',
+    isMandioca: true,
+    isMacaxeira: true,
     photoDataUris: [placeholderImage2, placeholderImage2, placeholderImage],
     status: 'Positive',
     recommendation: 'A planta está vigorosa e sem sinais de doença. Continue com o bom trabalho!',
@@ -131,6 +145,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer8',
     farmerName: 'Carlos Silva',
     cassavaType: 'Casca Roxa',
+    isMandioca: true,
+    isMacaxeira: false,
     photoDataUris: [placeholderImage, placeholderImage, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
@@ -141,6 +157,8 @@ const defaultMockRequests: AgriRequest[] = [
     farmerId: 'farmer9',
     farmerName: 'Ana Pereira',
     cassavaType: 'BRS CS01',
+    isMandioca: false,
+    isMacaxeira: true,
     photoDataUris: [placeholderImage2, placeholderImage, placeholderImage],
     status: 'Negative',
     recommendation: 'A planta exibe sinais de deficiência de nutrientes, especificamente nitrogênio. Recomenda-se aplicar um fertilizante rico em nitrogênio.',
@@ -280,9 +298,9 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
 
 export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
   if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
-  const initialLength = mockUsers.length;
-  mockUsers = mockUsers.filter(u => u.id !== userId);
-  if (mockUsers.length < initialLength) {
+  const userIndex = mockUsers.findIndex(u => u.id === userId);
+  if (userIndex > -1) {
+    mockUsers.splice(userIndex, 1);
     persistUsers();
     console.log('[MockData] Deleted user:', userId, 'Remaining users:', mockUsers.length);
     return true;
@@ -292,22 +310,29 @@ export const deleteUserFromMockData = async (userId: string): Promise<boolean> =
 };
 
 // --- Mutating Functions for Requests ---
-export const addMockRequest = (newRequest: AgriRequest): AgriRequest => {
+export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>): Promise<AgriRequest> => {
   if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
-  mockRequests.unshift(newRequest); 
+  const newRequest: AgriRequest = {
+    ...newRequestData,
+    id: `req${Date.now()}`,
+    submissionDate: new Date().toISOString(),
+    status: 'Pending',
+  };
+  mockRequests.unshift(newRequest);
   persistRequests();
   console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
 };
 
-export const updateMockRequest = (updatedRequestData: AgriRequest): AgriRequest | null => {
+export const updateMockRequest = async (updatedRequestData: AgriRequest): Promise<AgriRequest | null> => {
   if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
     const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
     if (index !== -1) {
-        mockRequests[index] = updatedRequestData;
+        // Preserve fields that might not be in updatedRequestData if it's a partial update in some contexts
+        mockRequests[index] = { ...mockRequests[index], ...updatedRequestData };
         persistRequests();
         console.log('[MockData] Updated request:', updatedRequestData.id);
-        return updatedRequestData;
+        return mockRequests[index];
     }
     console.warn(`[MockData] Update request failed: Request with id ${updatedRequestData.id} not found.`);
     return null;

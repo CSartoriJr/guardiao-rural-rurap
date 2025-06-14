@@ -88,6 +88,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     try {
       const aiInput = {
         cassavaType: request.cassavaType,
+        isMandioca: request.isMandioca,
+        isMacaxeira: request.isMacaxeira,
         photoDataUri1: request.photoDataUris[0],
         photoDataUri2: request.photoDataUris[1],
         photoDataUri3: request.photoDataUris[2],

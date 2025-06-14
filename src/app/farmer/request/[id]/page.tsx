@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -9,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -119,6 +120,13 @@ export default function FarmerViewRequestPage() {
     }
   }, [requestId, user]);
 
+  const getPlantTypeDisplay = (req: AgriRequest): string => {
+    const types = [];
+    if (req.isMandioca) types.push('Mandioca');
+    if (req.isMacaxeira) types.push('Macaxeira');
+    return types.length > 0 ? types.join(' e ') : 'Não especificado';
+  };
+
   if (isLoading) {
     return (
       <PageWrapper allowedRoles={['farmer']}>
@@ -130,7 +138,8 @@ export default function FarmerViewRequestPage() {
               <Skeleton className="h-4 w-1/2" /> {/* Description */}
             </CardHeader>
             <CardContent className="space-y-4">
-              <Skeleton className="h-5 w-1/3" /> {/* Cassava Type */}
+              <Skeleton className="h-5 w-1/3" /> {/* Plant Type */}
+              <Skeleton className="h-5 w-1/3" /> {/* Cassava Variety */}
               <Skeleton className="h-5 w-1/3" /> {/* Submission Date */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -184,7 +193,11 @@ export default function FarmerViewRequestPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Tipo de Mandioca</h3>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Sprout className="h-4 w-4 mr-2 text-primary" />Tipo de Planta</h3>
+              <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
               <p className="text-lg text-foreground">{request.cassavaType}</p>
             </div>
             <div>
