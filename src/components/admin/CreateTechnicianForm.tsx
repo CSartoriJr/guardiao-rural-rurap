@@ -17,24 +17,31 @@ import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
 // Mock function to simulate saving the technician user
-const saveTechnicianUser = async (userData: Pick<User, 'name' | 'email'>): Promise<User> => {
+const saveTechnicianUser = async (userData: Pick<User, 'name' | 'cpf'>): Promise<User> => {
   console.log("Salvando novo técnico:", userData);
   await new Promise(resolve => setTimeout(resolve, 1500)); 
   
   const newTechnician: User = {
     id: `tech${Date.now()}`,
     name: userData.name,
-    email: userData.email,
+    cpf: userData.cpf, // Changed from email
     role: 'technician',
   };
   mockUsers.push(newTechnician); // Add to the global mockUsers array
   return newTechnician;
 };
 
+// Basic CPF validation: checks if it has 11 digits after removing non-numeric characters
+// For a real app, use a robust CPF validation library.
+const cpfValidation = z.string().refine(cpf => {
+  const numericCpf = cpf.replace(/\D/g, '');
+  return numericCpf.length === 11;
+}, { message: 'O CPF deve ter 11 dígitos.' });
+
+
 const technicianFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  email: z.string().email({ message: 'Por favor, insira um email válido.' }),
-  // Password is not part of the form as per mock auth system
+  cpf: cpfValidation, // Changed from email
 });
 
 type TechnicianFormValues = z.infer<typeof technicianFormSchema>;
@@ -45,11 +52,11 @@ export default function CreateTechnicianForm() {
   const { user: adminUser } = useAuth(); // Admin performing the action
   const router = useRouter();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<TechnicianFormValues>({
+  const { control, handleSubmit, reset, setValue: setFormValue, formState: { errors } } = useForm<TechnicianFormValues>({
     resolver: zodResolver(technicianFormSchema),
     defaultValues: {
       name: '',
-      email: '',
+      cpf: '',
     },
   });
 
@@ -60,26 +67,25 @@ export default function CreateTechnicianForm() {
     }
     setIsSubmitting(true);
     try {
-      // Check if email already exists
-      const emailExists = mockUsers.some(user => user.email.toLowerCase() === data.email.toLowerCase());
-      if (emailExists) {
+      const normalizedNewCpf = data.cpf.replace(/\D/g, '');
+      // Check if CPF already exists
+      const cpfExists = mockUsers.some(user => user.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase());
+      if (cpfExists) {
         toast({
-          title: 'Email já Existe',
-          description: 'Este endereço de email já está cadastrado.',
+          title: 'CPF já Existe',
+          description: 'Este CPF já está cadastrado.',
           variant: 'destructive',
         });
         setIsSubmitting(false);
         return;
       }
 
-      const newTechnician = await saveTechnicianUser({ name: data.name, email: data.email });
+      const newTechnician = await saveTechnicianUser({ name: data.name, cpf: data.cpf }); // pass formatted CPF
       toast({
         title: 'Técnico Criado!',
-        description: `O técnico ${newTechnician.name} (${newTechnician.email}) foi criado com sucesso.`,
+        description: `O técnico ${newTechnician.name} (CPF: ${newTechnician.cpf}) foi criado com sucesso.`,
       });
-      reset(); // Reset form fields
-      // Optionally redirect or provide a link to go back
-      // router.push(APP_ROUTES.ADMIN_DASHBOARD); 
+      reset(); 
     } catch (error) {
       console.error("Falha ao criar técnico:", error);
       toast({ title: "Falha na Criação", description: "Não foi possível criar o técnico. Por favor, tente novamente.", variant: "destructive" });
@@ -87,6 +93,25 @@ export default function CreateTechnicianForm() {
       setIsSubmitting(false);
     }
   };
+  
+  // Basic CPF formatting as user types (optional, can be improved)
+  const handleCpfInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length > 11) value = value.substring(0, 11); // Limit to 11 digits
+
+    // Apply formatting XXX.XXX.XXX-XX
+    let formattedValue = value;
+    if (value.length > 9) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
+    } else if (value.length > 6) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
+    } else if (value.length > 3) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3)}`;
+    }
+    // setFormValue('cpf', formattedValue, { shouldValidate: true }); // Update RHF state
+    fieldOnChange(formattedValue); // Update RHF state via controller's onChange
+  };
+
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -111,13 +136,21 @@ export default function CreateTechnicianForm() {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="cpf">CPF</Label>
                 <Controller
-                name="email"
+                name="cpf"
                 control={control}
-                render={({ field }) => <Input id="email" type="email" placeholder="ex: tecnico@example.com" {...field} />}
+                render={({ field }) => (
+                  <Input 
+                    id="cpf" 
+                    placeholder="000.000.000-00" 
+                    {...field} 
+                    onChange={(e) => handleCpfInputChange(e, field.onChange)}
+                    maxLength={14}
+                  />
+                )}
                 />
-                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+                {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
             </div>
             <p className="text-xs text-muted-foreground">Nota: A senha pode ser qualquer uma para fins de demonstração, pois o sistema de autenticação fictício não a valida.</p>
 

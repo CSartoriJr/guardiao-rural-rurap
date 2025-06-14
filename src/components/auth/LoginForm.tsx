@@ -6,28 +6,29 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+// RadioGroup no longer needed for role selection
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROUTES } from '@/config/routes';
 import { Loader2, LogIn } from 'lucide-react';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); // Mock password, not used in mockUsers
-  const [role, setRole] = useState<'farmer' | 'technician' | 'admin'>('farmer');
+  const [cpf, setCpf] = useState('');
+  const [password, setPassword] = useState('');
   const { login, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast({ title: "Erro de Validação", description: "O email é obrigatório.", variant: "destructive" });
+    if (!cpf) {
+      toast({ title: "Erro de Validação", description: "O CPF é obrigatório.", variant: "destructive" });
       return;
     }
-    const user = await login(email, role);
+    // Password validation could be added here if needed
+    const user = await login(cpf, password); 
     if (user) {
       toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${user.name}!` });
+      // Redirect based on user role from the authenticated user object
       if (user.role === 'farmer') {
         router.push(APP_ROUTES.FARMER_DASHBOARD);
       } else if (user.role === 'technician') {
@@ -38,22 +39,40 @@ export default function LoginForm() {
     } else {
       toast({
         title: 'Falha no Login',
-        description: 'Email ou função inválidos. Por favor, tente novamente.',
+        description: 'CPF ou senha inválidos. Por favor, tente novamente.',
         variant: 'destructive',
       });
     }
   };
 
+  // Basic CPF formatting as user types (optional, can be improved)
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length > 11) value = value.substring(0, 11); // Limit to 11 digits
+
+    // Apply formatting XXX.XXX.XXX-XX
+    if (value.length > 9) {
+      value = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
+    } else if (value.length > 6) {
+      value = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
+    } else if (value.length > 3) {
+      value = `${value.substring(0, 3)}.${value.substring(3)}`;
+    }
+    setCpf(value);
+  };
+
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="cpf">CPF</Label>
         <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="voce@exemplo.com"
+          id="cpf"
+          type="text" // Changed from email
+          value={cpf}
+          onChange={handleCpfChange}
+          placeholder="000.000.000-00"
+          maxLength={14} // Max length for XXX.XXX.XXX-XX
           required
         />
       </div>
@@ -67,29 +86,9 @@ export default function LoginForm() {
           placeholder="••••••••"
           required
         />
-         <p className="text-xs text-muted-foreground">Nota: Para demonstração, qualquer senha funciona. Email e função devem corresponder aos dados fictícios.</p>
+         <p className="text-xs text-muted-foreground">Nota: Para demonstração, qualquer senha funciona. O CPF deve corresponder aos dados fictícios.</p>
       </div>
-      <div className="space-y-2">
-        <Label>Função</Label>
-        <RadioGroup
-          value={role}
-          onValueChange={(value: 'farmer' | 'technician' | 'admin') => setRole(value)}
-          className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 pt-1"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="farmer" id="role-farmer" />
-            <Label htmlFor="role-farmer" className="font-normal">Agricultor</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="technician" id="role-technician" />
-            <Label htmlFor="role-technician" className="font-normal">Técnico</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="admin" id="role-admin" />
-            <Label htmlFor="role-admin" className="font-normal">Administrador</Label>
-          </div>
-        </RadioGroup>
-      </div>
+      {/* Role selection RadioGroup removed */}
       <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading}>
         {loading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

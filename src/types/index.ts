@@ -1,7 +1,7 @@
 
 export interface User {
   id: string;
-  email: string;
+  cpf: string; // Alterado de email para cpf
   role: 'farmer' | 'technician' | 'admin';
   name: string;
 }

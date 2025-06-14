@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   initializing: boolean; // To track initial auth state loading from localStorage
-  login: (email: string, role: 'farmer' | 'technician' | 'admin') => Promise<User | null>;
+  login: (cpf: string, password: string) => Promise<User | null>; // Changed email and role to cpf and password
   logout: () => void;
 }
 
@@ -30,13 +30,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setInitializing(false);
   }, []);
 
-  const login = async (email: string, role: 'farmer' | 'technician' | 'admin'): Promise<User | null> => {
+  const login = async (cpf: string, password: string): Promise<User | null> => { // Password is still mock
     setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role === role);
+    
+    // Normalize CPF: remove dots and dashes for comparison if stored that way, or ensure input is normalized
+    const normalizedCpf = cpf.replace(/[.-]/g, ''); 
+    
+    const foundUser = mockUsers.find(
+      u => u.cpf.replace(/[.-]/g, '').toLowerCase() === normalizedCpf.toLowerCase()
+    );
     
     if (foundUser) {
+      // In a real app, you'd verify the password here
       setUser(foundUser);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(foundUser));
       setLoading(false);
