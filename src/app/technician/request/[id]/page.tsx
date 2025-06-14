@@ -9,7 +9,7 @@ import { mockRequests } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -17,45 +17,68 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return mockRequests.find(req => req.id === requestId);
+  console.log('[TechnicianViewRequestPage] Fetching request for ID:', requestId);
+  await new Promise(resolve => setTimeout(resolve, 300)); // Simulate short delay
+  const request = mockRequests.find(req => req.id === requestId);
+  console.log('[TechnicianViewRequestPage] Found request:', request);
+  return request;
 };
 
 
 export default function TechnicianViewRequestPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth(); // Technician user
+  const { user, initializing: authInitializing } = useAuth(); // Technician user
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
+  console.log('[TechnicianViewRequestPage] Page loaded. Request ID from params:', requestId, "Auth Initializing:", authInitializing, "User:", user);
+
 
   useEffect(() => {
-    if (requestId && user) {
+    if (authInitializing) {
+      console.log('[TechnicianViewRequestPage] Auth still initializing, waiting...');
+      return; // Wait for auth to initialize
+    }
+
+    if (!user) {
+      console.log('[TechnicianViewRequestPage] No user found, redirecting to login.');
+      // router.replace(APP_ROUTES.LOGIN); // This might be handled by PageWrapper
+      return;
+    }
+    
+    if (requestId) {
+      console.log('[TechnicianViewRequestPage] Request ID and user available. Fetching request data.');
       setIsLoading(true);
+      setError(null);
       fetchRequestByIdForTechnician(requestId)
         .then(data => {
           if (data) {
             setRequest(data);
+            console.log('[TechnicianViewRequestPage] Request data fetched successfully:', data);
           } else {
             setError("Pedido não encontrado.");
+            console.warn('[TechnicianViewRequestPage] Request not found for ID:', requestId);
           }
-          setIsLoading(false);
         })
         .catch(err => {
-          console.error("Falha ao buscar pedido:", err);
+          console.error("[TechnicianViewRequestPage] Falha ao buscar pedido:", err);
           setError("Falha ao carregar detalhes do pedido.");
+        })
+        .finally(() => {
           setIsLoading(false);
+          console.log('[TechnicianViewRequestPage] Fetching finished. Loading state:', false);
         });
-    } else if (!requestId) {
+    } else if (!requestId && !authInitializing) {
       setError("ID do pedido inválido.");
       setIsLoading(false);
+      console.warn('[TechnicianViewRequestPage] Invalid request ID.');
     }
-  }, [requestId, user]);
+  }, [requestId, user, authInitializing, router]);
 
-  if (isLoading) {
+  if (isLoading || authInitializing) {
     return (
        <PageWrapper allowedRoles={['technician']}>
         <div className="max-w-3xl mx-auto">
@@ -100,16 +123,12 @@ export default function TechnicianViewRequestPage() {
   }
 
   if (!request) {
-    // This case should ideally be covered by isLoading or error state.
-    // If reached, it means request is null after loading and without an error being set.
-    // This might happen if fetchRequestByIdForTechnician resolves with undefined and setError isn't called for that.
-    // The current logic *does* set an error if data is undefined.
     return (
       <PageWrapper allowedRoles={['technician']}>
          <div className="text-center py-10">
-          <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground">Pedido não encontrado</h2>
-          <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido ou o pedido não existe.</p>
+          <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
+          <h2 className="text-xl font-semibold text-foreground">Carregando pedido...</h2>
+           <p className="text-muted-foreground">Se esta mensagem persistir, o pedido pode não ter sido encontrado.</p>
           <Button onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>

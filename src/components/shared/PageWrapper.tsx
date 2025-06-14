@@ -1,7 +1,6 @@
-
 'use client';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
 import React, { useEffect } from 'react';
 import AppHeader from './AppHeader';
 import { APP_ROUTES } from '@/config/routes';
@@ -17,25 +16,33 @@ interface PageWrapperProps {
 export default function PageWrapper({ children, allowedRoles }: PageWrapperProps) {
   const { user, loading, initializing } = useAuth();
   const router = useRouter();
+  const pathname = usePathname(); // Get current pathname
 
   useEffect(() => {
+    console.log('[PageWrapper] Effect triggered. Pathname:', pathname, 'Initializing:', initializing, 'Loading:', loading, 'User:', user ? user.role : 'null');
+
     if (!initializing && !loading) {
       if (!user) {
+        console.log('[PageWrapper] No user, redirecting to LOGIN');
         router.replace(APP_ROUTES.LOGIN);
       } else if (!allowedRoles.includes(user.role)) {
-        // Redirect to respective dashboards if role is not allowed for current page
+        console.log(`[PageWrapper] User role '${user.role}' not in allowed roles [${allowedRoles.join(', ')}]. Redirecting.`);
         if (user.role === 'farmer') router.replace(APP_ROUTES.FARMER_DASHBOARD);
         else if (user.role === 'technician') router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
         else if (user.role === 'admin') router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         else router.replace(APP_ROUTES.LOGIN); // Fallback
+      } else {
+        console.log(`[PageWrapper] User role '${user.role}' is allowed. No redirect.`);
       }
+    } else {
+      console.log('[PageWrapper] Still initializing or loading auth state.');
     }
-  }, [user, loading, initializing, router, allowedRoles]);
+  }, [user, loading, initializing, router, allowedRoles, pathname]);
 
   if (loading || initializing || !user || (user && !allowedRoles.includes(user.role))) {
+     console.log('[PageWrapper] Rendering loading/skeleton state. Initializing:', initializing, 'Loading:', loading, 'User:', user ? user.role : 'null', 'Allowed:', allowedRoles);
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        {/* Render a simplified header skeleton if AppHeader might cause issues or isn't needed */}
         <div className="bg-card shadow-md sticky top-0 z-50">
             <div className="container mx-auto px-4 py-3 flex justify-between items-center h-16">
                 <Skeleton className="h-8 w-32" />
@@ -55,7 +62,8 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
       </div>
     );
   }
-
+  
+  console.log('[PageWrapper] Rendering children.');
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <AppHeader />
@@ -65,10 +73,3 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
     </div>
   );
 }
-
-// Add a simple fadeIn animation to globals.css if needed or use tailwind's animate features
-// For example, in globals.css:
-// @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-// .animate-fadeIn { animation: fadeIn 0.5s ease-in-out; }
-// Or use tailwind.config.js keyframes and animation properties.
-// For simplicity, direct style for transition is used here.

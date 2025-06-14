@@ -20,10 +20,12 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
           <CardDescription className="text-xs">ID do Pedido: {request.id}</CardDescription>
         </div>
-        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} passHref>
-          <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 ml-auto">
-            <Eye className="mr-1 h-4 w-4" /> Ver
-          </Button>
+        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} passHref legacyBehavior>
+          <a className="ml-auto">
+            <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
+              <Eye className="mr-1 h-4 w-4" /> Ver
+            </Button>
+          </a>
         </Link>
       </CardHeader>
       <CardContent className="space-y-3 py-3">
@@ -49,7 +51,6 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           ))}
         </div>
       </CardContent>
-      {/* CardFooter has been removed */}
     </Card>
   );
 }
