@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog'; // Import Dialog components
+import { Dialog, DialogContent } from '@/components/ui/dialog'; // Removed DialogClose from direct import
 
 // Mock function to fetch a single request
 const fetchRequestById = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -278,17 +278,7 @@ export default function FarmerViewRequestPage() {
                     objectFit="contain" 
                 />
             </div>
-            <DialogClose asChild>
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-3 right-3 text-foreground bg-background/70 hover:bg-background/90"
-                    onClick={closeImageModal}
-                    aria-label="Fechar imagem expandida"
-                >
-                    <XCircle className="h-6 w-6" />
-                </Button>
-            </DialogClose>
+            {/* The explicit DialogClose button is removed here, relying on the default X from DialogContent */}
           </DialogContent>
         </Dialog>
       )}
