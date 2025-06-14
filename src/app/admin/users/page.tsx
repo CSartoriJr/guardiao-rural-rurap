@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
 import type { User } from '@/types';
@@ -8,12 +8,13 @@ import { mockUsers, updateUserInMockData, deleteUserFromMockData } from '@/lib/m
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Frown } from 'lucide-react';
+import { Frown, ListFilter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 const fetchAllUsers = async (): Promise<User[]> => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
-  return [...mockUsers]; // Return a copy to avoid direct mutation issues if any
+  return [...mockUsers]; 
 };
 
 export default function ManageUsersPage() {
@@ -21,6 +22,7 @@ export default function ManageUsersPage() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [roleFilter, setRoleFilter] = useState<User['role'] | 'all'>('all');
 
   useEffect(() => {
     if (adminUser && adminUser.role === 'admin') {
@@ -77,12 +79,35 @@ export default function ManageUsersPage() {
     }
   };
 
+  const filteredUsers = useMemo(() => {
+    if (roleFilter === 'all') {
+      return users;
+    }
+    return users.filter(user => user.role === roleFilter);
+  }, [users, roleFilter]);
 
   return (
     <PageWrapper allowedRoles={['admin']}>
-      <div className="mb-8">
-        <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
-        <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
+          <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
+        </div>
+        <div className="w-full sm:w-auto sm:min-w-[200px]">
+          <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
+          <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as User['role'] | 'all')}>
+            <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
+              <ListFilter className="mr-2 h-4 w-4 text-primary" />
+              <SelectValue placeholder="Filtrar por função..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Funções</SelectItem>
+              <SelectItem value="admin">Administradores</SelectItem>
+              <SelectItem value="technician">Técnicos</SelectItem>
+              <SelectItem value="farmer">Agricultores</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -92,9 +117,9 @@ export default function ManageUsersPage() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>
-      ) : users.length > 0 ? (
+      ) : filteredUsers.length > 0 ? (
         <UserList 
-          users={users} 
+          users={filteredUsers} 
           currentAdminId={adminUser?.id || ''}
           onUserUpdate={handleUserUpdate} 
           onUserDelete={handleUserDelete}
@@ -104,7 +129,11 @@ export default function ManageUsersPage() {
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Usuário Encontrado</h2>
-          <p className="text-muted-foreground">Não há usuários cadastrados no sistema além de você.</p>
+          <p className="text-muted-foreground">
+            {roleFilter === 'all' 
+              ? "Não há usuários cadastrados no sistema além de você." 
+              : `Não há usuários com a função "${getRoleDisplayName(roleFilter)}" cadastrados.`}
+          </p>
         </div>
       )}
     </PageWrapper>
