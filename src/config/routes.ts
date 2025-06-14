@@ -8,4 +8,6 @@ export const APP_ROUTES = {
   TECHNICIAN_DASHBOARD: '/technician/dashboard',
   TECHNICIAN_VIEW_REQUEST: (id: string) => `/technician/request/${id}`,
   TECHNICIAN_ANALYTICS_PANEL: '/technician/analytics',
+  ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_CREATE_TECHNICIAN: '/admin/create-technician',
 };

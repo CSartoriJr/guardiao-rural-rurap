@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,7 +14,7 @@ import { Loader2, LogIn } from 'lucide-react';
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState(''); // Mock password, not used in mockUsers
-  const [role, setRole] = useState<'farmer' | 'technician'>('farmer');
+  const [role, setRole] = useState<'farmer' | 'technician' | 'admin'>('farmer');
   const { login, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -29,8 +30,10 @@ export default function LoginForm() {
       toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${user.name}!` });
       if (user.role === 'farmer') {
         router.push(APP_ROUTES.FARMER_DASHBOARD);
-      } else {
+      } else if (user.role === 'technician') {
         router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
+      } else if (user.role === 'admin') {
+        router.push(APP_ROUTES.ADMIN_DASHBOARD);
       }
     } else {
       toast({
@@ -70,8 +73,8 @@ export default function LoginForm() {
         <Label>Função</Label>
         <RadioGroup
           value={role}
-          onValueChange={(value: 'farmer' | 'technician') => setRole(value)}
-          className="flex space-x-4 pt-1"
+          onValueChange={(value: 'farmer' | 'technician' | 'admin') => setRole(value)}
+          className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 pt-1"
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="farmer" id="role-farmer" />
@@ -80,6 +83,10 @@ export default function LoginForm() {
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="technician" id="role-technician" />
             <Label htmlFor="role-technician" className="font-normal">Técnico</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="admin" id="role-admin" />
+            <Label htmlFor="role-admin" className="font-normal">Administrador</Label>
           </div>
         </RadioGroup>
       </div>

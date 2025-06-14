@@ -1,3 +1,4 @@
+
 'use client';
 import type { User } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
@@ -7,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   initializing: boolean; // To track initial auth state loading from localStorage
-  login: (email: string, role: 'farmer' | 'technician') => Promise<User | null>;
+  login: (email: string, role: 'farmer' | 'technician' | 'admin') => Promise<User | null>;
   logout: () => void;
 }
 
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setInitializing(false);
   }, []);
 
-  const login = async (email: string, role: 'farmer' | 'technician'): Promise<User | null> => {
+  const login = async (email: string, role: 'farmer' | 'technician' | 'admin'): Promise<User | null> => {
     setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));

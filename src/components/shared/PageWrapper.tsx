@@ -1,3 +1,4 @@
+
 'use client';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -5,10 +6,12 @@ import React, { useEffect } from 'react';
 import AppHeader from './AppHeader';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { User } from '@/types';
+
 
 interface PageWrapperProps {
   children: React.ReactNode;
-  allowedRoles: Array<'farmer' | 'technician'>;
+  allowedRoles: Array<User['role']>;
 }
 
 export default function PageWrapper({ children, allowedRoles }: PageWrapperProps) {
@@ -20,9 +23,11 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
       if (!user) {
         router.replace(APP_ROUTES.LOGIN);
       } else if (!allowedRoles.includes(user.role)) {
+        // Redirect to respective dashboards if role is not allowed for current page
         if (user.role === 'farmer') router.replace(APP_ROUTES.FARMER_DASHBOARD);
         else if (user.role === 'technician') router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
-        else router.replace(APP_ROUTES.LOGIN);
+        else if (user.role === 'admin') router.replace(APP_ROUTES.ADMIN_DASHBOARD);
+        else router.replace(APP_ROUTES.LOGIN); // Fallback
       }
     }
   }, [user, loading, initializing, router, allowedRoles]);

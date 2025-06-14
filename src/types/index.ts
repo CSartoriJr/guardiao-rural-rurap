@@ -1,7 +1,8 @@
+
 export interface User {
   id: string;
   email: string;
-  role: 'farmer' | 'technician';
+  role: 'farmer' | 'technician' | 'admin';
   name: string;
 }
 
@@ -20,4 +21,5 @@ export interface AgriRequest {
   technicianName?: string; // For display convenience
   responseDate?: string; // ISO date string
   aiSuggestedRecommendation?: string;
+  municipality?: string;
 }
