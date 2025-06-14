@@ -5,6 +5,13 @@ export interface User {
   role: 'farmer' | 'technician' | 'admin';
   name: string;
   password?: string; // Senha agora é parte do usuário
+
+  // Fields specific to farmer role, added during registration
+  phone?: string;
+  email?: string;
+  address?: string;
+  municipality?: string;
+  familyMembers?: number;
 }
 
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
@@ -24,10 +31,9 @@ export interface AgriRequest {
   technicianName?: string; // For display convenience
   responseDate?: string; // ISO date string
   aiSuggestedRecommendation?: string;
-  municipality?: string;
+  municipality?: string; // Municipality of the request, might be different from farmer's registration
   plantedArea?: number; // Área plantada em hectares
   infectedArea?: number; // Área infectada em hectares
   latitude?: number; // Latitude from panoramic image
   longitude?: number; // Longitude from panoramic image
 }
-
