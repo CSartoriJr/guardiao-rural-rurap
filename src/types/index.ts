@@ -4,6 +4,7 @@ export interface User {
   cpf: string; // Alterado de email para cpf
   role: 'farmer' | 'technician' | 'admin';
   name: string;
+  password?: string; // Senha agora é parte do usuário
 }
 
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
@@ -23,3 +24,4 @@ export interface AgriRequest {
   aiSuggestedRecommendation?: string;
   municipality?: string;
 }
+

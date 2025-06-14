@@ -12,27 +12,25 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { User } from '@/types'; 
 import { mockUsers } from '@/lib/mockData'; // To add the new user
-import { Loader2, UserPlus, ArrowLeft } from 'lucide-react';
+import { Loader2, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
-// Mock function to simulate saving the technician user
-const saveTechnicianUser = async (userData: Pick<User, 'name' | 'cpf'>): Promise<User> => {
-  console.log("Salvando novo técnico:", userData);
+const saveTechnicianUser = async (userData: Pick<User, 'name' | 'cpf' | 'password'>): Promise<User> => {
+  console.log("Salvando novo técnico:", { name: userData.name, cpf: userData.cpf }); // Don't log password
   await new Promise(resolve => setTimeout(resolve, 1500)); 
   
   const newTechnician: User = {
     id: `tech${Date.now()}`,
     name: userData.name,
-    cpf: userData.cpf, // Changed from email
+    cpf: userData.cpf,
+    password: userData.password, // Store the password
     role: 'technician',
   };
-  mockUsers.push(newTechnician); // Add to the global mockUsers array
+  mockUsers.push(newTechnician);
   return newTechnician;
 };
 
-// Basic CPF validation: checks if it has 11 digits after removing non-numeric characters
-// For a real app, use a robust CPF validation library.
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
   return numericCpf.length === 11;
@@ -41,22 +39,31 @@ const cpfValidation = z.string().refine(cpf => {
 
 const technicianFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  cpf: cpfValidation, // Changed from email
+  cpf: cpfValidation,
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
 });
 
 type TechnicianFormValues = z.infer<typeof technicianFormSchema>;
 
 export default function CreateTechnicianForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
-  const { user: adminUser } = useAuth(); // Admin performing the action
+  const { user: adminUser } = useAuth();
   const router = useRouter();
 
-  const { control, handleSubmit, reset, setValue: setFormValue, formState: { errors } } = useForm<TechnicianFormValues>({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<TechnicianFormValues>({
     resolver: zodResolver(technicianFormSchema),
     defaultValues: {
       name: '',
       cpf: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
@@ -68,7 +75,6 @@ export default function CreateTechnicianForm() {
     setIsSubmitting(true);
     try {
       const normalizedNewCpf = data.cpf.replace(/\D/g, '');
-      // Check if CPF already exists
       const cpfExists = mockUsers.some(user => user.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase());
       if (cpfExists) {
         toast({
@@ -80,7 +86,7 @@ export default function CreateTechnicianForm() {
         return;
       }
 
-      const newTechnician = await saveTechnicianUser({ name: data.name, cpf: data.cpf }); // pass formatted CPF
+      const newTechnician = await saveTechnicianUser({ name: data.name, cpf: data.cpf, password: data.password });
       toast({
         title: 'Técnico Criado!',
         description: `O técnico ${newTechnician.name} (CPF: ${newTechnician.cpf}) foi criado com sucesso.`,
@@ -94,12 +100,10 @@ export default function CreateTechnicianForm() {
     }
   };
   
-  // Basic CPF formatting as user types (optional, can be improved)
   const handleCpfInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    if (value.length > 11) value = value.substring(0, 11); // Limit to 11 digits
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.substring(0, 11);
 
-    // Apply formatting XXX.XXX.XXX-XX
     let formattedValue = value;
     if (value.length > 9) {
       formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
@@ -108,10 +112,8 @@ export default function CreateTechnicianForm() {
     } else if (value.length > 3) {
       formattedValue = `${value.substring(0, 3)}.${value.substring(3)}`;
     }
-    // setFormValue('cpf', formattedValue, { shouldValidate: true }); // Update RHF state
-    fieldOnChange(formattedValue); // Update RHF state via controller's onChange
+    fieldOnChange(formattedValue);
   };
-
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -152,7 +154,36 @@ export default function CreateTechnicianForm() {
                 />
                 {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
             </div>
-            <p className="text-xs text-muted-foreground">Nota: A senha pode ser qualquer uma para fins de demonstração, pois o sistema de autenticação fictício não a valida.</p>
+
+            <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                    <Controller
+                    name="password"
+                    control={control}
+                    render={({ field }) => <Input id="password" type={showPassword ? "text" : "password"} placeholder="Mínimo 6 caracteres" {...field} />}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                 <div className="relative">
+                    <Controller
+                    name="confirmPassword"
+                    control={control}
+                    render={({ field }) => <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Repita a senha" {...field} />}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                </div>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+            </div>
 
             </CardContent>
             <CardFooter>
