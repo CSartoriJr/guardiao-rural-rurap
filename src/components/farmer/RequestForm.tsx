@@ -22,9 +22,9 @@ const requestFormSchema = z.object({
   cassavaVariety: z.string().min(2, { message: 'A variedade deve ter pelo menos 2 caracteres.' }),
   isMandioca: z.boolean().optional(),
   isMacaxeira: z.boolean().optional(),
-  photo1: z.string().nullable().refine(val => val !== null, { message: "A foto 1 é obrigatória." }),
-  photo2: z.string().nullable().refine(val => val !== null, { message: "A foto 2 é obrigatória." }),
-  photo3: z.string().nullable().refine(val => val !== null, { message: "A foto 3 é obrigatória." }),
+  photo1: z.string().nullable().refine(val => val !== null, { message: "A foto Panorâmica é obrigatória." }),
+  photo2: z.string().nullable().refine(val => val !== null, { message: "A foto de Envassoramento é obrigatória." }),
+  photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
 }).refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
   path: ["isMandioca"], // You can attach this error to one of the checkboxes or a general form error
@@ -143,17 +143,17 @@ export default function RequestForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="photo1">Foto 1</Label>
+              <Label htmlFor="photo1">Panorâmica</Label>
               <ImageUploadInput id="photo1" onImageUpload={(uri) => setValue('photo1', uri, { shouldValidate: true })} />
               {errors.photo1 && <p className="text-sm text-destructive mt-1">{errors.photo1.message}</p>}
             </div>
             <div>
-              <Label htmlFor="photo2">Foto 2</Label>
+              <Label htmlFor="photo2">Envassoramento</Label>
               <ImageUploadInput id="photo2" onImageUpload={(uri) => setValue('photo2', uri, { shouldValidate: true })} />
               {errors.photo2 && <p className="text-sm text-destructive mt-1">{errors.photo2.message}</p>}
             </div>
             <div>
-              <Label htmlFor="photo3">Foto 3</Label>
+              <Label htmlFor="photo3">Corte do Ápice da Planta</Label>
               <ImageUploadInput id="photo3" onImageUpload={(uri) => setValue('photo3', uri, { shouldValidate: true })} />
               {errors.photo3 && <p className="text-sm text-destructive mt-1">{errors.photo3.message}</p>}
             </div>
@@ -173,3 +173,4 @@ export default function RequestForm() {
     </Card>
   );
 }
+
