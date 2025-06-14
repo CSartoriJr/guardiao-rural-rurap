@@ -14,12 +14,13 @@ export default function FarmerRegisterPage() {
       </div>
       <FarmerRegistrationForm />
       <div className="mt-6 text-center w-full max-w-md">
-        <Link href={APP_ROUTES.LOGIN} passHref>
-          <Button variant="link" className="text-muted-foreground hover:text-primary">
+        {/* Ensure this link also uses the asChild pattern if it were a complex button, but for simple Link it's fine */}
+        <Button asChild variant="link" className="text-muted-foreground hover:text-primary">
+          <Link href={APP_ROUTES.LOGIN}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para o Login
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );
