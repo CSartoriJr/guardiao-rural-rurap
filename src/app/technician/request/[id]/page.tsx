@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent } from '@/components/ui/dialog'; // Removed DialogClose from direct import
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 // Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -253,7 +253,7 @@ export default function TechnicianViewRequestPage() {
       </div>
 
       {expandedImageUri && (
-        <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
+         <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <div className="relative w-full h-[85vh]">
                 <Image 
@@ -263,10 +263,10 @@ export default function TechnicianViewRequestPage() {
                     objectFit="contain" 
                 />
             </div>
-            {/* The explicit DialogClose button is removed here, relying on the default X from DialogContent */}
           </DialogContent>
         </Dialog>
       )}
     </PageWrapper>
   );
 }
+
