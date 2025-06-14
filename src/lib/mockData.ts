@@ -154,65 +154,91 @@ const defaultMockRequests: AgriRequest[] = [
 
 // --- Initialization and Persistence Logic ---
 let R_MOCK_USERS_INITIALIZED = false;
-export let mockUsers: User[] = [...defaultMockUsers];
+export let mockUsers: User[] = []; // Initialize as empty, will be populated by loadMockData
 
-if (typeof window !== 'undefined' && !R_MOCK_USERS_INITIALIZED) {
-  const storedUsers = localStorage.getItem(MOCK_USERS_STORAGE_KEY);
-  if (storedUsers) {
-    try {
-      const parsedUsers = JSON.parse(storedUsers);
-      if (Array.isArray(parsedUsers)) {
-        mockUsers = parsedUsers;
-      } else {
+let R_MOCK_REQUESTS_INITIALIZED = false;
+export let mockRequests: AgriRequest[] = []; // Initialize as empty, will be populated by loadMockData
+
+
+const loadMockData = () => {
+  console.log('[MockData] Attempting to load data from localStorage.');
+  // Load Users
+  if (typeof window !== 'undefined' && !R_MOCK_USERS_INITIALIZED) {
+    console.log('[MockData] Initializing users.');
+    const storedUsers = localStorage.getItem(MOCK_USERS_STORAGE_KEY);
+    if (storedUsers) {
+      console.log('[MockData] Found stored users in localStorage.');
+      try {
+        const parsedUsers = JSON.parse(storedUsers);
+        if (Array.isArray(parsedUsers)) {
+          mockUsers = parsedUsers;
+          console.log(`[MockData] Successfully parsed ${mockUsers.length} users from localStorage.`);
+        } else {
+          console.warn("[MockData] Malformed users data in localStorage, resetting to default.");
+          mockUsers = [...defaultMockUsers];
+          localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+        }
+      } catch (e) {
+        console.error("[MockData] Failed to parse users from localStorage, resetting to default.", e);
         mockUsers = [...defaultMockUsers];
         localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
       }
-    } catch (e) {
-      console.error("Failed to parse mock users from localStorage, resetting to default.", e);
+    } else {
+      console.log('[MockData] No stored users found, using default users and saving to localStorage.');
       mockUsers = [...defaultMockUsers];
       localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
     }
-  } else {
-    mockUsers = [...defaultMockUsers];
-    localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+    R_MOCK_USERS_INITIALIZED = true;
   }
-  R_MOCK_USERS_INITIALIZED = true;
+
+  // Load Requests
+  if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
+    console.log('[MockData] Initializing requests.');
+    const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
+    if (storedRequests) {
+      console.log('[MockData] Found stored requests in localStorage.');
+      try {
+        const parsedRequests = JSON.parse(storedRequests);
+        if (Array.isArray(parsedRequests)) {
+          mockRequests = parsedRequests;
+          console.log(`[MockData] Successfully parsed ${mockRequests.length} requests from localStorage.`);
+        } else {
+          console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
+          mockRequests = [...defaultMockRequests];
+          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+        }
+      } catch (e)
+      {
+        console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
+        mockRequests = [...defaultMockRequests];
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+      }
+    } else {
+      console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
+      mockRequests = [...defaultMockRequests];
+      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+    }
+    R_MOCK_REQUESTS_INITIALIZED = true;
+  }
+   console.log('[MockData] Data loading complete. Users:', mockUsers.length, 'Requests:', mockRequests.length);
+};
+
+// Call loadMockData on script initialization when window is available
+if (typeof window !== 'undefined') {
+  loadMockData();
 }
+
 
 const persistUsers = () => {
   if (typeof window !== 'undefined') {
+    console.log('[MockData] Persisting users to localStorage:', mockUsers.length);
     localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
   }
 };
 
-let R_MOCK_REQUESTS_INITIALIZED = false;
-export let mockRequests: AgriRequest[] = [...defaultMockRequests];
-
-if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
-  const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
-  if (storedRequests) {
-    try {
-      const parsedRequests = JSON.parse(storedRequests);
-      if (Array.isArray(parsedRequests)) {
-        mockRequests = parsedRequests;
-      } else {
-        mockRequests = [...defaultMockRequests];
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-      }
-    } catch (e) {
-      console.error("Failed to parse mock requests from localStorage, resetting to default.", e);
-      mockRequests = [...defaultMockRequests];
-      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-    }
-  } else {
-    mockRequests = [...defaultMockRequests];
-    localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-  }
-  R_MOCK_REQUESTS_INITIALIZED = true;
-}
-
 const persistRequests = () => {
   if (typeof window !== 'undefined') {
+    console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
     localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
   }
 };
@@ -220,14 +246,18 @@ const persistRequests = () => {
 
 // --- Mutating Functions for Users ---
 export const addMockUser = (newUser: User): User => {
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
   mockUsers.push(newUser);
   persistUsers();
+  console.log('[MockData] Added user:', newUser.id, 'Total users:', mockUsers.length);
   return newUser;
 };
 
 export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
   const userIndex = mockUsers.findIndex(u => u.id === userId);
   if (userIndex === -1) {
+    console.warn('[MockData] Update failed: User not found', userId);
     return null;
   }
 
@@ -237,40 +267,49 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
       u => u.id !== userId && u.cpf.replace(/\D/g, '') === normalizedNewCpf
     );
     if (existingUserWithCpf) {
+      console.error('[MockData] Update failed: CPF already exists', updatedUserData.cpf);
       throw new Error("Este CPF já está cadastrado para outro usuário.");
     }
   }
   
   mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
   persistUsers();
+  console.log('[MockData] Updated user:', userId);
   return mockUsers[userIndex];
 };
 
 export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  if (userIndex > -1) {
-    mockUsers.splice(userIndex, 1);
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  const initialLength = mockUsers.length;
+  mockUsers = mockUsers.filter(u => u.id !== userId);
+  if (mockUsers.length < initialLength) {
     persistUsers();
+    console.log('[MockData] Deleted user:', userId, 'Remaining users:', mockUsers.length);
     return true;
   }
+  console.warn('[MockData] Delete failed: User not found', userId);
   return false;
 };
 
 // --- Mutating Functions for Requests ---
 export const addMockRequest = (newRequest: AgriRequest): AgriRequest => {
-  mockRequests.unshift(newRequest); // Add to the beginning to show newest first
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  mockRequests.unshift(newRequest); 
   persistRequests();
+  console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
 };
 
 export const updateMockRequest = (updatedRequestData: AgriRequest): AgriRequest | null => {
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); // Ensure data is loaded
     const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
     if (index !== -1) {
         mockRequests[index] = updatedRequestData;
         persistRequests();
+        console.log('[MockData] Updated request:', updatedRequestData.id);
         return updatedRequestData;
     }
-    console.error(`Request with id ${updatedRequestData.id} not found for update.`);
+    console.warn(`[MockData] Update request failed: Request with id ${updatedRequestData.id} not found.`);
     return null;
 };
 
@@ -282,3 +321,4 @@ export const amapaMunicipalities: string[] = [
   "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
   "Itaubal", "Pracuúba", "Serra do Navio"
 ];
+
