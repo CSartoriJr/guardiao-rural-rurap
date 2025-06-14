@@ -132,11 +132,11 @@ export default function RequestForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cassavaVariety">Variedade (ex: BRS Formosa, Vassourinha)</Label>
+            <Label htmlFor="cassavaVariety">Variedade (ex: Castelinha, Mandioca BRS 399, IAC 14-18 Verdinha, ...)</Label>
             <Controller
               name="cassavaVariety"
               control={control}
-              render={({ field }) => <Input id="cassavaVariety" placeholder="ex: TMS 30572, TME 419" {...field} />}
+              render={({ field }) => <Input id="cassavaVariety" placeholder="ex: Castelinha, BRS 399, IAC 14-18 Verdinha" {...field} />}
             />
             {errors.cassavaVariety && <p className="text-sm text-destructive">{errors.cassavaVariety.message}</p>}
           </div>
@@ -173,4 +173,3 @@ export default function RequestForm() {
     </Card>
   );
 }
-
