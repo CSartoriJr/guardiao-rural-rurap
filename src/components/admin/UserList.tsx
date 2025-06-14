@@ -109,6 +109,23 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     setEditingUser(null);
   };
 
+  const getDeleteButtonTitle = (user: UserWithActivityCount): string => {
+    if (user.id === currentAdminId) {
+      return "Você não pode remover seu próprio usuário.";
+    }
+    if (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) {
+      return "Não é possível remover o único administrador.";
+    }
+    if (user.role === 'farmer' && (user.requestCount ?? 0) > 0) {
+      return "Este agricultor possui pedidos e não pode ser removido.";
+    }
+    if (user.role === 'technician' && (user.responseCount ?? 0) > 0) {
+      return "Este técnico possui respostas e não pode ser removido.";
+    }
+    return "Remover usuário";
+  };
+
+
   return (
     <>
       <Card className="shadow-md">
@@ -147,8 +164,13 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteClick(user)}
-                    disabled={user.id === currentAdminId || (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1)}
-                    title={user.id === currentAdminId ? "Você não pode remover seu próprio usuário." : (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ? "Não é possível remover o único administrador." : "Remover usuário"}
+                    disabled={
+                      user.id === currentAdminId ||
+                      (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
+                      (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||
+                      (user.role === 'technician' && (user.responseCount ?? 0) > 0)
+                    }
+                    title={getDeleteButtonTitle(user)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Remover
                   </Button>
@@ -287,3 +309,4 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   )
 );
 Card.displayName = "Card";
+
