@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
 import type { User } from '@/types';
-import { mockUsers, updateUserInMockData } from '@/lib/mockData';
+import { mockUsers, updateUserInMockData, deleteUserFromMockData } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,6 +52,21 @@ export default function ManageUsersPage() {
       toast({ title: "Falha na Atualização", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     }
   };
+
+  const handleUserDelete = async (userId: string, userName: string) => {
+    try {
+      const success = await deleteUserFromMockData(userId);
+      if (success) {
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        toast({ title: "Usuário Removido", description: `O usuário ${userName} foi removido com sucesso.` });
+      } else {
+        toast({ title: "Erro na Remoção", description: "Não foi possível encontrar o usuário para remover.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      console.error("Falha ao remover usuário:", error);
+      toast({ title: "Falha na Remoção", description: error.message || "Ocorreu um erro.", variant: "destructive" });
+    }
+  };
   
   const getRoleDisplayName = (role: User['role']) => {
     switch (role) {
@@ -67,7 +82,7 @@ export default function ManageUsersPage() {
     <PageWrapper allowedRoles={['admin']}>
       <div className="mb-8">
         <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
-        <p className="text-muted-foreground">Visualize e edite os usuários do sistema.</p>
+        <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
       </div>
 
       {isLoading ? (
@@ -78,7 +93,13 @@ export default function ManageUsersPage() {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : users.length > 0 ? (
-        <UserList users={users} onUserUpdate={handleUserUpdate} getRoleDisplayName={getRoleDisplayName} />
+        <UserList 
+          users={users} 
+          currentAdminId={adminUser?.id || ''}
+          onUserUpdate={handleUserUpdate} 
+          onUserDelete={handleUserDelete}
+          getRoleDisplayName={getRoleDisplayName} 
+        />
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />

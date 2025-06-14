@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
-import { Pencil, UserX } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Pencil, UserX, Trash2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +17,9 @@ import { mockUsers } from '@/lib/mockData'; // For CPF validation
 
 interface UserListProps {
   users: User[];
+  currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<User>) => Promise<void>;
+  onUserDelete: (userId: string, userName: string) => Promise<void>;
   getRoleDisplayName: (role: User['role']) => string;
 }
 
@@ -33,9 +36,10 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
-export default function UserList({ users, onUserUpdate, getRoleDisplayName }: UserListProps) {
+export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const { control, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
@@ -49,6 +53,17 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
       role: user.role,
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  const confirmDelete = async () => {
+    if (userToDelete) {
+      await onUserDelete(userToDelete.id, userToDelete.name);
+      setUserToDelete(null); 
+    }
   };
 
   const handleCpfInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
@@ -66,18 +81,15 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
     fieldOnChange(formattedValue);
   };
 
-  const onSubmit = async (data: EditUserFormValues) => {
+  const onSubmitEdit = async (data: EditUserFormValues) => {
     if (!editingUser) return;
 
-    // Check for CPF uniqueness if CPF is changed
     const normalizedNewCpf = data.cpf.replace(/\D/g, '');
     if (normalizedNewCpf !== editingUser.cpf.replace(/\D/g, '')) {
       const cpfExists = mockUsers.some(
         u => u.id !== editingUser.id && u.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase()
       );
       if (cpfExists) {
-        // This should ideally be handled by onUserUpdate throwing an error that the page component catches.
-        // For simplicity, we'll show an alert here, but a better UX would be a form error.
         alert('Este CPF já está cadastrado para outro usuário.');
         return;
       }
@@ -110,11 +122,19 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
                     <Pencil className="mr-2 h-4 w-4" /> Editar
                   </Button>
-                  {/* Future: Add delete user button here */}
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleDeleteClick(user)}
+                    disabled={user.id === currentAdminId}
+                    title={user.id === currentAdminId ? "Você não pode remover seu próprio usuário." : "Remover usuário"}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Remover
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -131,25 +151,25 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
                 Modifique os dados do usuário abaixo. Clique em salvar quando terminar.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmitEdit)}>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
+                  <Label htmlFor="edit-name">Nome Completo</Label>
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => <Input id="name" {...field} />}
+                    render={({ field }) => <Input id="edit-name" {...field} />}
                   />
                   {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF</Label>
+                  <Label htmlFor="edit-cpf">CPF</Label>
                   <Controller
                     name="cpf"
                     control={control}
                     render={({ field }) => (
                       <Input 
-                        id="cpf" 
+                        id="edit-cpf" 
                         {...field} 
                         onChange={(e) => handleCpfInputChange(e, field.onChange)}
                         maxLength={14}
@@ -159,13 +179,13 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
                   {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Função</Label>
+                  <Label htmlFor="edit-role">Função</Label>
                   <Controller
                     name="role"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger id="role">
+                        <SelectTrigger id="edit-role">
                           <SelectValue placeholder="Selecione uma função" />
                         </SelectTrigger>
                         <SelectContent>
@@ -190,6 +210,25 @@ export default function UserList({ users, onUserUpdate, getRoleDisplayName }: Us
             </form>
           </DialogContent>
         </Dialog>
+      )}
+
+      {userToDelete && (
+         <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover o usuário "{userToDelete.name}" (CPF: {userToDelete.cpf})? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

@@ -55,6 +55,13 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
   return mockUsers[userIndex];
 };
 
+// Function to delete a user from the mockUsers array
+export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
+  const initialLength = mockUsers.length;
+  mockUsers = mockUsers.filter(u => u.id !== userId);
+  return mockUsers.length < initialLength;
+};
+
 
 // Placeholder data URIs for images (replace with actual placeholders or leave empty if not needed for mock)
 const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
