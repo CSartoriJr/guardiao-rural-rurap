@@ -82,7 +82,7 @@ export default function RequestForm() {
           toast({ title: "Localização Obtida", description: "Sua localização GPS foi capturada com sucesso." });
         },
         (error) => {
-          console.error("Erro ao obter geolocalização:", error.message);
+          console.warn("Erro ao obter geolocalização:", error.message);
           let message = "Não foi possível obter sua localização GPS.";
           if (error.code === error.PERMISSION_DENIED) {
             message = "Permissão para acessar a localização foi negada.";
@@ -98,7 +98,7 @@ export default function RequestForm() {
           }
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Increased timeout to 15 seconds
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Increased timeout
       );
     } else {
       setLocationStatus('unsupported');
@@ -304,4 +304,3 @@ export default function RequestForm() {
     </Card>
   );
 }
-
