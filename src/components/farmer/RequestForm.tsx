@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -81,7 +82,7 @@ export default function RequestForm() {
           toast({ title: "Localização Obtida", description: "Sua localização GPS foi capturada com sucesso." });
         },
         (error) => {
-          console.error("Erro ao obter geolocalização:", error);
+          console.error("Erro ao obter geolocalização:", error.message, error);
           let message = "Não foi possível obter sua localização GPS.";
           if (error.code === error.PERMISSION_DENIED) {
             message = "Permissão para acessar a localização foi negada.";
@@ -302,3 +303,4 @@ export default function RequestForm() {
     </Card>
   );
 }
+
