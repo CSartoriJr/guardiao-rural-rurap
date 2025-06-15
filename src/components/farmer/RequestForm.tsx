@@ -98,7 +98,7 @@ export default function RequestForm() {
           }
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Increased timeout to 15 seconds
       );
     } else {
       setLocationStatus('unsupported');
@@ -304,3 +304,4 @@ export default function RequestForm() {
     </Card>
   );
 }
+
