@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,6 +48,7 @@ type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 export default function RequestForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, startTransition] = useTransition();
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function RequestForm() {
           }
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // Increased timeout
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } 
       );
     } else {
       setLocationStatus('unsupported');
@@ -123,10 +124,10 @@ export default function RequestForm() {
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
-        latitude: latitude ?? undefined, // Use fetched latitude
-        longitude: longitude ?? undefined, // Use fetched longitude
+        latitude: latitude ?? undefined, 
+        longitude: longitude ?? undefined, 
         deviceLocationStatus: locationStatus,
-        municipality: user.municipality, // Assuming farmer's municipality is used for request
+        municipality: user.municipality, 
       };
       const newRequest = await addMockRequest(requestData as AgriRequest); 
       
@@ -187,7 +188,11 @@ export default function RequestForm() {
                     <Checkbox
                       id="isMandioca"
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        startTransition(() => {
+                          field.onChange(checked);
+                        });
+                      }}
                     />
                     <Label htmlFor="isMandioca" className="font-normal">Mandioca</Label>
                   </div>
@@ -201,7 +206,11 @@ export default function RequestForm() {
                     <Checkbox
                       id="isMacaxeira"
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        startTransition(() => {
+                          field.onChange(checked);
+                        });
+                      }}
                     />
                     <Label htmlFor="isMacaxeira" className="font-normal">Macaxeira</Label>
                   </div>
