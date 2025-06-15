@@ -6,11 +6,11 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest } from '@/types';
-import { mockRequests, deleteMockRequest } from '@/lib/mockData';
+import { mockRequests, deleteMockRequest, updateMockRequest } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -20,12 +20,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 
 
-// Mock function to fetch a single request for technician
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
   console.log('[TechnicianViewRequestPage] Fetching request for ID:', requestId);
-  await new Promise(resolve => setTimeout(resolve, 300)); // Simulate short delay
+  await new Promise(resolve => setTimeout(resolve, 300)); 
   const request = mockRequests.find(req => req.id === requestId);
   console.log('[TechnicianViewRequestPage] Found request:', request);
   return request;
@@ -39,6 +39,7 @@ export default function TechnicianViewRequestPage() {
   const { toast } = useToast();
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
@@ -48,33 +49,66 @@ export default function TechnicianViewRequestPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
-  console.log('[TechnicianViewRequestPage] Page loaded. Request ID from params:', requestId, "Auth Initializing:", authInitializing, "User:", user);
-
 
   useEffect(() => {
     if (authInitializing) {
-      console.log('[TechnicianViewRequestPage] Auth still initializing, waiting...');
       return; 
     }
 
-    if (!user && !authInitializing) { // Check authInitializing to prevent redirect during initial load
-        console.log('[TechnicianViewRequestPage] No user found after auth init, redirecting to login.');
+    if (!user && !authInitializing) {
         router.replace(APP_ROUTES.LOGIN);
         return;
     }
     
-    if (requestId && user) { // Ensure user is available before fetching
-      console.log('[TechnicianViewRequestPage] Request ID and user available. Fetching request data.');
+    if (requestId && user) {
       setIsLoading(true);
       setError(null);
       fetchRequestByIdForTechnician(requestId)
-        .then(data => {
+        .then(async (data) => {
           if (data) {
-            setRequest(data);
-            console.log('[TechnicianViewRequestPage] Request data fetched successfully:', data);
+            // If request is pending and AI suggestion is not present, run AI flow
+            if (data.status === 'Pending' && !data.aiSuggestedRecommendation) {
+              setIsAiProcessing(true);
+              try {
+                const aiInput = {
+                  cassavaType: data.cassavaType,
+                  isMandioca: data.isMandioca,
+                  isMacaxeira: data.isMacaxeira,
+                  photoDataUri1: data.photoDataUris[0],
+                  photoDataUri2: data.photoDataUris[1],
+                  photoDataUri3: data.photoDataUris[2],
+                  plantedArea: data.plantedArea,
+                  infectedArea: data.infectedArea,
+                };
+                const aiOutput = await generateRecommendation(aiInput);
+                
+                const updatedRequestWithAIData: AgriRequest = {
+                  ...data,
+                  aiSuggestedRecommendation: aiOutput.recommendation,
+                  latitude: aiOutput.extractedLatitude,
+                  longitude: aiOutput.extractedLongitude,
+                };
+                
+                const savedUpdatedRequest = await updateMockRequest(updatedRequestWithAIData);
+                if (savedUpdatedRequest) {
+                  setRequest(savedUpdatedRequest);
+                  toast({ title: "Sugestão da IA Carregada", description: "Recomendação e localização (se encontrada) foram preenchidas." });
+                } else {
+                  setRequest(data); // Fallback to original data if update fails
+                  toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as sugestões da IA.", variant: "destructive" });
+                }
+              } catch (aiError) {
+                console.error("[TechnicianViewRequestPage] Falha ao gerar recomendação da IA:", aiError);
+                toast({ title: "Falha na IA", description: "Não foi possível obter a sugestão da IA.", variant: "destructive" });
+                setRequest(data); // Set original data if AI fails
+              } finally {
+                setIsAiProcessing(false);
+              }
+            } else {
+              setRequest(data); // AI already processed or not applicable
+            }
           } else {
             setError("Pedido não encontrado.");
-            console.warn('[TechnicianViewRequestPage] Request not found for ID:', requestId);
           }
         })
         .catch(err => {
@@ -83,14 +117,12 @@ export default function TechnicianViewRequestPage() {
         })
         .finally(() => {
           setIsLoading(false);
-          console.log('[TechnicianViewRequestPage] Fetching finished. Loading state:', false);
         });
     } else if (!requestId && !authInitializing) {
       setError("ID do pedido inválido.");
       setIsLoading(false);
-      console.warn('[TechnicianViewRequestPage] Invalid request ID.');
     }
-  }, [requestId, user, authInitializing, router]);
+  }, [requestId, user, authInitializing, router, toast]);
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
     if (!req) return 'Não especificado';
@@ -118,7 +150,7 @@ export default function TechnicianViewRequestPage() {
     if (!user || user.role !== 'admin' || !request) return;
 
     setIsDeleting(true);
-    if (adminPassword === user.password) {
+    if (adminPassword === user.password) { // Ensure user.password is available and correct
       try {
         const success = await deleteMockRequest(request.id);
         if (success) {
@@ -249,7 +281,7 @@ export default function TechnicianViewRequestPage() {
                     <AlertDialogCancel onClick={() => setAdminPassword('')}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction 
                         onClick={handleConfirmDelete} 
-                        disabled={isDeleting || adminPassword.length === 0}
+                        disabled={isDeleting || adminPassword.length === 0 || !user?.password}
                         className="bg-destructive hover:bg-destructive/90"
                     >
                     {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
@@ -324,10 +356,19 @@ export default function TechnicianViewRequestPage() {
             </div>
           </CardContent>
         </Card>
+        
+        {isAiProcessing && (
+            <Card className="mt-6">
+                <CardContent className="pt-6 text-center">
+                    <Loader2 className="mx-auto h-10 w-10 text-primary animate-spin mb-3" />
+                    <p className="text-muted-foreground">Aguarde, a Inteligência Artificial está analisando as imagens e preparando uma sugestão...</p>
+                </CardContent>
+            </Card>
+        )}
 
-        {request.status === 'Pending' && user?.role === 'technician' ? ( 
+        {!isAiProcessing && request.status === 'Pending' && user?.role === 'technician' ? ( 
           <ResponseForm request={request} />
-        ) : request.status !== 'Pending' ? (
+        ) : !isAiProcessing && request.status !== 'Pending' ? (
           <Card className="mt-6 bg-card/80">
             <CardHeader>
               <CardTitle className="font-headline text-xl">Resposta Enviada</CardTitle>
@@ -353,7 +394,7 @@ export default function TechnicianViewRequestPage() {
                 <Image 
                     src={expandedImageUri} 
                     alt="Imagem expandida" 
-                    fill // Changed from layout="fill" objectFit="contain"
+                    fill 
                     style={{ objectFit: 'contain' }}
                 />
             </div>
@@ -363,4 +404,4 @@ export default function TechnicianViewRequestPage() {
     </PageWrapper>
   );
 }
-
+    
