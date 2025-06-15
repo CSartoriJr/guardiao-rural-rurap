@@ -99,7 +99,7 @@ export default function RequestForm() {
           }
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } 
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } 
       );
     } else {
       setLocationStatus('unsupported');
