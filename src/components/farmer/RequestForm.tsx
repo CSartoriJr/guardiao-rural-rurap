@@ -82,7 +82,7 @@ export default function RequestForm() {
           toast({ title: "Localização Obtida", description: "Sua localização GPS foi capturada com sucesso." });
         },
         (error) => {
-          console.error("Erro ao obter geolocalização:", error.message, error);
+          console.error("Erro ao obter geolocalização:", error.message);
           let message = "Não foi possível obter sua localização GPS.";
           if (error.code === error.PERMISSION_DENIED) {
             message = "Permissão para acessar a localização foi negada.";
@@ -126,6 +126,7 @@ export default function RequestForm() {
         latitude: latitude ?? undefined, // Use fetched latitude
         longitude: longitude ?? undefined, // Use fetched longitude
         deviceLocationStatus: locationStatus,
+        municipality: user.municipality, // Assuming farmer's municipality is used for request
       };
       const newRequest = await addMockRequest(requestData as AgriRequest); 
       
@@ -303,4 +304,3 @@ export default function RequestForm() {
     </Card>
   );
 }
-
