@@ -21,7 +21,7 @@ const defaultMockUsers: User[] = [
   { id: 'tech6', cpf: '000.000.000-04', role: 'technician', name: 'Ricardo Neves', password: 'password123' },
   { id: 'tech7', cpf: '000.000.000-05', role: 'technician', name: 'Lúcia Ferreira', password: 'password123' },
   { id: 'admin1', cpf: '000.000.000-00', role: 'admin', name: 'Admin Adicional', password: 'adminpassword' },
-  { id: 'farmer8', cpf: '000.000.000-06', role: 'farmer', name: 'Carlos Silva', password: 'password123', email: 'carlos@example.com', phone: '(96)92222-8888', address: 'Comunidade Rio Verde', municipality: 'Pedra Branca do Amapari', familyMembers: 4 },
+  { id: 'farmer8', cpf: '000.000.000-06', role: 'farmer', name: 'Carlos Silva', password: 'password123', email: 'carlos@example.com', phone: '(96)92222-8888', address: 'Comunidade Rio Verde', municipality: 'Pedra Branca do Amaparí', familyMembers: 4 },
   { id: 'farmer9', cpf: '000.000.000-07', role: 'farmer', name: 'Ana Pereira', password: 'password123', email: 'ana@example.com', phone: '(96)91111-9999', address: 'Bairro Novo, 101', municipality: 'Vitória do Jari', familyMembers: 2 },
   { id: 'tech8', cpf: '000.000.000-08', role: 'technician', name: 'Roberto Dias', password: 'password123' },
   { id: 'tech9', cpf: '000.000.000-09', role: 'technician', name: 'Juliana Andrade', password: 'password123' },
@@ -166,7 +166,7 @@ const defaultMockRequests: AgriRequest[] = [
     photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Pedra Branca do Amapari',
+    municipality: 'Pedra Branca do Amaparí',
     plantedArea: 7,
     infectedArea: 2.5,
     latitude: 0.7716,
@@ -414,10 +414,10 @@ export const deleteMockRequest = async (requestId: string): Promise<boolean> => 
 
 // --- Non-mutating Data ---
 export const amapaMunicipalities: string[] = [
-  "Macapá", "Santana", "Laranjal do Jari", "Oiapoque", "Mazagão",
-  "Porto Grande", "Tartarugalzinho", "Pedra Branca do Amapari",
-  "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
-  "Itaubal", "Pracuúba", "Serra do Navio"
+  "Amapá", "Calçoene", "Cutias", "Ferreira Gomes", "Itaubal",
+  "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
+  "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
+  "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
 ];
 
 // Ensure that all default mock requests also use the small placeholder for long data URIs or valid URLs
@@ -429,3 +429,6 @@ defaultMockRequests.forEach(req => {
     return uri;
   }) as [string, string, string];
 });
+
+
+  
