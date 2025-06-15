@@ -38,8 +38,8 @@ export type GenerateRecommendationInput = z.infer<typeof GenerateRecommendationI
 
 const GenerateRecommendationOutputSchema = z.object({
   recommendation: z.string().describe('The agricultural recommendation for the cassava plant.'),
-  extractedLatitude: z.number().optional().describe('The latitude extracted by the AI from visible text on the image, if found.'),
-  extractedLongitude: z.number().optional().describe('The longitude extracted by the AI from visible text on the image, if found.'),
+  extractedLatitude: z.coerce.number().optional().describe('The latitude extracted by the AI from visible text on the image, if found. Must be a numerical value between -90 and 90.'),
+  extractedLongitude: z.coerce.number().optional().describe('The longitude extracted by the AI from visible text on the image, if found. Must be a numerical value between -180 and 180.'),
 });
 export type GenerateRecommendationOutput = z.infer<typeof GenerateRecommendationOutputSchema>;
 
@@ -69,8 +69,9 @@ Images Provided:
 
 Instructions:
 1.  **GPS Coordinate Extraction**: Carefully examine all submitted images, especially 'Photo 1 (Panoramic)'. Look for any text overlay or embedded information that clearly indicates GPS Latitude and Longitude values (e.g., as added by apps like NoteCam).
-    *   If you find valid numerical Latitude and Longitude values, parse them. Latitude should be between -90 and 90. Longitude should be between -180 and 180.
-    *   Populate the 'extractedLatitude' and 'extractedLongitude' fields in your output if coordinates are successfully parsed. If not found or unclear, leave them undefined.
+    *   If you find clearly visible numerical Latitude and Longitude values on 'Photo 1 (Panoramic)', parse them directly as numbers. Latitude must be a number between -90 and 90. Longitude must be a number between -180 and 180.
+    *   If valid numerical coordinates are extracted, populate the 'extractedLatitude' and 'extractedLongitude' fields in your JSON output with these numbers.
+    *   If no GPS coordinates are clearly visible and parsable as numbers, or if they are ambiguous or absent, ensure the 'extractedLatitude' and 'extractedLongitude' fields are either omitted from the JSON output or set to null. Do not invent or estimate coordinates.
 
 2.  **Agricultural Recommendation**: Based on the plant classification, variety, submitted photos, and area information:
     *   Consider the proportion of infected area to planted area if provided.
@@ -92,10 +93,7 @@ const generateRecommendationFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    // Ensure that if coordinates are present, they are numbers, not strings from LLM.
-    // The Zod schema should handle this during parsing if the LLM provides strings,
-    // but an explicit check/conversion might be added here if issues arise.
+    // z.coerce.number() in the output schema will handle string-to-number conversion.
     return output!;
   }
 );
-
