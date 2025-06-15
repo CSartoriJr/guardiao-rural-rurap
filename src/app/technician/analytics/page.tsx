@@ -7,35 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { AgriRequest } from '@/types';
-import { mockRequests, amapaMunicipalities } from '@/lib/mockData'; 
-import { APP_ROUTES } from '@/config/routes';
+import { mockRequests, amapaMunicipalities } from '@/lib/mockData';
 import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap'; // Import the new map
 
 // Mock function to fetch all requests (in a real app, this would be an API call)
 const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
   await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
   return mockRequests; // Using all mock requests for analytics
 };
-
-// SVG for Amapá - updated for a more realistic outline
-const AmapaMap = () => (
-  <svg 
-    viewBox="0 0 400 450" // Adjusted viewBox for a more representative shape
-    className="w-full h-auto max-w-md mx-auto" 
-    aria-label="Mapa do Estado do Amapá"
-  >
-    <title>Mapa do Estado do Amapá</title>
-    <desc>Uma representação estilizada do contorno do estado do Amapá.</desc>
-    <path 
-      d="M212.89,11.27C211.52,9.62 209.72,8.28 208.12,7.07C195.4,0.65 177.73,0.38 164.13,0.05C147.92,-0.35 131.67,0.43 115.82,1.16C95.88,2.09 75.93,3.01 56.33,4.62C47.41,5.36 38.82,6.37 30.3,7.37C20.14,8.59 13.72,14.63 10.24,23.82C4.91,37.93 2.54,52.53 1.38,67.21C0.25,81.6 -0.17,96.17 0.04,110.68C0.19,120.57 0.53,130.44 1.19,140.25C2.28,156.23 4.51,172.04 7.64,187.49C10.62,202.14 15.72,216.62 20.65,230.64C25.66,244.9 30.78,258.98 36.46,272.65C40.61,282.52 45.33,292.25 49.13,302.21C54.74,316.95 59.27,332.02 63.94,346.95C66.45,354.93 69.08,362.88 71.73,370.79C73.14,374.97 74.86,379.09 76.18,383.28C77.59,387.78 79.07,392.23 80.93,396.49C82.35,399.85 84.03,403.17 86.18,406.16C88.37,409.28 91.13,411.89 94.17,413.95C100.34,418.08 107.53,420.14 114.73,421.6C124.44,423.59 134.1,425.15 143.93,425.98C156.37,427.08 169.03,427.45 181.43,427.93C195.74,428.5 209.93,429.63 223.99,430.03C234.68,430.32 245.38,430.39 256.03,430.28C266.18,430.18 276.3,429.75 286.37,429.25C299.13,428.59 311.88,427.62 324.34,425.79C337.64,423.82 350.64,420.65 362.59,415.3C367.81,412.98 372.73,410.02 377.03,406.67C381.08,403.54 384.35,399.94 386.91,396.04C389.28,392.44 391.03,388.63 392.54,384.75C393.83,381.49 395.23,378.19 396.26,374.9C397.95,369.36 399.03,363.75 399.84,358.11C400.8,351.44 401.13,344.71 401.15,337.97C401.17,328.11 400.52,318.27 399.03,308.63C397.93,301.57 396.48,294.58 394.84,287.69C393.21,280.83 391.42,274.03 389.8,267.25C387.21,256.36 384.83,245.56 382.03,234.92C378.71,222.36 374.82,210.04 370.58,198.1C366.6,186.89 362.24,175.94 358.21,165.23C354.33,154.89 350.68,144.71 347.09,134.61C342.86,122.98 338.47,111.56 334.38,100.28C332.14,94.05 330.04,87.89 327.94,81.73C326.09,76.23 324.04,70.79 321.75,65.52C320.33,62.29 318.8,59.12 316.99,56.12C314.03,51.33 310.35,47.12 305.73,44.02C301.24,40.99 296.04,39.02 290.56,37.63C280.81,35.14 270.76,33.65 260.64,32.46C249.92,31.19 239.15,30.24 228.36,29.58C223.73,29.29 219.1,29.11 214.47,29.04C214.47,23.12 214.13,17.19 212.89,11.27Z"
-      fill="hsl(var(--primary))" 
-      stroke="hsl(var(--border))" 
-      strokeWidth="1" 
-    />
-  </svg>
-);
-
 
 interface ChartDataItem {
   name: string;
@@ -94,6 +75,10 @@ export default function TechnicianAnalyticsPage() {
 
   const cassavaTypeChartData: ChartDataItem[] = stats.cassavaTypesArray.slice(0, 5); // Top 5
 
+  const handleMapMunicipalitySelect = (name: string | null) => {
+    setSelectedMunicipality(name);
+  };
+
   if (isLoading) {
     return (
       <PageWrapper allowedRoles={['technician']}>
@@ -140,11 +125,14 @@ export default function TechnicianAnalyticsPage() {
         </div>
         
         <Card>
-            <CardHeader><CardTitle className="font-headline text-xl">Mapa do Amapá</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
             <CardContent>
-                 <AmapaMap />
+                 <AmapaInteractiveMap
+                    selectedMunicipality={selectedMunicipality}
+                    onMunicipalitySelect={handleMapMunicipalitySelect}
+                 />
                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Este mapa é uma representação estilizada do estado.
+                    Clique em um município para filtrar os dados ou selecione no menu acima.
                     {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
                 </p>
             </CardContent>
@@ -253,4 +241,3 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
-
