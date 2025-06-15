@@ -36,8 +36,9 @@ const defaultMockUsers: User[] = [
   { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
 ];
 
-const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; // 1x1 black pixel gif
 const placeholderImage2 = 'https://placehold.co/300x300.png';
+
 
 const defaultMockRequests: AgriRequest[] = [
   {
@@ -47,14 +48,14 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'TMS 30572',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [placeholderImage, placeholderImage2, placeholderImage],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
     plantedArea: 10,
     infectedArea: 1,
-    latitude: 0.0349, 
-    longitude: -51.0694, 
+    latitude: 0.0349,
+    longitude: -51.0694,
   },
   {
     id: 'req2',
@@ -63,7 +64,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'TME 419',
     isMandioca: false,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, placeholderImage, placeholderImage],
+    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Positive',
     recommendation: 'A planta parece saudável. Continue com as práticas atuais. Monitore para pragas.',
     submissionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -80,7 +81,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRA fortitude',
     isMandioca: true,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage, placeholderImage, placeholderImage2],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Laranjal do Jari',
@@ -95,7 +96,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'IAC 90',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [placeholderImage, placeholderImage2, placeholderImage],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Negative',
     recommendation: 'Parece ter a Doença do Mosaico da Mandioca. Recomenda-se remover as plantas infectadas e usar mudas certificadas para plantios futuros.',
     submissionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -113,7 +114,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRS Kiriris',
     isMandioca: false,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, placeholderImage, placeholderImage2],
+    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Oiapoque',
@@ -127,7 +128,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRS Formosa',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [placeholderImage, placeholderImage, placeholderImage],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Inconclusive',
     recommendation: 'Os sintomas não são claros. Sugiro monitorar a planta por mais uma semana e, se não houver melhora, enviar novas fotos com detalhes das folhas e do caule.',
     submissionDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
@@ -145,7 +146,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'Vassourinha',
     isMandioca: true,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, placeholderImage2, placeholderImage],
+    photoDataUris: [placeholderImage2, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Positive',
     recommendation: 'A planta está vigorosa e sem sinais de doença. Continue com o bom trabalho!',
     submissionDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -162,7 +163,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'Casca Roxa',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [placeholderImage, placeholderImage, placeholderImage2],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Pedra Branca do Amapari',
@@ -178,7 +179,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRS CS01',
     isMandioca: false,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, placeholderImage, placeholderImage],
+    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Negative',
     recommendation: 'A planta exibe sinais de deficiência de nutrientes, especificamente nitrogênio. Recomenda-se aplicar um fertilizante rico em nitrogênio.',
     submissionDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
@@ -191,10 +192,10 @@ const defaultMockRequests: AgriRequest[] = [
 
 // --- Initialization and Persistence Logic ---
 let R_MOCK_USERS_INITIALIZED = false;
-export let mockUsers: User[] = []; 
+export let mockUsers: User[] = [];
 
 let R_MOCK_REQUESTS_INITIALIZED = false;
-export let mockRequests: AgriRequest[] = []; 
+export let mockRequests: AgriRequest[] = [];
 
 
 const loadMockData = () => {
@@ -235,25 +236,35 @@ const loadMockData = () => {
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
       try {
-        const parsedRequests = JSON.parse(storedRequests);
+        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[]; // Assume they are AgriRequest[]
         if (Array.isArray(parsedRequests)) {
-          mockRequests = parsedRequests;
-          console.log(`[MockData] Successfully parsed ${mockRequests.length} requests from localStorage.`);
+          // When loading, ensure photoDataUris are valid, especially if they were stored as placeholders.
+          // For this mock, we'll just load them. A more robust system might re-validate or transform.
+           mockRequests = parsedRequests.map(req => ({
+            ...req,
+            // Ensure photoDataUris is always an array of 3 strings, falling back to small placeholder if needed
+            photoDataUris: (
+              Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
+              ? req.photoDataUris
+              : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]
+            ) as [string, string, string] // Cast to tuple
+          }));
+          console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
           console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
           mockRequests = [...defaultMockRequests];
-          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
         }
       } catch (e)
       {
         console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
         mockRequests = [...defaultMockRequests];
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
       }
     } else {
       console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
       mockRequests = [...defaultMockRequests];
-      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
     }
     R_MOCK_REQUESTS_INITIALIZED = true;
   }
@@ -275,14 +286,36 @@ const persistUsers = () => {
 const persistRequests = () => {
   if (typeof window !== 'undefined') {
     console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
-    localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+    // Create a version of requests suitable for localStorage to avoid quota issues.
+    const requestsToStore = mockRequests.map(req => {
+      const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
+        // If URI is a long base64 string, replace it. Keep URLs or short data URIs.
+        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) { // 256 chars is an arbitrary threshold
+          return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
+        }
+        return uri;
+      }) as [string, string, string]; // Ensure it's a tuple
+
+      return {
+        ...req,
+        photoDataUris: sanitizedPhotoUris,
+      };
+    });
+    try {
+      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
+      console.log('[MockData] Successfully persisted sanitized requests.');
+    } catch (error) {
+      console.error('[MockData] Error persisting requests to localStorage:', error);
+      // Potentially, clear localStorage or part of it if quota is still an issue with sanitized data
+      // For now, just log the error. A more robust app might try other strategies.
+    }
   }
 };
 
 
 // --- Mutating Functions for Users ---
 export const addMockUser = (newUser: User): User => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
   mockUsers.push(newUser);
   persistUsers();
   console.log('[MockData] Added user:', newUser.id, 'Total users:', mockUsers.length);
@@ -290,7 +323,7 @@ export const addMockUser = (newUser: User): User => {
 };
 
 export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
   const userIndex = mockUsers.findIndex(u => u.id === userId);
   if (userIndex === -1) {
     console.warn('[MockData] Update failed: User not found', userId);
@@ -307,7 +340,7 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
       throw new Error("Este CPF já está cadastrado para outro usuário.");
     }
   }
-  
+
   mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
   persistUsers();
   console.log('[MockData] Updated user:', userId);
@@ -315,7 +348,7 @@ export const updateUserInMockData = async (userId: string, updatedUserData: Part
 };
 
 export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); 
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
   const userIndex = mockUsers.findIndex(u => u.id === userId);
   if (userIndex > -1) {
     mockUsers.splice(userIndex, 1);
@@ -329,25 +362,35 @@ export const deleteUserFromMockData = async (userId: string): Promise<boolean> =
 
 // --- Mutating Functions for Requests ---
 export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>): Promise<AgriRequest> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); 
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
   const newRequest: AgriRequest = {
     ...newRequestData,
     id: `req${Date.now()}`,
     submissionDate: new Date().toISOString(),
     status: 'Pending',
+    // Ensure photoDataUris is correctly typed as a tuple if newRequestData provides it
+    photoDataUris: (newRequestData.photoDataUris 
+        ? newRequestData.photoDataUris 
+        : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
   };
-  mockRequests.unshift(newRequest); // Add to the beginning of the array
-  persistRequests();
+  mockRequests.unshift(newRequest); // Add to the beginning of the array (in-memory full data)
+  persistRequests(); // This will save the sanitized version to localStorage
   console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
 };
 
 export const updateMockRequest = async (updatedRequestData: AgriRequest): Promise<AgriRequest | null> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData(); 
+  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
     const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
     if (index !== -1) {
-        mockRequests[index] = { ...mockRequests[index], ...updatedRequestData };
-        persistRequests();
+        mockRequests[index] = { 
+          ...mockRequests[index], 
+          ...updatedRequestData,
+          photoDataUris: (updatedRequestData.photoDataUris 
+            ? updatedRequestData.photoDataUris 
+            : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
+        };
+        persistRequests(); // Persist sanitized version
         console.log('[MockData] Updated request:', updatedRequestData.id);
         return mockRequests[index];
     }
@@ -360,7 +403,7 @@ export const deleteMockRequest = async (requestId: string): Promise<boolean> => 
   const initialLength = mockRequests.length;
   mockRequests = mockRequests.filter(req => req.id !== requestId);
   if (mockRequests.length < initialLength) {
-    persistRequests();
+    persistRequests(); // Persist after deletion
     console.log('[MockData] Deleted request:', requestId, 'Remaining requests:', mockRequests.length);
     return true;
   }
@@ -376,3 +419,13 @@ export const amapaMunicipalities: string[] = [
   "Vitória do Jari", "Amapá", "Calçoene", "Cutias", "Ferreira Gomes",
   "Itaubal", "Pracuúba", "Serra do Navio"
 ];
+
+// Ensure that all default mock requests also use the small placeholder for long data URIs or valid URLs
+defaultMockRequests.forEach(req => {
+  req.photoDataUris = (req.photoDataUris || [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]).map(uri => {
+    if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
+      return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
+    }
+    return uri;
+  }) as [string, string, string];
+});
