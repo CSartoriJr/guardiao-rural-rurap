@@ -10,7 +10,7 @@ import { mockRequests, deleteMockRequest, updateMockRequest } from '@/lib/mockDa
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -67,7 +67,8 @@ export default function TechnicianViewRequestPage() {
         .then(async (data) => {
           if (data) {
             // If request is pending and AI suggestion is not present, run AI flow
-            if (data.status === 'Pending' && !data.aiSuggestedRecommendation) {
+            // Also check if latitude/longitude from AI are missing, even if a suggestion exists (e.g., from manual entry before AI)
+            if (data.status === 'Pending' && (!data.aiSuggestedRecommendation || data.latitude === undefined || data.longitude === undefined) ) {
               setIsAiProcessing(true);
               try {
                 const aiInput = {
@@ -79,20 +80,23 @@ export default function TechnicianViewRequestPage() {
                   photoDataUri3: data.photoDataUris[2],
                   plantedArea: data.plantedArea,
                   infectedArea: data.infectedArea,
+                  deviceLatitude: data.latitude, // Pass device-captured lat if available
+                  deviceLongitude: data.longitude, // Pass device-captured lon if available
                 };
                 const aiOutput = await generateRecommendation(aiInput);
                 
                 const updatedRequestWithAIData: AgriRequest = {
                   ...data,
                   aiSuggestedRecommendation: aiOutput.recommendation,
-                  latitude: aiOutput.extractedLatitude,
+                  // AI output (extractedLatitude/Longitude) now becomes the primary source for these fields after AI processing
+                  latitude: aiOutput.extractedLatitude, 
                   longitude: aiOutput.extractedLongitude,
                 };
                 
                 const savedUpdatedRequest = await updateMockRequest(updatedRequestWithAIData);
                 if (savedUpdatedRequest) {
                   setRequest(savedUpdatedRequest);
-                  toast({ title: "Sugestão da IA Carregada", description: "Recomendação e localização (se encontrada) foram preenchidas." });
+                  toast({ title: "Sugestão e Localização da IA Carregadas", description: "Recomendação e localização (se aplicável) foram processadas pela IA." });
                 } else {
                   setRequest(data); // Fallback to original data if update fails
                   toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as sugestões da IA.", variant: "destructive" });
@@ -168,6 +172,39 @@ export default function TechnicianViewRequestPage() {
     setIsDeleting(false);
     setIsDeleteDialogOpen(false);
     setAdminPassword('');
+  };
+
+  const LocationDisplay = () => {
+    if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
+      let source = "Extraída/Confirmada pela IA";
+      if (request.deviceLocationStatus === 'success') {
+        source = "Fornecida pelo Dispositivo do Agricultor";
+      } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+        source = `Tentativa do Dispositivo: ${request.deviceLocationStatus}, Localização da IA`;
+      }
+      return (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
+          </h3>
+          <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
+          <p className="text-xs text-muted-foreground">Fonte: {source}</p>
+        </div>
+      );
+    } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+       return (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
+          </h3>
+          <p className="text-lg text-muted-foreground flex items-center">
+            <WifiOff className="h-4 w-4 mr-2 text-destructive" /> Nenhuma localização GPS finalizada.
+          </p>
+          <p className="text-xs text-muted-foreground">Status do GPS do agricultor: {request.deviceLocationStatus}. A IA não extraiu das imagens.</p>
+        </div>
+      );
+    }
+    return null; // No location data to display
   };
 
 
@@ -327,12 +364,7 @@ export default function TechnicianViewRequestPage() {
                 <p className="text-lg text-foreground">{request.infectedArea} ha</p>
               </div>
             )}
-             {(typeof request.latitude === 'number' && typeof request.longitude === 'number') && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (Extraída pela IA)</h3>
-                <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
-              </div>
-            )}
+            <LocationDisplay />
              <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon, MapPin } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon, MapPin, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -137,6 +137,43 @@ export default function FarmerViewRequestPage() {
     setExpandedImageUri(null);
   };
 
+  const LocationDisplay = () => {
+    if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
+      let source = "Extraída/Confirmada pela IA";
+      if (request.deviceLocationStatus === 'success') {
+        source = "Fornecida pelo Dispositivo";
+      } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+         source = `Tentativa do Dispositivo: ${request.deviceLocationStatus || 'N/A'}, Localização da IA`;
+      }
+      return (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
+          <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
+          <p className="text-xs text-muted-foreground">Fonte: {source}</p>
+        </div>
+      );
+    } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+      // If device GPS failed and AI also didn't find anything
+       return (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
+          <p className="text-lg text-muted-foreground flex items-center">
+            <WifiOff className="h-4 w-4 mr-2 text-destructive" /> Nenhuma localização GPS disponível.
+          </p>
+          <p className="text-xs text-muted-foreground">Status do GPS do dispositivo: {request.deviceLocationStatus}. A IA também não extraiu das imagens.</p>
+        </div>
+      );
+    }
+    // If no coordinates and no specific device status to report (e.g. older requests before device GPS feature)
+    return (
+       <div>
+        <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
+        <p className="text-lg text-muted-foreground">Localização não disponível para este pedido.</p>
+      </div>
+    );
+  };
+
+
   if (isLoading) {
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
@@ -229,12 +266,7 @@ export default function FarmerViewRequestPage() {
                 <p className="text-lg text-foreground">{request.infectedArea} ha</p>
               </div>
             )}
-             {(typeof request.latitude === 'number' && typeof request.longitude === 'number') && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização (Extraída pela IA)</h3>
-                <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
-              </div>
-            )}
+            <LocationDisplay />
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -274,8 +306,8 @@ export default function FarmerViewRequestPage() {
                 <Image 
                     src={expandedImageUri} 
                     alt="Imagem expandida" 
-                    layout="fill"
-                    objectFit="contain" 
+                    fill
+                    style={{objectFit: "contain"}}
                 />
             </div>
           </DialogContent>
@@ -284,4 +316,3 @@ export default function FarmerViewRequestPage() {
     </PageWrapper>
   );
 }
-

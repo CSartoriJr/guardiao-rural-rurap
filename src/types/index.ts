@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   cpf: string; // Alterado de email para cpf
@@ -15,6 +16,8 @@ export interface User {
 }
 
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
+export type DeviceLocationStatus = 'idle' | 'fetching' | 'success' | 'error' | 'denied' | 'unavailable' | 'timeout' | 'unsupported';
+
 
 export interface AgriRequest {
   id: string;
@@ -34,6 +37,7 @@ export interface AgriRequest {
   municipality?: string; // Municipality of the request, might be different from farmer's registration
   plantedArea?: number; // Área plantada em hectares
   infectedArea?: number; // Área infectada em hectares
-  latitude?: number; // Latitude from panoramic image
-  longitude?: number; // Longitude from panoramic image
+  latitude?: number; // Latitude from device or AI
+  longitude?: number; // Longitude from device or AI
+  deviceLocationStatus?: DeviceLocationStatus; // Status of device GPS capture attempt by farmer
 }

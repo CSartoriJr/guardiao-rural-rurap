@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -12,9 +11,9 @@ import ImageUploadInput from '@/components/shared/ImageUploadInput';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { AgriRequest } from '@/types';
+import type { AgriRequest, DeviceLocationStatus } from '@/types';
 import { addMockRequest } from '@/lib/mockData';
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -27,7 +26,6 @@ const requestFormSchema = z.object({
   photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
-  // Latitude and Longitude are not farmer inputs; they are handled by AI extraction and technician review.
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -52,6 +50,11 @@ export default function RequestForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationStatus, setLocationStatus] = useState<DeviceLocationStatus>('idle');
+
 
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -67,6 +70,41 @@ export default function RequestForm() {
     },
   });
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      setLocationStatus('fetching');
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+          setLocationStatus('success');
+          toast({ title: "Localização Obtida", description: "Sua localização GPS foi capturada com sucesso." });
+        },
+        (error) => {
+          console.error("Erro ao obter geolocalização:", error);
+          let message = "Não foi possível obter sua localização GPS.";
+          if (error.code === error.PERMISSION_DENIED) {
+            message = "Permissão para acessar a localização foi negada.";
+            setLocationStatus('denied');
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            message = "Informação de localização não está disponível.";
+            setLocationStatus('unavailable');
+          } else if (error.code === error.TIMEOUT) {
+            message = "Tempo esgotado ao tentar obter a localização.";
+            setLocationStatus('timeout');
+          } else {
+            setLocationStatus('error');
+          }
+          toast({ title: "Erro de Localização", description: message, variant: "destructive" });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setLocationStatus('unsupported');
+      toast({ title: "Geolocalização Não Suportada", description: "Seu navegador não suporta geolocalização.", variant: "destructive" });
+    }
+  }, [toast]);
+
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user) {
@@ -75,7 +113,7 @@ export default function RequestForm() {
     }
     setIsSubmitting(true);
     try {
-      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'latitude' | 'longitude'> = {
+      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
         farmerId: user.id,
         farmerName: user.name,
         cassavaType: data.cassavaVariety,
@@ -84,8 +122,9 @@ export default function RequestForm() {
         photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
-        // Latitude and longitude will be undefined here initially.
-        // They get populated by the AI flow later.
+        latitude: latitude ?? undefined, // Use fetched latitude
+        longitude: longitude ?? undefined, // Use fetched longitude
+        deviceLocationStatus: locationStatus,
       };
       const newRequest = await addMockRequest(requestData as AgriRequest); 
       
@@ -96,7 +135,7 @@ export default function RequestForm() {
 
       toast({
         title: 'Pedido Enviado!',
-        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado. ID: ${newRequest.id}. A localização será analisada pela IA.`,
+        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
     } catch (error) {
@@ -107,11 +146,31 @@ export default function RequestForm() {
     }
   };
 
+  const LocationInfo = () => {
+    switch (locationStatus) {
+      case 'fetching':
+        return <p className="text-sm flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Obtendo sua localização GPS...</p>;
+      case 'success':
+        return <p className="text-sm text-green-600 flex items-center"><LocateFixed className="h-4 w-4 mr-2" /> Localização GPS obtida: Lat {latitude?.toFixed(4)}, Long {longitude?.toFixed(4)}</p>;
+      case 'denied':
+        return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. A localização não será anexada.</p>;
+      case 'unavailable':
+      case 'timeout':
+      case 'error':
+        return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Falha ao obter GPS. A IA tentará extrair das fotos, se visível.</p>;
+      case 'unsupported':
+         return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Geolocalização não suportada pelo seu navegador.</p>;
+      default:
+        return <p className="text-sm text-muted-foreground">A localização GPS será capturada se disponível. A IA também tentará extrair das fotos.</p>;
+    }
+  };
+
+
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Enviar Novo Pedido</CardTitle>
-        <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas. Se as fotos contiverem informações de GPS (como as do app NoteCam), nossa IA tentará extraí-las.</CardDescription>
+        <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas. Sua localização GPS será capturada automaticamente, se permitida.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
@@ -222,10 +281,9 @@ export default function RequestForm() {
           </div>
 
           <div className="space-y-2 pt-2">
-            <Label className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</Label>
-            <div className="text-sm text-muted-foreground p-3 border border-dashed rounded-md bg-muted/30">
-                A localização (Latitude/Longitude) será extraída pela Inteligência Artificial se estiver visível na imagem panorâmica (Foto1).
-                O técnico revisará essa informação. Certifique-se que as coordenadas estejam nítidas na foto.
+            <Label className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização GPS do Dispositivo</Label>
+            <div className="text-sm p-3 border border-dashed rounded-md bg-muted/30">
+                <LocationInfo />
             </div>
           </div>
 
