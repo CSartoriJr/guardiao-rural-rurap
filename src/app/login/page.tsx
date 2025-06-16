@@ -1,21 +1,15 @@
 
 'use client'; 
 
-// import { useRouter } from 'next/navigation'; // Removido pois não é mais necessário aqui
-import Link from 'next/link'; // Adicionado Link
+import Link from 'next/link';
 import { CacaBruxaLogo } from '@/components/shared/Logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
-import { APP_ROUTES } from '@/config/routes';
+import { APP_ROUTES } from '@/config/routes'; // APP_ROUTES is still imported as it might be used elsewhere or for consistency
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
-  // const router = useRouter(); // Removido
-  // const handleRegisterClick = () => { // Removido
-  //   router.push(APP_ROUTES.FARMER_REGISTER);
-  // };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 sm:p-6">
       <div className="mb-8">
@@ -35,9 +29,9 @@ export default function LoginPage() {
         <Button 
           variant="outline" 
           className="w-full"
-          asChild // Adicionado asChild
+          asChild
         >
-          <Link href={APP_ROUTES.FARMER_REGISTER}> {/* Envolvido com Link */}
+          <Link href="/register/farmer"> {/* Changed to direct string path */}
             <UserPlus className="mr-2 h-4 w-4" />
             Cadastrar como Agricultor
           </Link>
