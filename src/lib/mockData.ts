@@ -5,205 +5,53 @@ const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
 // --- Default Data ---
-const defaultMockUsers: User[] = [
-  { id: 'farmer1', cpf: '111.111.111-11', role: 'farmer', name: 'João Agricultor', password: 'password123', email: 'joao@example.com', phone: '(96)99999-1111', address: 'Rua das Palmeiras, 123', municipality: 'Macapá', familyMembers: 4 },
-  { id: 'tech1', cpf: '222.222.222-22', role: 'technician', name: 'Alice Técnica', password: 'password123' },
-  { id: 'farmer2', cpf: '333.333.333-33', role: 'farmer', name: 'Maria Garcia', password: 'password123', email: 'maria@example.com', phone: '(96)98888-2222', address: 'Av. Beira Rio, 456', municipality: 'Santana', familyMembers: 3 },
-  { id: 'farmer3', cpf: '444.444.444-44', role: 'farmer', name: 'Chen Wei', password: 'password123', email: 'chen@example.com', phone: '(96)97777-3333', address: 'Travessa das Acácias, 789', municipality: 'Macapá', familyMembers: 5 },
-  { id: 'tech2', cpf: '555.555.555-55', role: 'technician', name: 'David Moleiro', password: 'password123' },
-  { id: 'tech3', cpf: '666.666.666-66', role: 'technician', name: 'Fátima Khan', password: 'password123' },
-  { id: 'farmer4', cpf: '777.777.777-77', role: 'farmer', name: 'Bento Agricultor', password: 'password123', email: 'bento@example.com', phone: '(96)96666-4444', address: 'Estrada Principal, S/N', municipality: 'Mazagão', familyMembers: 2 },
-  { id: 'tech4', cpf: '888.888.888-88', role: 'technician', name: 'Clara Artesã', password: 'password123' },
-  { id: 'farmer5', cpf: '999.999.999-99', role: 'farmer', name: 'Kenji Tanaka', password: 'password123', email: 'kenji@example.com', phone: '(96)95555-5555', address: 'Alameda dos Ipes, 321', municipality: 'Oiapoque', familyMembers: 1 },
-  { id: 'tech5', cpf: '000.000.000-01', role: 'technician', name: 'Isabelle Moreau', password: 'password123' },
-  { id: 'farmer6', cpf: '000.000.000-02', role: 'farmer', name: 'Pedro Alvares', password: 'password123', email: 'pedro@example.com', phone: '(96)94444-6666', address: 'Rua da Colina, 987', municipality: 'Porto Grande', familyMembers: 6 },
-  { id: 'farmer7', cpf: '000.000.000-03', role: 'farmer', name: 'Sofia Costa', password: 'password123', email: 'sofia@example.com', phone: '(96)93333-7777', address: 'Vila Esperança, 654', municipality: 'Laranjal do Jari', familyMembers: 3 },
-  { id: 'tech6', cpf: '000.000.000-04', role: 'technician', name: 'Ricardo Neves', password: 'password123' },
-  { id: 'tech7', cpf: '000.000.000-05', role: 'technician', name: 'Lúcia Ferreira', password: 'password123' },
-  { id: 'admin1', cpf: '000.000.000-00', role: 'admin', name: 'Admin Adicional', password: 'adminpassword' },
-  { id: 'farmer8', cpf: '000.000.000-06', role: 'farmer', name: 'Carlos Silva', password: 'password123', email: 'carlos@example.com', phone: '(96)92222-8888', address: 'Comunidade Rio Verde', municipality: 'Pedra Branca do Amaparí', familyMembers: 4 },
-  { id: 'farmer9', cpf: '000.000.000-07', role: 'farmer', name: 'Ana Pereira', password: 'password123', email: 'ana@example.com', phone: '(96)91111-9999', address: 'Bairro Novo, 101', municipality: 'Vitória do Jari', familyMembers: 2 },
-  { id: 'tech8', cpf: '000.000.000-08', role: 'technician', name: 'Roberto Dias', password: 'password123' },
-  { id: 'tech9', cpf: '000.000.000-09', role: 'technician', name: 'Juliana Andrade', password: 'password123' },
-  { id: 'farmer10', cpf: '101.010.101-01', role: 'farmer', name: 'Lucas Mendes', password: 'password123', email: 'lucas@example.com', phone: '(96)90000-1010', address: 'Centro, Sala 10', municipality: 'Amapá', familyMembers: 1 },
-  { id: 'farmer11', cpf: '111.011.011-01', role: 'farmer', name: 'Beatriz Almeida', password: 'password123', email: 'beatriz@example.com', phone: '(96)91234-1101', address: 'Residencial Sol Nascente, Bloco A', municipality: 'Calçoene', familyMembers: 3 },
-  { id: 'tech10', cpf: '121.212.121-21', role: 'technician', name: 'André Sousa', password: 'password123' },
-  { id: 'tech11', cpf: '131.313.131-31', role: 'technician', name: 'Camila Santos', password: 'password123' },
-  { id: 'farmer12', cpf: '141.414.141-41', role: 'farmer', name: 'Agricultor Novo 1', password: 'password123', email: 'novo1@example.com', phone: '(96)95678-1414', address: 'Sitio Boa Vista', municipality: 'Cutias', familyMembers: 5 },
-  { id: 'farmer13', cpf: '151.515.151-51', role: 'farmer', name: 'Agricultora Nova 2', password: 'password123', email: 'nova2@example.com', phone: '(96)98765-1515', address: 'Fazenda Alegria', municipality: 'Ferreira Gomes', familyMembers: 2 },
-  { id: 'tech12', cpf: '161.616.161-61', role: 'technician', name: 'Técnico Novo 1', password: 'password123' },
-  { id: 'tech13', cpf: '171.717.171-71', role: 'technician', name: 'Técnica Nova 2', password: 'password123' },
-  { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
-];
-
 const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
+const defaultMockUsers: User[] = [
+  { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
+  { id: 'tech_claudia_sartori', cpf: '123.456.789-00', role: 'technician', name: 'Claudia Sartori', password: 'claudia_password' },
+  { id: 'farmer_joao_silva', cpf: '111.111.111-11', role: 'farmer', name: 'João Silva Agricultor', password: 'password123', email: 'joao.silva@example.com', phone: '(96)99999-1111', address: 'Rua das Palmeiras, 123', municipality: 'Macapá', familyMembers: 4 },
+];
 
 const defaultMockRequests: AgriRequest[] = [
   {
-    id: 'req1',
-    farmerId: 'farmer1',
-    farmerName: 'João Agricultor',
-    cassavaType: 'TMS 30572',
-    isMandioca: true,
-    isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Pending',
-    submissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Macapá',
-    plantedArea: 10,
-    infectedArea: 1,
-    latitude: 0.0349,
-    longitude: -51.0694,
-  },
-  {
-    id: 'req2',
-    farmerId: 'farmer1',
-    farmerName: 'João Agricultor',
-    cassavaType: 'TME 419',
-    isMandioca: false,
-    isMacaxeira: true,
-    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Positive',
-    recommendation: 'A planta parece saudável. Continue com as práticas atuais. Monitore para pragas.',
-    submissionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech1',
-    technicianName: 'Alice Técnica',
-    responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Santana',
-    plantedArea: 5,
-    latitude: 0.0588, // Approx Santana
-    longitude: -51.1782, // Approx Santana
-  },
-   {
-    id: 'req3',
-    farmerId: 'farmer2',
-    farmerName: 'Maria Garcia',
-    cassavaType: 'BRA fortitude',
-    isMandioca: true,
-    isMacaxeira: true,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
-    status: 'Pending',
-    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Laranjal do Jari',
-    infectedArea: 0.5,
-    latitude: -0.5000,
-    longitude: -52.5167,
-  },
-  {
-    id: 'req4',
-    farmerId: 'farmer4', // Bento Agricultor
-    farmerName: 'Bento Agricultor',
-    cassavaType: 'IAC 90',
-    isMandioca: true,
-    isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Negative',
-    recommendation: 'Parece ter a Doença do Mosaico da Mandioca. Recomenda-se remover as plantas infectadas e usar mudas certificadas para plantios futuros.',
-    submissionDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech2',
-    technicianName: 'David Moleiro',
-    responseDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Mazagão',
-    plantedArea: 20,
-    infectedArea: 8,
-  },
-  {
-    id: 'req5',
-    farmerId: 'farmer5',
-    farmerName: 'Kenji Tanaka',
-    cassavaType: 'BRS Kiriris',
-    isMandioca: false,
-    isMacaxeira: true,
-    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
-    status: 'Pending',
-    submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Oiapoque',
-    latitude: 3.8439,
-    longitude: -51.8339,
-  },
-  {
-    id: 'req6',
-    farmerId: 'farmer6', // Pedro Alvares
-    farmerName: 'Pedro Alvares',
+    id: 'req_joao_1_new',
+    farmerId: 'farmer_joao_silva',
+    farmerName: 'João Silva Agricultor',
     cassavaType: 'BRS Formosa',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Inconclusive',
-    recommendation: 'Os sintomas não são claros. Sugiro monitorar a planta por mais uma semana e, se não houver melhora, enviar novas fotos com detalhes das folhas e do caule.',
-    submissionDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech6',
-    technicianName: 'Ricardo Neves',
-    responseDate: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Porto Grande',
-    plantedArea: 12.5,
-    infectedArea: 0,
-  },
-  {
-    id: 'req7',
-    farmerId: 'farmer7', // Sofia Costa
-    farmerName: 'Sofia Costa',
-    cassavaType: 'Vassourinha',
-    isMandioca: true,
-    isMacaxeira: true,
-    photoDataUris: [placeholderImage2, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Positive',
-    recommendation: 'A planta está vigorosa e sem sinais de doença. Continue com o bom trabalho!',
-    submissionDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech7',
-    technicianName: 'Lúcia Ferreira',
-    responseDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Cutias',
-  },
-  {
-    id: 'req8',
-    farmerId: 'farmer8',
-    farmerName: 'Carlos Silva',
-    cassavaType: 'Casca Roxa',
-    isMandioca: true,
-    isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2],
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
     status: 'Pending',
-    submissionDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Pedra Branca do Amaparí',
-    plantedArea: 7,
-    infectedArea: 2.5,
-    latitude: 0.7716,
-    longitude: -51.9502,
+    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    municipality: 'Macapá',
+    plantedArea: 5,
+    infectedArea: 1,
+    latitude: 0.038,
+    longitude: -51.05,
+    deviceLocationStatus: 'success',
   },
   {
-    id: 'req9',
-    farmerId: 'farmer9', // Ana Pereira
-    farmerName: 'Ana Pereira',
-    cassavaType: 'BRS CS01',
+    id: 'req_joao_2_new',
+    farmerId: 'farmer_joao_silva',
+    farmerName: 'João Silva Agricultor',
+    cassavaType: 'Vassourinha',
     isMandioca: false,
     isMacaxeira: true,
     photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Negative',
-    recommendation: 'A planta exibe sinais de deficiência de nutrientes, especificamente nitrogênio. Recomenda-se aplicar um fertilizante rico em nitrogênio.',
-    submissionDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech8',
-    technicianName: 'Roberto Dias',
-    responseDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Vitória do Jari',
-  },
-  {
-    id: 'req1749935232522', // This is a new one for testing the update
-    farmerId: 'farmer10',
-    farmerName: 'Lucas Mendes',
-    cassavaType: 'BRS Poti Branca',
-    isMandioca: true,
-    isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
-    status: 'Pending',
-    submissionDate: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Santana', // Target municipality
-    plantedArea: 3,
-    infectedArea: 0.2,
-    latitude: 0.05,     // Approx Santana
-    longitude: -51.18,  // Approx Santana
+    status: 'Positive',
+    recommendation: 'Planta parece saudável. Continue com as boas práticas de manejo.',
+    submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    technicianId: 'tech_claudia_sartori',
+    technicianName: 'Claudia Sartori',
+    responseDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    municipality: 'Santana',
+    plantedArea: 2,
+    latitude: 0.0588,
+    longitude: -51.1782,
+    deviceLocationStatus: 'success',
+    aiSuggestedRecommendation: 'A planta está com boa aparência e desenvolvimento. Sugiro manter os cuidados atuais e monitorar para qualquer sinal de pragas ou doenças comuns na região de Santana.',
   },
 ];
 
@@ -251,7 +99,6 @@ const loadMockData = () => {
     console.log('[MockData] Initializing requests.');
     const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
     let dataLoadedFromStorage = false;
-    let madeOverrideForSpecificRequest = false;
 
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
@@ -281,35 +128,9 @@ const loadMockData = () => {
       mockRequests = [...defaultMockRequests];
     }
 
-    // Ensure req1749935232522 specifically has municipality 'Santana'
-    // This acts as an override or ensures the default is correctly applied.
-    const targetReqId = 'req1749935232522';
-    const targetReqIndex = mockRequests.findIndex(req => req.id === targetReqId);
-    
-    if (targetReqIndex !== -1) {
-      if (mockRequests[targetReqIndex].municipality !== 'Santana') {
-        console.log(`[MockData] Overriding municipality for ${targetReqId} to 'Santana'.`);
-        mockRequests[targetReqIndex].municipality = 'Santana';
-        madeOverrideForSpecificRequest = true; // Mark that an override was made
-      }
-    } else {
-       // If the target request is not found in mockRequests (e.g., fresh localStorage or it got deleted)
-       // and we want to ensure it exists from defaults, we can re-add it from defaultMockRequests.
-       const defaultTargetReq = defaultMockRequests.find(req => req.id === targetReqId);
-       if (defaultTargetReq) {
-         console.log(`[MockData] Target request ${targetReqId} not found, adding from defaults with municipality 'Santana'.`);
-         mockRequests.push({...defaultTargetReq, municipality: 'Santana'}); // Ensure municipality is Santana
-         madeOverrideForSpecificRequest = true; // Mark that a change (addition) was made
-       } else {
-        console.warn(`[MockData] Target request ${targetReqId} not found in defaultMockRequests either.`);
-       }
-    }
-
-    // Persist changes if:
-    // 1. Data was loaded from storage AND an override was made for the specific request.
-    // 2. No data was in storage initially (so defaults were loaded and should be persisted).
-    if ((dataLoadedFromStorage && madeOverrideForSpecificRequest) || !storedRequests) {
-      console.log('[MockData] Persisting requests to localStorage after potential override or initial load.');
+    // Persist changes if no data was in storage initially (so defaults were loaded and should be persisted).
+    if (!storedRequests) {
+      console.log('[MockData] Persisting requests to localStorage after initial load from defaults.');
       const requestsToStore = mockRequests.map(req => {
         const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
           if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
@@ -321,7 +142,7 @@ const loadMockData = () => {
       });
       try {
         localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
-        console.log('[MockData] Successfully persisted (potentially overridden/initialized) requests.');
+        console.log('[MockData] Successfully persisted initialized requests from defaults.');
       } catch (error) {
         console.error('[MockData] Error persisting requests to localStorage:', error);
       }
@@ -371,12 +192,22 @@ const persistRequests = () => {
 
 // --- Mutating Functions for Users ---
 export const addMockUser = (newUser: User): User => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
+  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
+  // Check if user with this CPF already exists to prevent duplicates
+  const existingUser = mockUsers.find(u => u.cpf.replace(/\D/g, '') === newUser.cpf.replace(/\D/g, ''));
+  if (existingUser) {
+    console.warn('[MockData] Add user failed: User with this CPF already exists', newUser.cpf);
+    // Optionally, throw an error or return the existing user, or handle as per app logic
+    // For now, let's prevent adding and return the existing one or throw an error.
+    // throw new Error("Usuário com este CPF já existe.");
+    return existingUser; // Or null, or throw error
+  }
   mockUsers.push(newUser);
   persistUsers();
   console.log('[MockData] Added user:', newUser.id, 'Total users:', mockUsers.length);
   return newUser;
 };
+
 
 export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
   if (!R_MOCK_USERS_INITIALIZED) loadMockData();
@@ -489,10 +320,4 @@ defaultMockRequests.forEach(req => {
     }
     return uri;
   }) as [string, string, string];
-
-  // Specific update for req1749935232522
-  if (req.id === 'req1749935232522') {
-    req.municipality = 'Santana';
-  }
 });
-
