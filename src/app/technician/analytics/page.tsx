@@ -64,7 +64,6 @@ export default function TechnicianAnalyticsPage() {
       .sort((a, b) => b.count - a.count);
 
     const requestsByMun: { [key: string]: number } = {};
-    // Use 'requests' for the full municipality list if no filter, otherwise 'filteredRequests'
     const sourceForMunStats = selectedMunicipality ? filteredRequests : requests;
     sourceForMunStats.forEach(req => {
       if (req.municipality) {
@@ -102,10 +101,26 @@ export default function TechnicianAnalyticsPage() {
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-10 w-1/4" />
           </div>
-          <Skeleton className="h-64 w-full md:w-1/2 mx-auto" /> {/* Map Placeholder */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
+                <CardContent className="pt-2">
+                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full max-w-md mx-auto rounded-lg" />
+                  <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
+                  <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="flex flex-col gap-6">
+              <Skeleton className="h-28 w-full rounded-lg" />
+              <Skeleton className="h-28 w-full rounded-lg" />
+              <Skeleton className="h-28 w-full rounded-lg" />
+              <Skeleton className="h-28 w-full rounded-lg" />
+            </div>
           </div>
+
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Skeleton className="h-80 rounded-lg" />
@@ -144,60 +159,64 @@ export default function TechnicianAnalyticsPage() {
           </div>
         </div>
         
-        <Card>
-            <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
-            <CardContent>
-                 <AmapaInteractiveMap
-                    selectedMunicipality={selectedMunicipality}
-                    onMunicipalitySelect={handleMapMunicipalitySelect}
-                 />
-                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Clique em um município para filtrar os dados ou selecione no menu acima.
-                    {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
-                </p>
-            </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pending}</div>
-              <p className="text-xs text-muted-foreground">Aguardando revisão</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
-              <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
-              <p className="text-xs text-muted-foreground">Necessitam atenção</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
+                    <CardContent>
+                        <AmapaInteractiveMap
+                            selectedMunicipality={selectedMunicipality}
+                            onMunicipalitySelect={handleMapMunicipalitySelect}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                            Clique em um município para filtrar os dados ou selecione no menu acima.
+                            {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="flex flex-col gap-6">
+                <Card className="shadow-md">
+                    <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold">{stats.total}</div>
+                    <p className="text-xs text-muted-foreground">
+                        {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
+                    </p>
+                    </CardContent>
+                </Card>
+                <Card className="shadow-md">
+                    <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold">{stats.pending}</div>
+                    <p className="text-xs text-muted-foreground">Aguardando revisão</p>
+                    </CardContent>
+                </Card>
+                <Card className="shadow-md">
+                    <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
+                    <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
+                    </CardContent>
+                </Card>
+                <Card className="shadow-md">
+                    <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
+                    <p className="text-xs text-muted-foreground">Necessitam atenção</p>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
+
 
         {filteredRequests.length > 0 ? (
           <div className="space-y-6">
@@ -286,3 +305,4 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
+
