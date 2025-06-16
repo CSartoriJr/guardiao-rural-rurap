@@ -51,7 +51,7 @@ const defaultMockRequests: AgriRequest[] = [
     latitude: 0.0588,
     longitude: -51.1782,
     deviceLocationStatus: 'success',
-    aiSuggestedRecommendation: 'A planta está com boa aparência e desenvolvimento. Sugiro manter os cuidados atuais e monitorar para qualquer sinal de pragas ou doenças comuns na região de Santana.',
+    // aiSuggestedRecommendation field removed from here
   },
 ];
 

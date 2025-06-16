@@ -39,6 +39,7 @@ const submitTechnicianResponse = async (
     // Latitude and longitude from the original request are preserved
     latitude: originalRequest.latitude, 
     longitude: originalRequest.longitude,
+    // aiSuggestedRecommendation is no longer set here by the response form
   };
   
   return updateMockRequest(updatedRequest); 
@@ -76,7 +77,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
     defaultValues: {
-      recommendation: request.aiSuggestedRecommendation || '', // This field might be empty if AI suggestion was never generated
+      recommendation: '', // Default to empty as AI suggestion is removed
       status: request.status !== 'Pending' ? request.status : undefined,
     },
   });

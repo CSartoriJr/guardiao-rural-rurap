@@ -1,11 +1,11 @@
 
 'use server';
 /**
- * @fileOverview AI-powered recommendation generator for technicians based on cassava type, submitted photos,
+ * @fileOverview AI-powered assistant for technicians. It processes cassava type, submitted photos,
  * and optionally, device-provided GPS coordinates. It attempts to extract GPS from images if not provided by the device,
  * and determines the Amapá municipality based on the coordinates.
  *
- * - generateRecommendation - A function that generates recommendation drafts, extracts/confirms GPS, and determines municipality.
+ * - generateRecommendation - A function that extracts/confirms GPS and determines municipality. (Note: Name kept for now, but recommendation text is removed)
  * - GenerateRecommendationInput - The input type for the generateRecommendation function.
  * - GenerateRecommendationOutput - The return type for the generateRecommendation function.
  */
@@ -41,7 +41,6 @@ const GenerateRecommendationInputSchema = z.object({
 export type GenerateRecommendationInput = z.infer<typeof GenerateRecommendationInputSchema>;
 
 const GenerateRecommendationOutputSchema = z.object({
-  recommendation: z.string().describe('The agricultural recommendation for the cassava plant.'),
   extractedLatitude: z.coerce.number().optional().describe('The latitude confirmed or extracted by the AI. Must be a numerical value between -90 and 90. Prioritizes device-provided coordinates if available, otherwise attempts extraction from images.'),
   extractedLongitude: z.coerce.number().optional().describe('The longitude confirmed or extracted by the AI. Must be a numerical value between -180 and 180. Prioritizes device-provided coordinates if available, otherwise attempts extraction from images.'),
   determinedMunicipality: z.string().optional().describe(`The Amapá municipality determined by the AI based on the extracted GPS coordinates. If coordinates are within Amapá, choose one from this list: ${amapaMunicipalities.join(', ')}. If coordinates are outside Amapá or municipality cannot be definitively determined from the list, leave this field blank/undefined. If coordinates seem to be in Amapá but the precise municipality is unclear, assign the most likely one (e.g., "Macapá" for a central or unknown location within Amapá).`),
@@ -59,7 +58,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateRecommendationInputSchema},
   output: {schema: GenerateRecommendationOutputSchema},
   prompt: `You are an expert agricultural technician specializing in cassava plants (mandioca/macaxeira) in the state of Amapá, Brazil.
-Your task is to provide a detailed recommendation for the farmer, determine the GPS coordinates, and identify the municipality in Amapá.
+Your task is to determine the GPS coordinates and identify the Amapá municipality based on the provided plant information and images.
 
 Valid Amapá Municipalities: ${amapaMunicipalities.join(', ')}.
 
@@ -93,15 +92,7 @@ Instructions:
         *   If the coordinates are in Amapá but the exact municipality is unclear from the list, you may assign "Macapá" if it's a plausible central location or if no other information is available.
         *   If the coordinates are clearly outside Amapá, or if a specific Amapá municipality cannot be determined from the provided list even if the location seems to be in Amapá, leave the 'determinedMunicipality' field blank/undefined. Do not guess a municipality if unsure.
 
-3.  **Agricultural Recommendation**: Based on the plant classification, variety, submitted photos, area information, determined GPS coordinates, and the 'determinedMunicipality' (if any):
-    *   Consider the proportion of infected area to planted area if provided.
-    *   If you determined a municipality, consider if this location information can refine your diagnosis or recommendation. State if you are using this information.
-    *   Provide a clear, actionable recommendation.
-    *   If a disease is suspected, name it and suggest specific control measures.
-    *   If the plant appears healthy, state that and recommend best practices.
-    *   If the images are inconclusive, explain why.
-
-Output Format: Ensure your response strictly adheres to the JSON schema for 'extractedLatitude', 'extractedLongitude', 'determinedMunicipality', and 'recommendation'.
+Output Format: Ensure your response strictly adheres to the JSON schema for 'extractedLatitude', 'extractedLongitude', and 'determinedMunicipality'.
 `,
 });
 
@@ -113,13 +104,11 @@ const generateRecommendationFlow = ai.defineFlow(
   },
   async (input): Promise<GenerateRecommendationOutput> => {
     try {
-      const result = await prompt(input); // result is GenerateResponse<GenerateRecommendationOutput>
+      const result = await prompt(input);
 
-      // Check if the result and its output property are valid, and if recommendation (a required field) is a string
-      if (result && result.output && typeof result.output.recommendation === 'string') {
-        // Successfully obtained and validated output
+      if (result && result.output) {
+        // Successfully obtained and validated output structure (location data)
         return {
-          recommendation: result.output.recommendation,
           extractedLatitude: result.output.extractedLatitude,
           extractedLongitude: result.output.extractedLongitude,
           determinedMunicipality: result.output.determinedMunicipality,
@@ -127,29 +116,24 @@ const generateRecommendationFlow = ai.defineFlow(
       } else {
         // Log an error if the result or output structure is not as expected
         console.error(
-          '[generateRecommendationFlow] AI prompt did not return a valid output structure. Result:',
+          '[generateRecommendationFlow] AI prompt did not return a valid output structure for location data. Result:',
           JSON.stringify(result, null, 2)
         );
-        let recommendationText = 'Falha ao obter recomendação da IA. A estrutura da resposta foi inesperada ou incompleta.';
-        // Check for specific error information from Genkit's response if available
+        let errorInfo = "Falha ao obter dados de localização da IA. A estrutura da resposta foi inesperada ou incompleta.";
         if (result && (result as any).error) {
-            recommendationText += ` Erro da IA: ${(result as any).error}`;
+            errorInfo += ` Erro da IA: ${(result as any).error}`;
         } else if (result && (result as any).blocked) {
-            recommendationText += ` Conteúdo bloqueado pela IA.`;
+            errorInfo += ` Conteúdo bloqueado pela IA.`;
         }
-        return {
-          recommendation: recommendationText,
-          // Optional fields will default to undefined, which is fine for Zod schema
-        };
+        // Return an object that matches the schema but indicates an error implicitly
+        // by having undefined fields, or consider adding an error field to the schema if needed.
+        return {}; // Return empty object for now; schema fields are optional.
       }
     } catch (error: any) {
-      // Catch any errors during the prompt execution or if the prompt() call itself throws an unhandled error
-      console.error('[generateRecommendationFlow] Error during AI prompt execution:', error.message ? error.message : error, error);
-      return {
-        recommendation: `Ocorreu um erro ao processar o pedido com a IA: ${error.message || 'Erro desconhecido'}.`,
-        // Optional fields will default to undefined
-      };
+      // Catch any errors during the prompt execution
+      console.error('[generateRecommendationFlow] Error during AI prompt execution for location data:', error.message ? error.message : error, error);
+      // Return an object that matches the schema
+      return {}; // Return empty object for now; schema fields are optional.
     }
   }
 );
-

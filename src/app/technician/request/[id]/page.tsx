@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
-import type { AgriRequest } from '@/types';
+import type { AgriRequest, DeviceLocationStatus } from '@/types';
 import { mockRequests, deleteMockRequest, updateMockRequest, amapaMunicipalities } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,7 +95,7 @@ export default function TechnicianViewRequestPage() {
   }, [requestId, user, authInitializing, router]);
 
 
-  // Effect 2: Process AI data if needed, once 'request' state is set and if it's pending
+  // Effect 2: Process AI data for location if needed, once 'request' state is set and if it's pending
   useEffect(() => {
     console.log('[TechnicianViewRequestPage Effect2] Triggered. Request state:', request ? request.id : 'null', 'Request status:', request ? request.status : 'n/a');
     if (!request || request.status !== 'Pending') {
@@ -104,14 +104,13 @@ export default function TechnicianViewRequestPage() {
       return;
     }
 
-    const needsAiProcessing = !request.aiSuggestedRecommendation ||
-                              request.latitude === undefined ||
+    const needsAiLocationProcessing = request.latitude === undefined ||
                               request.longitude === undefined ||
                               !request.municipality ||
                               !amapaMunicipalities.includes(request.municipality);
 
-    if (needsAiProcessing) {
-      console.log('[TechnicianViewRequestPage Effect2] Needs AI processing for request:', request.id);
+    if (needsAiLocationProcessing) {
+      console.log('[TechnicianViewRequestPage Effect2] Needs AI location processing for request:', request.id);
       setIsAiProcessing(true);
 
       const aiInput = {
@@ -123,50 +122,56 @@ export default function TechnicianViewRequestPage() {
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
         infectedArea: request.infectedArea,
-        deviceLatitude: request.latitude,
-        deviceLongitude: request.longitude,
+        deviceLatitude: request.latitude, // Pass current lat/lon, may be undefined
+        deviceLongitude: request.longitude, // Pass current lat/lon, may be undefined
       };
-      console.log('[TechnicianViewRequestPage Effect2] AI Input:', JSON.stringify(aiInput, null, 2));
+      console.log('[TechnicianViewRequestPage Effect2] AI Input for location:', JSON.stringify(aiInput, null, 2));
 
-      generateRecommendation(aiInput)
+      generateRecommendation(aiInput) // Renamed flow but functionality is now location-focused
         .then(aiOutput => {
-          console.log("[TechnicianViewRequestPage Effect2] Raw AI Output received:", JSON.stringify(aiOutput, null, 2));
+          console.log("[TechnicianViewRequestPage Effect2] Raw AI Output received for location:", JSON.stringify(aiOutput, null, 2));
+          
+          let latFromAI: number | undefined = undefined;
+          let lonFromAI: number | undefined = undefined;
+          let munFromAI: string | undefined = undefined;
 
-          if (aiOutput && typeof aiOutput.recommendation === 'string') {
-            console.log("[TechnicianViewRequestPage Effect2] AI Output is valid. Updating request fields.");
-            const updatedFields: Partial<AgriRequest> = {
-              aiSuggestedRecommendation: aiOutput.recommendation,
-              latitude: aiOutput.extractedLatitude ?? request.latitude,
-              longitude: aiOutput.extractedLongitude ?? request.longitude,
-              municipality: aiOutput.determinedMunicipality || request.municipality,
-            };
-            const updatedRequestWithAIData = { ...request, ...updatedFields };
-            return updateMockRequest(updatedRequestWithAIData);
+          if (aiOutput) {
+            latFromAI = aiOutput.extractedLatitude;
+            lonFromAI = aiOutput.extractedLongitude;
+            munFromAI = aiOutput.determinedMunicipality;
           } else {
-            console.error("[TechnicianViewRequestPage Effect2] AI output from generateRecommendation was invalid or incomplete. Output:", aiOutput);
-            toast({ title: "Sugestão da IA Incompleta", description: "Não foi possível processar completamente os dados da IA.", variant: "destructive" });
-            return Promise.resolve(null); // No update to persist
+            console.error("[TechnicianViewRequestPage] AI output from generateRecommendation was unexpectedly undefined.");
           }
+          
+          console.log("[TechnicianViewRequestPage Effect2] AI Output for location is valid. Updating request fields.");
+          const updatedFields: Partial<AgriRequest> = {
+            latitude: latFromAI ?? request.latitude,
+            longitude: lonFromAI ?? request.longitude,
+            municipality: munFromAI || request.municipality,
+          };
+          // No longer updating aiSuggestedRecommendation
+          const updatedRequestWithAIData = { ...request, ...updatedFields };
+          return updateMockRequest(updatedRequestWithAIData);
         })
         .then(savedUpdatedRequest => {
           if (savedUpdatedRequest) {
-            console.log("[TechnicianViewRequestPage Effect2] AI data saved. Updating request state.");
+            console.log("[TechnicianViewRequestPage Effect2] AI location data saved. Updating request state.");
             setRequest(savedUpdatedRequest);
-            toast({ title: "Dados da IA Carregados", description: "Sugestão e localização da IA processados." });
+            toast({ title: "Dados de Localização da IA Carregados", description: "Localização e município da IA processados." });
           } else {
-            console.log("[TechnicianViewRequestPage Effect2] No AI data saved (either AI failed or no update needed).");
+            console.log("[TechnicianViewRequestPage Effect2] No AI location data saved (either AI failed or no update needed).");
           }
         })
         .catch(aiError => {
-          console.error("[TechnicianViewRequestPage Effect2] Error during AI data generation or update:", aiError);
-          toast({ title: "Falha na IA", description: `Não foi possível obter/atualizar dados da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
+          console.error("[TechnicianViewRequestPage Effect2] Error during AI location data generation or update:", aiError);
+          toast({ title: "Falha na IA (Localização)", description: `Não foi possível obter/atualizar dados de localização da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
         })
         .finally(() => {
-          console.log("[TechnicianViewRequestPage Effect2] Finished AI processing attempt for request:", request.id);
+          console.log("[TechnicianViewRequestPage Effect2] Finished AI location processing attempt for request:", request.id);
           setIsAiProcessing(false);
         });
     } else {
-      console.log('[TechnicianViewRequestPage Effect2] AI processing not needed for request:', request.id);
+      console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed for request:', request.id);
     }
   }, [request, toast]);
 
@@ -458,7 +463,7 @@ export default function TechnicianViewRequestPage() {
             <Card className="mt-6">
                 <CardContent className="pt-6 text-center">
                     <Loader2 className="mx-auto h-10 w-10 text-primary animate-spin mb-3" />
-                    <p className="text-muted-foreground">Aguarde, a Inteligência Artificial está analisando as imagens e preparando uma sugestão...</p>
+                    <p className="text-muted-foreground">Aguarde, a Inteligência Artificial está processando dados de localização...</p>
                 </CardContent>
             </Card>
         )}

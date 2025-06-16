@@ -33,7 +33,7 @@ export interface AgriRequest {
   technicianId?: string;
   technicianName?: string; // For display convenience
   responseDate?: string; // ISO date string
-  aiSuggestedRecommendation?: string;
+  aiSuggestedRecommendation?: string; // This will no longer be actively populated by new AI calls
   municipality?: string; // Municipality of the request, might be different from farmer's registration
   plantedArea?: number; // Área plantada em hectares
   infectedArea?: number; // Área infectada em hectares
