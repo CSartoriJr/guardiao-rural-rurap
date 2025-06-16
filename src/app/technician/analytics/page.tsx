@@ -270,7 +270,7 @@ export default function TechnicianAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={Math.max(400, stats.requestsByMunicipalityArray.length * 30)}> {/* Dynamic height */}
+                    <ResponsiveContainer width="100%" height={Math.max(400, municipalityChartData.length * 30)}> {/* Dynamic height */}
                       <BarChart data={municipalityChartData} layout="vertical" margin={{ right: 20, left: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" allowDecimals={false} />
