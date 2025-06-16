@@ -184,11 +184,13 @@ export default function TechnicianViewRequestPage() {
   };
 
   const LocationDisplay = () => {
-    let locationText = "Coordenadas GPS não disponíveis.";
-    let sourceText = ""; // For GPS source/status
-    let municipalityText = request?.municipality ? `Município: ${request.municipality}` : "Município: Não determinado";
+    if (!request) return null;
 
-    if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
+    let locationText = "Coordenadas GPS não disponíveis.";
+    let sourceText = ""; 
+    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado";
+
+    if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
       locationText = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
       if (request.deviceLocationStatus === 'success') {
         sourceText = "Fonte GPS: Fornecida pelo Dispositivo do Agricultor.";
@@ -198,27 +200,33 @@ export default function TechnicianViewRequestPage() {
             sourceText += ` Status GPS Disp.: ${request.deviceLocationStatus}.`
          }
       }
-    } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+    } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationText = "Nenhuma localização GPS finalizada.";
       sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
-    } else if (request?.municipality) { 
+    } else if (request.municipality) { 
         sourceText = "Coordenadas GPS não disponíveis.";
     }
 
-
     return (
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-          <MapPin className="h-4 w-4 mr-2 text-primary" />Localização e Município
-        </h3>
-        <p className={`text-lg ${locationText.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
-          {locationText.startsWith("Lat:") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
-        </p>
-        {sourceText && <p className="text-xs text-muted-foreground">{sourceText}</p>}
-        <p className={`text-md mt-1 ${request?.municipality ? 'text-foreground' : 'text-muted-foreground'}`}>
-            {municipalityText}
-        </p>
-      </div>
+       <>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
+          </h3>
+          <p className={`text-lg ${locationText.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {locationText.startsWith("Lat:") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
+          </p>
+          {sourceText && <p className="text-xs text-muted-foreground">{sourceText}</p>}
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Município
+          </h3>
+          <p className={`text-lg ${request.municipality ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {municipalityDisplayString}
+          </p>
+        </div>
+      </>
     );
   };
 
@@ -239,8 +247,15 @@ export default function TechnicianViewRequestPage() {
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> {/* Location */}
-              <Skeleton className="h-5 w-1/3" /> {/* Municipality */}
+              <div>
+                <Skeleton className="h-4 w-1/3 mb-1" /> {/* "Localização" label */}
+                <Skeleton className="h-5 w-3/4 mb-1" /> {/* Coordinates placeholder */}
+                <Skeleton className="h-3 w-1/2" />      {/* Source hint placeholder */}
+              </div>
+              <div>
+                <Skeleton className="h-4 w-1/4 mb-1" /> {/* "Município" label */}
+                <Skeleton className="h-5 w-1/2" />    {/* Municipality name placeholder */}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />

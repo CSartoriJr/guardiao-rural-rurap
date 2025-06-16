@@ -138,11 +138,13 @@ export default function FarmerViewRequestPage() {
   };
 
  const LocationDisplay = () => {
+    if (!request) return null;
+
     let locationString = "";
     let sourceHint = "";
-    let municipalityString = request?.municipality ? `Município: ${request.municipality}` : "Município não determinado.";
+    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado";
 
-    if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
+    if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
       locationString = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
       if (request.deviceLocationStatus === 'success') {
         sourceHint = " (GPS do dispositivo)";
@@ -151,7 +153,7 @@ export default function FarmerViewRequestPage() {
       } else {
          sourceHint = " (Localização da IA)";
       }
-    } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+    } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationString = "Nenhuma localização GPS disponível.";
       sourceHint = ` (Status GPS do dispositivo: ${request.deviceLocationStatus})`;
     } else {
@@ -159,14 +161,25 @@ export default function FarmerViewRequestPage() {
     }
 
     return (
-      <div>
-        <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
-        <p className={`text-lg ${locationString.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
-          {locationString.startsWith("Lat:") ? locationString : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationString}</span>}
-          {sourceHint && <span className="text-xs text-muted-foreground ml-1">{sourceHint}</span>}
-        </p>
-        <p className={`text-md ${request?.municipality ? 'text-foreground' : 'text-muted-foreground'} mt-1`}>{municipalityString}</p>
-      </div>
+      <>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
+          </h3>
+          <p className={`text-lg ${locationString.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {locationString.startsWith("Lat:") ? locationString : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationString}</span>}
+            {sourceHint && <span className="text-xs text-muted-foreground ml-1">{sourceHint}</span>}
+          </p>
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Município
+          </h3>
+          <p className={`text-lg ${request.municipality ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {municipalityDisplayString}
+          </p>
+        </div>
+      </>
     );
   };
 
@@ -187,8 +200,15 @@ export default function FarmerViewRequestPage() {
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
               <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
-              <Skeleton className="h-5 w-1/3" /> {/* Location */}
-              <Skeleton className="h-5 w-1/3" /> {/* Municipality */}
+              <div>
+                <Skeleton className="h-4 w-1/3 mb-1" /> {/* "Localização" label */}
+                <Skeleton className="h-5 w-3/4 mb-1" /> {/* Coordinates placeholder */}
+                <Skeleton className="h-3 w-1/2" />      {/* Source hint placeholder */}
+              </div>
+              <div>
+                <Skeleton className="h-4 w-1/4 mb-1" /> {/* "Município" label */}
+                <Skeleton className="h-5 w-1/2" />    {/* Municipality name placeholder */}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />
