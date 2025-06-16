@@ -63,21 +63,22 @@ export default function TechnicianAnalyticsPage() {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    const requestsByMun: { [key: string]: number } = {};
-    // Use all requests for the "Pedidos por Município" chart if no municipality is selected,
-    // otherwise use filtered requests if a specific municipality is selected for the overall dashboard.
-    const sourceForMunGlobalStats = requests; // Always use all requests for this specific chart's base data
-    sourceForMunGlobalStats.forEach(req => {
+    const requestsByMunGeneral: { [key: string]: number } = {};
+    // Use all requests for the "Pedidos por Município" chart if no municipality is selected for the overall dashboard,
+    // to show the global distribution. If a municipality IS selected, this chart will reflect that filter.
+    const sourceForMunChart = selectedMunicipality ? filteredRequests : requests;
+    sourceForMunChart.forEach(req => {
       if (req.municipality) {
-        requestsByMun[req.municipality] = (requestsByMun[req.municipality] || 0) + 1;
+        requestsByMunGeneral[req.municipality] = (requestsByMunGeneral[req.municipality] || 0) + 1;
       }
     });
-    const requestsByMunicipalityArray = Object.entries(requestsByMun)
+    const requestsByMunicipalityArray = Object.entries(requestsByMunGeneral)
       .map(([name, count]) => ({ name, count }))
       .sort((a,b) => b.count - a.count);
 
+
     return { total, pending, positive, negative, inconclusive, cassavaTypesArray, requestsByMunicipalityArray };
-  }, [filteredRequests, requests]); // Added requests to dependency array for requestsByMunicipalityArray
+  }, [filteredRequests, requests, selectedMunicipality]);
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
@@ -115,11 +116,11 @@ export default function TechnicianAnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full"> {/* Adjusted for vertical distribution */}
-              <Skeleton className="h-28 w-full rounded-lg" />
-              <Skeleton className="h-28 w-full rounded-lg" />
-              <Skeleton className="h-28 w-full rounded-lg" />
-              <Skeleton className="h-28 w-full rounded-lg" />
+            <div className="lg:col-span-1 flex flex-col justify-between h-full">
+              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full aspect-square rounded-lg" />
             </div>
           </div>
 
@@ -177,8 +178,8 @@ export default function TechnicianAnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1 flex flex-col justify-between"> {/* Adjusted for vertical distribution */}
-                <Card className="shadow-md mb-6 lg:mb-0"> {/* Added margin for smaller screens if needed */}
+            <div className="lg:col-span-1 flex flex-col justify-between h-full">
+                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
                     </CardHeader>
@@ -189,7 +190,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0">
+                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
                     </CardHeader>
@@ -198,7 +199,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Aguardando revisão</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0">
+                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
                     </CardHeader>
@@ -207,7 +208,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md">
+                <Card className="shadow-md aspect-square flex flex-col justify-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
                     </CardHeader>
