@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -12,14 +13,16 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId || !firebaseConfig.storageBucket) {
   const missingKeys = [];
   if (!firebaseConfig.apiKey) missingKeys.push('NEXT_PUBLIC_FIREBASE_API_KEY');
   if (!firebaseConfig.authDomain) missingKeys.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
   if (!firebaseConfig.projectId) missingKeys.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  if (!firebaseConfig.storageBucket) missingKeys.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
   
-  const errorMessage = `Firebase configuration is missing: ${missingKeys.join(', ')}. Please set these in your .env file. Halting Firebase initialization.`;
+  const errorMessage = `Firebase configuration is missing crucial keys: ${missingKeys.join(', ')}. Please set these in your .env file. Halting Firebase initialization.`;
   console.error(errorMessage);
+  // This error will likely stop the app from starting or cause runtime errors when Firebase is accessed.
   throw new Error(errorMessage);
 }
 
@@ -39,3 +42,4 @@ db = getFirestore(app);
 storage = getStorage(app);
 
 export { app, db, storage };
+
