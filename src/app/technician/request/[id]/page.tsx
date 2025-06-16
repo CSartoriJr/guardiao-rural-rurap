@@ -6,8 +6,7 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-import { mockRequests, updateMockRequest, deleteMockRequest, amapaMunicipalities } from '@/lib/mockData'; // Reverted to mockData
-// import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; 
+import { mockRequests, updateMockRequest, deleteMockRequest, amapaMunicipalities } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -59,36 +58,19 @@ export default function TechnicianViewRequestPage() {
 
     setIsLoading(true);
     setError(null);
-    // Revert to mockData
+    
     const foundRequest = mockRequests.find(r => r.id === requestId);
     if (foundRequest) {
-        // Technicians and admins can view any request
         setRequest(foundRequest);
     } else {
         setError("Pedido não encontrado.");
     }
     setIsLoading(false);
     
-    // Previous Firestore logic:
-    // getRequestById(requestId)
-    //   .then((data) => {
-    //     if (data) {
-    //       setRequest(data);
-    //     } else {
-    //       setError("Pedido não encontrado.");
-    //     }
-    //   })
-    //   .catch(err => {
-    //     console.error("[TechnicianViewRequestPage Effect1] Falha ao buscar pedido:", err);
-    //     setError("Falha ao carregar detalhes do pedido.");
-    //   })
-    //   .finally(() => {
-    //     setIsLoading(false);
-    //   });
   }, [requestId, user, authInitializing, router]);
 
 
-  useEffect(() => { // Effect for AI processing, depends on `request`
+  useEffect(() => { 
     if (!request || request.status !== 'Pending' || !requestId) {
       if (request && request.status !== 'Pending') console.log('[TechnicianViewRequestPage Effect2] Request not pending or already processed by AI. Skipping AI step.');
       else if (!request) console.log('[TechnicianViewRequestPage Effect2] Request data not yet available. Skipping AI step.');
@@ -98,7 +80,8 @@ export default function TechnicianViewRequestPage() {
     const needsAiLocationProcessing = request.latitude === undefined ||
                               request.longitude === undefined ||
                               !request.municipality ||
-                              !amapaMunicipalities.includes(request.municipality);
+                              (request.municipality && !amapaMunicipalities.includes(request.municipality));
+
 
     if (needsAiLocationProcessing) {
       console.log('[TechnicianViewRequestPage Effect2] Needs AI location processing for request:', request.id);
@@ -113,8 +96,8 @@ export default function TechnicianViewRequestPage() {
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
         infectedArea: request.infectedArea,
-        deviceLatitude: request.latitude,
-        deviceLongitude: request.longitude,
+        deviceLatitude: request.latitude, // This could be undefined if device failed
+        deviceLongitude: request.longitude, // This could be undefined
       };
       console.log('[TechnicianViewRequestPage Effect2] AI Input for location:', JSON.stringify(aiInput, null, 2));
 
@@ -135,7 +118,7 @@ export default function TechnicianViewRequestPage() {
           }
           
           const updatedFields: Partial<AgriRequest> = {};
-          let needsDBUpdate = false; // Should be mockData update
+          let needsDBUpdate = false; 
 
           if (latFromAI !== undefined && latFromAI !== request.latitude) {
             updatedFields.latitude = latFromAI;
@@ -152,14 +135,13 @@ export default function TechnicianViewRequestPage() {
           
           if (needsDBUpdate && requestId) {
              console.log("[TechnicianViewRequestPage Effect2] AI Output for location requires mockData update. Updating request fields:", updatedFields);
-            // Revert to updateMockRequest
             const fullUpdatedRequest = { ...request, ...updatedFields };
             const savedUpdatedRequest = await updateMockRequest(fullUpdatedRequest as AgriRequest);
             if (savedUpdatedRequest) {
               setRequest(savedUpdatedRequest); 
-              toast({ title: "Dados de Localização da IA Atualizados (Mock)", description: "Localização e município da IA processados e salvos localmente." });
+              toast({ title: "Dados de Localização da IA Atualizados", description: "Localização e município da IA processados e salvos." });
             } else {
-                 toast({ title: "Erro ao Salvar IA (Mock)", description: "Não foi possível salvar as atualizações de localização da IA localmente.", variant: "destructive" });
+                 toast({ title: "Erro ao Salvar IA", description: "Não foi possível salvar as atualizações de localização da IA.", variant: "destructive" });
             }
           } else {
             console.log("[TechnicianViewRequestPage Effect2] No AI location data update needed or AI failed.");
@@ -176,7 +158,7 @@ export default function TechnicianViewRequestPage() {
     } else {
       console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed for request:', request.id);
     }
-  }, [request, toast]); // requestId is implicitly handled by `request` dependency.
+  }, [request, toast]); 
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -207,11 +189,11 @@ export default function TechnicianViewRequestPage() {
     setIsDeleting(true);
     if (adminPassword === user.password) { 
       try {
-        await deleteMockRequest(requestId); // Revert to deleteMockRequest
-        toast({ title: 'Pedido Removido (Mock)', description: `O pedido ID ${requestId} foi removido localmente.` });
+        await deleteMockRequest(requestId); 
+        toast({ title: 'Pedido Removido', description: `O pedido ID ${requestId} foi removido.` });
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       } catch (e) {
-        toast({ title: 'Erro na Remoção (Mock)', description: 'Ocorreu um erro ao tentar remover o pedido localmente.', variant: 'destructive' });
+        toast({ title: 'Erro na Remoção', description: 'Ocorreu um erro ao tentar remover o pedido.', variant: 'destructive' });
       }
     } else {
       toast({ title: 'Senha Incorreta', description: 'A senha de administrador está incorreta.', variant: 'destructive' });
