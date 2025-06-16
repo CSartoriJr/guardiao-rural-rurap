@@ -25,7 +25,7 @@ import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-
 
 const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
   console.log('[TechnicianViewRequestPage] Fetching request for ID:', requestId);
-  await new Promise(resolve => setTimeout(resolve, 300)); 
+  await new Promise(resolve => setTimeout(resolve, 300));
   const request = mockRequests.find(req => req.id === requestId);
   console.log('[TechnicianViewRequestPage] Found request:', request);
   return request;
@@ -35,7 +35,7 @@ const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriReq
 export default function TechnicianViewRequestPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, initializing: authInitializing } = useAuth(); 
+  const { user, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,29 +52,26 @@ export default function TechnicianViewRequestPage() {
 
   useEffect(() => {
     if (authInitializing) {
-      return; 
+      return;
     }
 
     if (!user && !authInitializing) {
         router.replace(APP_ROUTES.LOGIN);
         return;
     }
-    
+
     if (requestId && user) {
       setIsLoading(true);
       setError(null);
       fetchRequestByIdForTechnician(requestId)
         .then(async (data) => {
           if (data) {
-            // Trigger AI processing if:
-            // 1. Status is Pending AND
-            // 2. Either AI suggestion is missing OR GPS coords are missing OR municipality is missing/invalid
-            const needsAiProcessing = data.status === 'Pending' && 
-                                      (!data.aiSuggestedRecommendation || 
-                                       data.latitude === undefined || 
+            const needsAiProcessing = data.status === 'Pending' &&
+                                      (!data.aiSuggestedRecommendation ||
+                                       data.latitude === undefined ||
                                        data.longitude === undefined ||
-                                       !data.municipality || // municipality is missing
-                                       !amapaMunicipalities.includes(data.municipality) // or not a valid Amapa municipality
+                                       !data.municipality ||
+                                       !amapaMunicipalities.includes(data.municipality)
                                       );
 
             if (needsAiProcessing) {
@@ -89,36 +86,50 @@ export default function TechnicianViewRequestPage() {
                   photoDataUri3: data.photoDataUris[2],
                   plantedArea: data.plantedArea,
                   infectedArea: data.infectedArea,
-                  deviceLatitude: data.latitude, 
+                  deviceLatitude: data.latitude,
                   deviceLongitude: data.longitude,
                 };
                 const aiOutput = await generateRecommendation(aiInput);
-                
+
+                let recommendationFromAI = 'Falha ao processar sugestão da IA.';
+                let latFromAI, lonFromAI, munFromAI;
+
+                if (aiOutput) {
+                  recommendationFromAI = aiOutput.recommendation;
+                  latFromAI = aiOutput.extractedLatitude;
+                  lonFromAI = aiOutput.extractedLongitude;
+                  munFromAI = aiOutput.determinedMunicipality;
+                } else {
+                  console.error("[TechnicianViewRequestPage] AI output from generateRecommendation was unexpectedly undefined.");
+                  // recommendationFromAI is already set to a default error message.
+                  // latFromAI, lonFromAI, munFromAI will remain undefined.
+                }
+
                 const updatedRequestWithAIData: AgriRequest = {
                   ...data,
-                  aiSuggestedRecommendation: aiOutput.recommendation,
-                  latitude: aiOutput.extractedLatitude, 
-                  longitude: aiOutput.extractedLongitude,
-                  municipality: aiOutput.determinedMunicipality || data.municipality, // Use AI municipality, fallback to existing
+                  aiSuggestedRecommendation: recommendationFromAI,
+                  latitude: latFromAI ?? data.latitude, // Fallback to existing data if AI didn't provide
+                  longitude: lonFromAI ?? data.longitude, // Fallback
+                  municipality: munFromAI || data.municipality, // Fallback
                 };
-                
+
                 const savedUpdatedRequest = await updateMockRequest(updatedRequestWithAIData);
                 if (savedUpdatedRequest) {
                   setRequest(savedUpdatedRequest);
                   toast({ title: "Sugestão, Localização e Município da IA Carregados", description: "Dados processados pela IA." });
                 } else {
-                  setRequest(data); 
+                  setRequest(data);
                   toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as atualizações da IA.", variant: "destructive" });
                 }
-              } catch (aiError) {
+              } catch (aiError: any) {
                 console.error("[TechnicianViewRequestPage] Falha ao gerar dados da IA:", aiError);
-                toast({ title: "Falha na IA", description: "Não foi possível obter os dados da IA.", variant: "destructive" });
-                setRequest(data); 
+                toast({ title: "Falha na IA", description: `Não foi possível obter os dados da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
+                setRequest(data);
               } finally {
                 setIsAiProcessing(false);
               }
             } else {
-              setRequest(data); 
+              setRequest(data);
             }
           } else {
             setError("Pedido não encontrado.");
@@ -163,7 +174,7 @@ export default function TechnicianViewRequestPage() {
     if (!user || user.role !== 'admin' || !request) return;
 
     setIsDeleting(true);
-    if (adminPassword === user.password) { 
+    if (adminPassword === user.password) {
       try {
         const success = await deleteMockRequest(request.id);
         if (success) {
@@ -183,11 +194,11 @@ export default function TechnicianViewRequestPage() {
     setAdminPassword('');
   };
 
-  const LocationDisplay = () => {
+ const LocationDisplay = () => {
     if (!request) return null;
 
     let locationText = "Coordenadas GPS não disponíveis.";
-    let sourceText = ""; 
+    let sourceText = "";
     let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado";
 
     if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
@@ -203,7 +214,7 @@ export default function TechnicianViewRequestPage() {
     } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationText = "Nenhuma localização GPS finalizada.";
       sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
-    } else if (request.municipality) { 
+    } else if (request.municipality) {
         sourceText = "Coordenadas GPS não disponíveis.";
     }
 
@@ -235,18 +246,18 @@ export default function TechnicianViewRequestPage() {
     return (
        <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
-          <Skeleton className="h-8 w-1/4 mb-6" /> 
+          <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
             <CardHeader>
-              <Skeleton className="h-7 w-3/4 mb-2" /> 
-              <Skeleton className="h-4 w-1/2" /> 
+              <Skeleton className="h-7 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
             </CardHeader>
             <CardContent className="space-y-4">
-              <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-5 w-1/3" />
               <div>
                 <Skeleton className="h-4 w-1/3 mb-1" /> {/* "Localização" label */}
                 <Skeleton className="h-5 w-3/4 mb-1" /> {/* Coordinates placeholder */}
@@ -265,7 +276,7 @@ export default function TechnicianViewRequestPage() {
           </Card>
           <Card className="mt-6">
             <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
-            <CardContent><Skeleton className="h-40 w-full" /></CardContent> 
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
           </Card>
         </div>
       </PageWrapper>
@@ -300,7 +311,7 @@ export default function TechnicianViewRequestPage() {
       </PageWrapper>
     );
   }
-  
+
   return (
     <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
@@ -325,18 +336,18 @@ export default function TechnicianViewRequestPage() {
                 <div className="space-y-2 my-4">
                     <Label htmlFor="admin-password">Senha do Administrador</Label>
                     <div className="relative">
-                        <Input 
-                            id="admin-password" 
-                            type={showPassword ? "text" : "password"} 
+                        <Input
+                            id="admin-password"
+                            type={showPassword ? "text" : "password"}
                             value={adminPassword}
                             onChange={(e) => setAdminPassword(e.target.value)}
                             placeholder="Digite sua senha"
                         />
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                             onClick={() => setShowPassword(!showPassword)}
                         >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
@@ -346,8 +357,8 @@ export default function TechnicianViewRequestPage() {
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setAdminPassword('')}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
-                        onClick={handleConfirmDelete} 
+                    <AlertDialogAction
+                        onClick={handleConfirmDelete}
                         disabled={isDeleting || adminPassword.length === 0 || !user?.password}
                         className="bg-destructive hover:bg-destructive/90"
                     >
@@ -399,8 +410,8 @@ export default function TechnicianViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {request.photoDataUris.map((uri, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="rounded-lg overflow-hidden border border-border aspect-square bg-muted cursor-pointer"
                     onClick={() => handleImageClick(uri)}
                     data-ai-hint="cassava plant"
@@ -418,7 +429,7 @@ export default function TechnicianViewRequestPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         {isAiProcessing && (
             <Card className="mt-6">
                 <CardContent className="pt-6 text-center">
@@ -428,7 +439,7 @@ export default function TechnicianViewRequestPage() {
             </Card>
         )}
 
-        {!isAiProcessing && request.status === 'Pending' && user?.role === 'technician' ? ( 
+        {!isAiProcessing && request.status === 'Pending' && user?.role === 'technician' ? (
           <ResponseForm request={request} />
         ) : !isAiProcessing && request.status !== 'Pending' ? (
           <Card className="mt-6 bg-card/80">
@@ -453,10 +464,10 @@ export default function TechnicianViewRequestPage() {
          <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <div className="relative w-full h-[85vh]">
-                <Image 
-                    src={expandedImageUri} 
-                    alt="Imagem expandida" 
-                    fill 
+                <Image
+                    src={expandedImageUri}
+                    alt="Imagem expandida"
+                    fill
                     style={{ objectFit: 'contain' }}
                 />
             </div>
@@ -466,4 +477,3 @@ export default function TechnicianViewRequestPage() {
     </PageWrapper>
   );
 }
-    
