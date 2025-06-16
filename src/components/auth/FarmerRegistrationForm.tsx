@@ -7,14 +7,16 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/types';
 import { mockUsers, addMockUser, amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIcon } from 'lucide-react'; // Renamed Users to UsersIcon
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
+import Link from 'next/link'; // Import Link
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -33,6 +35,9 @@ const farmerRegistrationFormSchema = z.object({
   familyMembers: z.coerce.number().int().nonnegative({ message: 'O número de componentes familiares deve ser zero ou mais.' }),
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
+  lgpdConsent: z.boolean().refine(val => val === true, {
+    message: "Você deve aceitar os termos para se cadastrar."
+  }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem.",
   path: ["confirmPassword"],
@@ -59,6 +64,7 @@ export default function FarmerRegistrationForm() {
       familyMembers: 0,
       password: '',
       confirmPassword: '',
+      lgpdConsent: false,
     },
   });
 
@@ -123,18 +129,18 @@ export default function FarmerRegistrationForm() {
 
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
     let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.substring(0, 11); // Limit to 11 digits for (xx)xxxx-xxxx or (xx)xxxxx-xxxx
+    if (value.length > 11) value = value.substring(0, 11); 
 
     let formattedValue = '';
     if (value.length === 0) {
         formattedValue = '';
     } else if (value.length <= 2) {
         formattedValue = `(${value}`;
-    } else if (value.length <= 6) { // (xx)xxxx
+    } else if (value.length <= 6) { 
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
-    } else if (value.length <= 10) { // (xx)xxxx-xxxx
+    } else if (value.length <= 10) { 
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 6)}-${value.substring(6)}`;
-    } else { // (xx)xxxxx-xxxx
+    } else { 
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7, 11)}`;
     }
     fieldOnChange(formattedValue);
@@ -238,7 +244,7 @@ export default function FarmerRegistrationForm() {
               {errors.municipality && <p className="text-xs text-destructive pt-1">{errors.municipality.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="familyMembers" className="flex items-center"><Users className="mr-1.5 h-3.5 w-3.5" />Nº de Componentes Familiares</Label>
+              <Label htmlFor="familyMembers" className="flex items-center"><UsersIcon className="mr-1.5 h-3.5 w-3.5" />Nº de Componentes Familiares</Label>
               <Controller
                 name="familyMembers"
                 control={control}
@@ -279,6 +285,30 @@ export default function FarmerRegistrationForm() {
               {errors.confirmPassword && <p className="text-xs text-destructive pt-1">{errors.confirmPassword.message}</p>}
             </div>
           </div>
+
+          <div className="space-y-1 pt-2">
+            <div className="flex items-start space-x-2">
+              <Controller
+                name="lgpdConsent"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="lgpdConsent"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-1" 
+                  />
+                )}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label htmlFor="lgpdConsent" className="font-normal text-sm">
+                  Eu li e concordo com os <Link href="/termos-e-privacidade" className="font-medium text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso e Política de Privacidade</Link>, e autorizo o tratamento dos meus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD).
+                </Label>
+              </div>
+            </div>
+            {errors.lgpdConsent && <p className="text-xs text-destructive pt-1 pl-6">{errors.lgpdConsent.message}</p>}
+          </div>
+
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
@@ -294,3 +324,5 @@ export default function FarmerRegistrationForm() {
     </Card>
   );
 }
+
+    

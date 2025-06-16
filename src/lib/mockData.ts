@@ -9,16 +9,16 @@ const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQA
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
 const defaultMockUsers: User[] = [
-  { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
-  { id: 'tech_claudia_sartori', cpf: '123.456.789-00', role: 'technician', name: 'Claudia Sartori', password: 'claudia_password' },
-  { id: 'farmer_joao_silva', cpf: '111.111.111-11', role: 'farmer', name: 'João Silva Agricultor', password: 'password123', email: 'joao.silva@example.com', phone: '(96)99999-1111', address: 'Rua das Palmeiras, 123', municipality: 'Macapá', familyMembers: 4 },
+  { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Claudemir Sartori Junior', password: '23jr02cs' },
+  { id: 'tech_claudia_sartori', cpf: '291.751.862-68', role: 'technician', name: 'Claudia Sartori', password: 'senha123' },
+  { id: 'farmer_joao_silva', cpf: '141.414.141-41', role: 'farmer', name: 'Agricultor Novo 1', password: 'password123', email: 'joao.silva@example.com', phone: '(96)99999-1111', address: 'Rua das Palmeiras, 123', municipality: 'Macapá', familyMembers: 4 },
 ];
 
 const defaultMockRequests: AgriRequest[] = [
   {
     id: 'req_joao_1_new',
     farmerId: 'farmer_joao_silva',
-    farmerName: 'João Silva Agricultor',
+    farmerName: 'Agricultor Novo 1',
     cassavaType: 'BRS Formosa',
     isMandioca: true,
     isMacaxeira: false,
@@ -35,7 +35,7 @@ const defaultMockRequests: AgriRequest[] = [
   {
     id: 'req_joao_2_new',
     farmerId: 'farmer_joao_silva',
-    farmerName: 'João Silva Agricultor',
+    farmerName: 'Agricultor Novo 1',
     cassavaType: 'Vassourinha',
     isMandioca: false,
     isMacaxeira: true,
