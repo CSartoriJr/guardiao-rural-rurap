@@ -184,38 +184,24 @@ export default function TechnicianViewRequestPage() {
   };
 
   const LocationDisplay = () => {
-    let locationText = "Localização não disponível para este pedido.";
-    let sourceText = "";
+    let locationText = "Coordenadas GPS não disponíveis.";
+    let sourceText = ""; // For GPS source/status
+    let municipalityText = request?.municipality ? `Município: ${request.municipality}` : "Município: Não determinado";
 
     if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
       locationText = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
       if (request.deviceLocationStatus === 'success') {
-        sourceText = "Fonte: Fornecida pelo Dispositivo do Agricultor.";
-         if (request.municipality && amapaMunicipalities.includes(request.municipality)) {
-           sourceText += ` Município (IA/Dispositivo): ${request.municipality}.`;
-         } else if (request.municipality) {
-            sourceText += ` Município (Registrado): ${request.municipality}.`;
-         }
+        sourceText = "Fonte GPS: Fornecida pelo Dispositivo do Agricultor.";
       } else {
-         sourceText = "Fonte: Extraída/Confirmada pela IA.";
-         if (request.municipality && amapaMunicipalities.includes(request.municipality)) {
-           sourceText += ` Município (IA): ${request.municipality}.`;
-         } else if (request.municipality) {
-            sourceText += ` Município (Registrado): ${request.municipality}.`;
-         }
+         sourceText = "Fonte GPS: Extraída/Confirmada pela IA.";
          if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-            sourceText += ` Status GPS Dispositivo: ${request.deviceLocationStatus}.`
+            sourceText += ` Status GPS Disp.: ${request.deviceLocationStatus}.`
          }
       }
     } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationText = "Nenhuma localização GPS finalizada.";
-      sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}.`;
-      if (request.municipality) {
-        sourceText += ` Município (Registrado): ${request.municipality}.`;
-      }
-       sourceText += " A IA não extraiu coordenadas das imagens.";
-    } else if (request?.municipality) { // Only municipality from registration
-        locationText = `Município (Registrado): ${request.municipality}`;
+      sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
+    } else if (request?.municipality) { 
         sourceText = "Coordenadas GPS não disponíveis.";
     }
 
@@ -225,10 +211,13 @@ export default function TechnicianViewRequestPage() {
         <h3 className="text-sm font-medium text-muted-foreground flex items-center">
           <MapPin className="h-4 w-4 mr-2 text-primary" />Localização e Município
         </h3>
-        <p className={`text-lg ${typeof request?.latitude !== 'number' ? 'text-muted-foreground' : 'text-foreground'}`}>
-          {locationText.startsWith("Lat:") || locationText.startsWith("Município (Registrado):") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
+        <p className={`text-lg ${locationText.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {locationText.startsWith("Lat:") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
         </p>
         {sourceText && <p className="text-xs text-muted-foreground">{sourceText}</p>}
+        <p className={`text-md mt-1 ${request?.municipality ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {municipalityText}
+        </p>
       </div>
     );
   };
@@ -250,8 +239,8 @@ export default function TechnicianViewRequestPage() {
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> {/* Location */}
+              <Skeleton className="h-5 w-1/3" /> {/* Municipality */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />

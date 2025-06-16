@@ -137,38 +137,35 @@ export default function FarmerViewRequestPage() {
     setExpandedImageUri(null);
   };
 
-  const LocationDisplay = () => {
+ const LocationDisplay = () => {
+    let locationString = "";
+    let sourceHint = "";
+    let municipalityString = request?.municipality ? `Município: ${request.municipality}` : "Município não determinado.";
+
     if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
-      let source = "Extraída/Confirmada pela IA";
+      locationString = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
       if (request.deviceLocationStatus === 'success') {
-        source = "Fornecida pelo Dispositivo";
+        sourceHint = " (GPS do dispositivo)";
       } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-         source = `Tentativa do Dispositivo: ${request.deviceLocationStatus || 'N/A'}, Localização da IA`;
+         sourceHint = " (GPS do dispositivo: falha, localização da IA)";
+      } else {
+         sourceHint = " (Localização da IA)";
       }
-      return (
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
-          <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
-          <p className="text-xs text-muted-foreground">Fonte: {source}</p>
-        </div>
-      );
     } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-      // If device GPS failed and AI also didn't find anything
-       return (
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
-          <p className="text-lg text-muted-foreground flex items-center">
-            <WifiOff className="h-4 w-4 mr-2 text-destructive" /> Nenhuma localização GPS disponível.
-          </p>
-          <p className="text-xs text-muted-foreground">Status do GPS do dispositivo: {request.deviceLocationStatus}. A IA também não extraiu das imagens.</p>
-        </div>
-      );
+      locationString = "Nenhuma localização GPS disponível.";
+      sourceHint = ` (Status GPS do dispositivo: ${request.deviceLocationStatus})`;
+    } else {
+      locationString = "Localização não disponível para este pedido.";
     }
-    // If no coordinates and no specific device status to report (e.g. older requests before device GPS feature)
+
     return (
-       <div>
+      <div>
         <h3 className="text-sm font-medium text-muted-foreground flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização</h3>
-        <p className="text-lg text-muted-foreground">Localização não disponível para este pedido.</p>
+        <p className={`text-lg ${locationString.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {locationString.startsWith("Lat:") ? locationString : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationString}</span>}
+          {sourceHint && <span className="text-xs text-muted-foreground ml-1">{sourceHint}</span>}
+        </p>
+        <p className={`text-md ${request?.municipality ? 'text-foreground' : 'text-muted-foreground'} mt-1`}>{municipalityString}</p>
       </div>
     );
   };
@@ -191,6 +188,7 @@ export default function FarmerViewRequestPage() {
               <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
               <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
               <Skeleton className="h-5 w-1/3" /> {/* Location */}
+              <Skeleton className="h-5 w-1/3" /> {/* Municipality */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />
