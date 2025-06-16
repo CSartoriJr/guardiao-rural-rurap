@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CacaBruxaLogo } from '@/components/shared/Logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
-// APP_ROUTES is still imported as it might be used elsewhere or for consistency
+import { APP_ROUTES } from '@/config/routes'; // Import APP_ROUTES
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export default function LoginPage() {
       <div className="mt-6 text-center w-full max-w-md">
         <p className="text-sm text-muted-foreground mb-2">Não tem uma conta de agricultor?</p>
         <Link
-          href="/register/farm"
+          href={APP_ROUTES.FARMER_REGISTER} 
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full"
         >
           <UserPlus className="mr-2 h-4 w-4" />
@@ -40,3 +40,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
