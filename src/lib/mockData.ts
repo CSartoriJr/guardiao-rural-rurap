@@ -5,7 +5,7 @@ const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
 // --- Default Data ---
-const defaultPlaceholderUri = 'https://placehold.co/300x300.png'; // Corrected and centralized
+const defaultPlaceholderUri = 'https://placehold.co/300x300.png';
 
 const defaultMockUsers: User[] = [
   { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Claudemir Sartori Junior', password: '23jr02cs' },
@@ -14,43 +14,7 @@ const defaultMockUsers: User[] = [
 ];
 
 const defaultMockRequests: AgriRequest[] = [
-  {
-    id: 'req_joao_1_new',
-    farmerId: 'farmer_joao_silva',
-    farmerName: 'Agricultor Novo 1',
-    cassavaType: 'BRS Formosa',
-    isMandioca: true,
-    isMacaxeira: false,
-    photoDataUris: [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri],
-    status: 'Pending',
-    submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Macapá',
-    plantedArea: 5,
-    infectedArea: 1,
-    latitude: 0.038,
-    longitude: -51.05,
-    deviceLocationStatus: 'success',
-  },
-  {
-    id: 'req_joao_2_new',
-    farmerId: 'farmer_joao_silva',
-    farmerName: 'Agricultor Novo 1',
-    cassavaType: 'Vassourinha',
-    isMandioca: false,
-    isMacaxeira: true,
-    photoDataUris: [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri],
-    status: 'Positive',
-    recommendation: 'Planta parece saudável. Continue com as boas práticas de manejo.',
-    submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    technicianId: 'tech_claudia_sartori',
-    technicianName: 'Claudia Sartori',
-    responseDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Santana',
-    plantedArea: 2,
-    latitude: 0.0588,
-    longitude: -51.1782,
-    deviceLocationStatus: 'success',
-  },
+  // Pedidos do Agricultor Novo 1 foram removidos daqui
 ];
 
 // --- Initialization and Persistence Logic ---
@@ -113,17 +77,17 @@ const loadMockData = () => {
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
           console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
-          mockRequests = [...defaultMockRequests];
+          mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
           localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
         }
       } catch (e) {
         console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
-        mockRequests = [...defaultMockRequests];
+        mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
         localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
       }
     } else {
       console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
-      mockRequests = [...defaultMockRequests];
+      mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
       localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
     }
     R_MOCK_REQUESTS_INITIALIZED = true;
