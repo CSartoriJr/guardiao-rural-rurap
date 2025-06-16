@@ -103,8 +103,8 @@ export default function TechnicianAnalyticsPage() {
             <Skeleton className="h-10 w-1/4" />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> {/* Updated to 4 columns for skeleton */}
-            <div className="lg:col-span-3"> {/* Map skeleton takes 3 columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6"> {/* Updated for skeleton */}
+            <div className="lg:col-span-9"> {/* Map skeleton takes 9 columns */}
               <Card>
                 <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
                 <CardContent className="pt-2">
@@ -160,8 +160,8 @@ export default function TechnicianAnalyticsPage() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> {/* Changed to 4 columns */}
-            <Card className="lg:col-span-3"> {/* Map takes 3 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6"> {/* Changed to 10 columns */}
+            <Card className="lg:col-span-9"> {/* Map takes 9 columns */}
                 <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
                 <CardContent className="pt-2">
                     <AmapaInteractiveMap
@@ -175,7 +175,7 @@ export default function TechnicianAnalyticsPage() {
                 </CardContent>
             </Card>
             <div className="lg:col-span-1 flex flex-col justify-between h-full"> {/* Stats take 1 column */}
-                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
+                <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
                     </CardHeader>
@@ -186,7 +186,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
+                <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
                     </CardHeader>
@@ -195,7 +195,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Aguardando revisão</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
+                <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
                     </CardHeader>
@@ -204,7 +204,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
+                <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
                     </CardHeader>
