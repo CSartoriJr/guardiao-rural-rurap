@@ -5,7 +5,7 @@ const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
 // --- Default Data ---
-const VISIBLE_PLACEHOLDER_URI = 'https://placehold.co/60x60.png?text=P'; // Changed from VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI
+const VISIBLE_PLACEHOLDER_URI = 'https://placehold.co/60x60.png?text=P';
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
 const defaultMockUsers: User[] = [
@@ -97,7 +97,6 @@ const loadMockData = () => {
   if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
     console.log('[MockData] Initializing requests.');
     const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
-    let dataLoadedFromStorage = false;
 
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
@@ -112,33 +111,21 @@ const loadMockData = () => {
               : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
             ) as [string, string, string]
           }));
-          dataLoadedFromStorage = true;
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
           console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
-          mockRequests = [...defaultMockRequests]; 
+          mockRequests = [...defaultMockRequests];
+          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
         }
       } catch (e) {
         console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
         mockRequests = [...defaultMockRequests];
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
       }
     } else {
-      console.log('[MockData] No stored requests found, using default requests.');
+      console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
       mockRequests = [...defaultMockRequests];
-    }
-
-    if (!storedRequests) {
-      console.log('[MockData] Persisting requests to localStorage after initial load from defaults.');
-      // Persist requests (without sanitization that makes images disappear for now)
-      try {
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests.map(req => ({
-          ...req,
-          photoDataUris: req.photoDataUris || [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
-        }))));
-        console.log('[MockData] Successfully persisted initialized requests from defaults.');
-      } catch (error) {
-        console.error('[MockData] Error persisting requests to localStorage:', error);
-      }
+      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
     }
     R_MOCK_REQUESTS_INITIALIZED = true;
   }
@@ -160,8 +147,6 @@ const persistUsers = () => {
 const persistRequests = () => {
   if (typeof window !== 'undefined') {
     console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
-    // Removed aggressive sanitization that replaced valid data URIs with tiny placeholders.
-    // Now, it just ensures the photoDataUris array structure is maintained.
     const requestsToStore = mockRequests.map(req => {
       const photoUrisToStore = (req.photoDataUris && req.photoDataUris.length === 3
         ? req.photoDataUris
@@ -294,14 +279,3 @@ export const amapaMunicipalities: string[] = [
   "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
   "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
 ];
-
-defaultMockRequests.forEach(req => {
-  const currentPhotos = Array.isArray(req.photoDataUris) ? req.photoDataUris : [];
-  const photos: [string, string, string] = [
-    currentPhotos[0] || VISIBLE_PLACEHOLDER_URI,
-    currentPhotos[1] || VISIBLE_PLACEHOLDER_URI,
-    currentPhotos[2] || VISIBLE_PLACEHOLDER_URI,
-  ];
-  req.photoDataUris = photos.map(uri => uri || VISIBLE_PLACEHOLDER_URI) as [string, string, string];
-});
-
