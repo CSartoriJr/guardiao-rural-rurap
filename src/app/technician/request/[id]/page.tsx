@@ -27,7 +27,7 @@ const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriReq
   console.log('[TechnicianViewRequestPage] Fetching request for ID:', requestId);
   await new Promise(resolve => setTimeout(resolve, 300));
   const request = mockRequests.find(req => req.id === requestId);
-  console.log('[TechnicianViewRequestPage] Found request:', request);
+  console.log('[TechnicianViewRequestPage] Found request:', request ? request.id : 'not found');
   return request;
 };
 
@@ -37,116 +37,139 @@ export default function TechnicianViewRequestPage() {
   const router = useRouter();
   const { user, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
+
   const [request, setRequest] = useState<AgriRequest | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [error, setError] useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // For initial request data load
+  const [isAiProcessing, setIsAiProcessing] = useState(false); // Specifically for AI step
+  const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] useState(false);
-  const [adminPassword, setAdminPassword] useState('');
-  const [isDeleting, setIsDeleting] useState(false);
-  const [showPassword, setShowPassword] useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
+  // Effect 1: Fetch initial request data
   useEffect(() => {
+    console.log('[TechnicianViewRequestPage Effect1] Triggered. AuthInitializing:', authInitializing, 'RequestId:', requestId, 'User:', user ? user.id : 'null');
     if (authInitializing) {
+      console.log('[TechnicianViewRequestPage Effect1] Auth still initializing. Aborting.');
       return;
     }
 
-    if (!user && !authInitializing) {
-        router.replace(APP_ROUTES.LOGIN);
-        return;
+    if (!user) {
+      console.log('[TechnicianViewRequestPage Effect1] No user and auth not initializing. Redirecting to LOGIN.');
+      router.replace(APP_ROUTES.LOGIN);
+      return;
     }
 
-    if (requestId && user) {
-      setIsLoading(true);
-      setError(null);
-      fetchRequestByIdForTechnician(requestId)
-        .then(async (data) => {
-          if (data) {
-            const needsAiProcessing = data.status === 'Pending' &&
-                                      (!data.aiSuggestedRecommendation ||
-                                       data.latitude === undefined ||
-                                       data.longitude === undefined ||
-                                       !data.municipality ||
-                                       !amapaMunicipalities.includes(data.municipality)
-                                      );
-
-            if (needsAiProcessing) {
-              setIsAiProcessing(true);
-              try {
-                const aiInput = {
-                  cassavaType: data.cassavaType,
-                  isMandioca: data.isMandioca,
-                  isMacaxeira: data.isMacaxeira,
-                  photoDataUri1: data.photoDataUris[0],
-                  photoDataUri2: data.photoDataUris[1],
-                  photoDataUri3: data.photoDataUris[2],
-                  plantedArea: data.plantedArea,
-                  infectedArea: data.infectedArea,
-                  deviceLatitude: data.latitude,
-                  deviceLongitude: data.longitude,
-                };
-                const aiOutput = await generateRecommendation(aiInput);
-
-                let recommendationFromAI = 'Falha ao processar sugestão da IA.';
-                let latFromAI, lonFromAI, munFromAI;
-
-                if (aiOutput) {
-                  recommendationFromAI = aiOutput.recommendation;
-                  latFromAI = aiOutput.extractedLatitude;
-                  lonFromAI = aiOutput.extractedLongitude;
-                  munFromAI = aiOutput.determinedMunicipality;
-                } else {
-                  console.error("[TechnicianViewRequestPage] AI output from generateRecommendation was unexpectedly undefined.");
-                  // recommendationFromAI is already set to a default error message.
-                  // latFromAI, lonFromAI, munFromAI will remain undefined.
-                }
-
-                const updatedRequestWithAIData: AgriRequest = {
-                  ...data,
-                  aiSuggestedRecommendation: recommendationFromAI,
-                  latitude: latFromAI ?? data.latitude, // Fallback to existing data if AI didn't provide
-                  longitude: lonFromAI ?? data.longitude, // Fallback
-                  municipality: munFromAI || data.municipality, // Fallback
-                };
-
-                const savedUpdatedRequest = await updateMockRequest(updatedRequestWithAIData);
-                if (savedUpdatedRequest) {
-                  setRequest(savedUpdatedRequest);
-                  toast({ title: "Sugestão, Localização e Município da IA Carregados", description: "Dados processados pela IA." });
-                } else {
-                  setRequest(data);
-                  toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as atualizações da IA.", variant: "destructive" });
-                }
-              } catch (aiError: any) {
-                console.error("[TechnicianViewRequestPage] Falha ao gerar dados da IA:", aiError);
-                toast({ title: "Falha na IA", description: `Não foi possível obter os dados da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
-                setRequest(data);
-              } finally {
-                setIsAiProcessing(false);
-              }
-            } else {
-              setRequest(data);
-            }
-          } else {
-            setError("Pedido não encontrado.");
-          }
-        })
-        .catch(err => {
-          console.error("[TechnicianViewRequestPage] Falha ao buscar pedido:", err);
-          setError("Falha ao carregar detalhes do pedido.");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else if (!requestId && !authInitializing) {
+    if (!requestId) {
+      console.warn('[TechnicianViewRequestPage Effect1] Invalid or missing requestId. Setting error.');
       setError("ID do pedido inválido.");
       setIsLoading(false);
+      return;
     }
-  }, [requestId, user, authInitializing, router, toast]);
+
+    setIsLoading(true);
+    setError(null); // Reset error before fetching
+    fetchRequestByIdForTechnician(requestId)
+      .then((data) => {
+        if (data) {
+          console.log('[TechnicianViewRequestPage Effect1] Request data fetched successfully:', data.id);
+          setRequest(data);
+        } else {
+          console.warn('[TechnicianViewRequestPage Effect1] Request not found for ID:', requestId);
+          setError("Pedido não encontrado.");
+        }
+      })
+      .catch(err => {
+        console.error("[TechnicianViewRequestPage Effect1] Falha ao buscar pedido:", err);
+        setError("Falha ao carregar detalhes do pedido.");
+      })
+      .finally(() => {
+        console.log('[TechnicianViewRequestPage Effect1] Finished fetching. Setting isLoading to false.');
+        setIsLoading(false);
+      });
+  }, [requestId, user, authInitializing, router]);
+
+
+  // Effect 2: Process AI data if needed, once 'request' state is set and if it's pending
+  useEffect(() => {
+    console.log('[TechnicianViewRequestPage Effect2] Triggered. Request state:', request ? request.id : 'null', 'Request status:', request ? request.status : 'n/a');
+    if (!request || request.status !== 'Pending') {
+      if (request && request.status !== 'Pending') console.log('[TechnicianViewRequestPage Effect2] Request not pending or already processed by AI. Skipping AI step.');
+      else if (!request) console.log('[TechnicianViewRequestPage Effect2] Request data not yet available. Skipping AI step.');
+      return;
+    }
+
+    const needsAiProcessing = !request.aiSuggestedRecommendation ||
+                              request.latitude === undefined ||
+                              request.longitude === undefined ||
+                              !request.municipality ||
+                              !amapaMunicipalities.includes(request.municipality);
+
+    if (needsAiProcessing) {
+      console.log('[TechnicianViewRequestPage Effect2] Needs AI processing for request:', request.id);
+      setIsAiProcessing(true);
+
+      const aiInput = {
+        cassavaType: request.cassavaType,
+        isMandioca: request.isMandioca,
+        isMacaxeira: request.isMacaxeira,
+        photoDataUri1: request.photoDataUris[0],
+        photoDataUri2: request.photoDataUris[1],
+        photoDataUri3: request.photoDataUris[2],
+        plantedArea: request.plantedArea,
+        infectedArea: request.infectedArea,
+        deviceLatitude: request.latitude,
+        deviceLongitude: request.longitude,
+      };
+      console.log('[TechnicianViewRequestPage Effect2] AI Input:', JSON.stringify(aiInput, null, 2));
+
+      generateRecommendation(aiInput)
+        .then(aiOutput => {
+          console.log("[TechnicianViewRequestPage Effect2] Raw AI Output received:", JSON.stringify(aiOutput, null, 2));
+
+          if (aiOutput && typeof aiOutput.recommendation === 'string') {
+            console.log("[TechnicianViewRequestPage Effect2] AI Output is valid. Updating request fields.");
+            const updatedFields: Partial<AgriRequest> = {
+              aiSuggestedRecommendation: aiOutput.recommendation,
+              latitude: aiOutput.extractedLatitude ?? request.latitude,
+              longitude: aiOutput.extractedLongitude ?? request.longitude,
+              municipality: aiOutput.determinedMunicipality || request.municipality,
+            };
+            const updatedRequestWithAIData = { ...request, ...updatedFields };
+            return updateMockRequest(updatedRequestWithAIData);
+          } else {
+            console.error("[TechnicianViewRequestPage Effect2] AI output from generateRecommendation was invalid or incomplete. Output:", aiOutput);
+            toast({ title: "Sugestão da IA Incompleta", description: "Não foi possível processar completamente os dados da IA.", variant: "destructive" });
+            return Promise.resolve(null); // No update to persist
+          }
+        })
+        .then(savedUpdatedRequest => {
+          if (savedUpdatedRequest) {
+            console.log("[TechnicianViewRequestPage Effect2] AI data saved. Updating request state.");
+            setRequest(savedUpdatedRequest);
+            toast({ title: "Dados da IA Carregados", description: "Sugestão e localização da IA processados." });
+          } else {
+            console.log("[TechnicianViewRequestPage Effect2] No AI data saved (either AI failed or no update needed).");
+          }
+        })
+        .catch(aiError => {
+          console.error("[TechnicianViewRequestPage Effect2] Error during AI data generation or update:", aiError);
+          toast({ title: "Falha na IA", description: `Não foi possível obter/atualizar dados da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
+        })
+        .finally(() => {
+          console.log("[TechnicianViewRequestPage Effect2] Finished AI processing attempt for request:", request.id);
+          setIsAiProcessing(false);
+        });
+    } else {
+      console.log('[TechnicianViewRequestPage Effect2] AI processing not needed for request:', request.id);
+    }
+  }, [request, toast]);
+
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
     if (!req) return 'Não especificado';
@@ -207,15 +230,15 @@ export default function TechnicianViewRequestPage() {
         sourceText = "Fonte GPS: Fornecida pelo Dispositivo do Agricultor.";
       } else {
          sourceText = "Fonte GPS: Extraída/Confirmada pela IA.";
-         if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+         if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching' && request.deviceLocationStatus !== 'success') {
             sourceText += ` Status GPS Disp.: ${request.deviceLocationStatus}.`
          }
       }
     } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationText = "Nenhuma localização GPS finalizada.";
       sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
-    } else if (request.municipality) {
-        sourceText = "Coordenadas GPS não disponíveis.";
+    } else if (request.municipality) { // Municipality might be available from AI even if lat/lon are not
+        sourceText = "Coordenadas GPS não disponíveis ou não finalizadas.";
     }
 
     return (
@@ -242,7 +265,7 @@ export default function TechnicianViewRequestPage() {
   };
 
 
-  if (isLoading || authInitializing) {
+  if (isLoading || authInitializing) { // Keep authInitializing here for the very first load
     return (
        <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
@@ -297,13 +320,13 @@ export default function TechnicianViewRequestPage() {
     );
   }
 
-  if (!request) {
+  if (!request) { // This case should ideally be covered by isLoading or error state
     return (
       <PageWrapper allowedRoles={['technician', 'admin']}>
          <div className="text-center py-10">
           <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
-          <h2 className="text-xl font-semibold text-foreground">Carregando pedido...</h2>
-           <p className="text-muted-foreground">Se esta mensagem persistir, o pedido pode não ter sido encontrado.</p>
+          <h2 className="text-xl font-semibold text-foreground">Carregando pedido ou pedido não encontrado...</h2>
+           <p className="text-muted-foreground">Se esta mensagem persistir, o pedido pode não ter sido encontrado ou houve um problema.</p>
           <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
@@ -312,6 +335,7 @@ export default function TechnicianViewRequestPage() {
     );
   }
 
+  // If we reach here, request is loaded.
   return (
     <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
