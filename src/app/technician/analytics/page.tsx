@@ -117,10 +117,10 @@ export default function TechnicianAnalyticsPage() {
               </Card>
             </div>
             <div className="lg:col-span-1 flex flex-col justify-between h-full">
-              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
-              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
-              <Skeleton className="w-full aspect-square rounded-lg mb-6 lg:mb-0" />
-              <Skeleton className="w-full aspect-square rounded-lg" />
+              <Skeleton className="w-full h-24 rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full h-24 rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full h-24 rounded-lg mb-6 lg:mb-0" />
+              <Skeleton className="w-full h-24 rounded-lg" />
             </div>
           </div>
 
@@ -179,7 +179,7 @@ export default function TechnicianAnalyticsPage() {
                 </Card>
             </div>
             <div className="lg:col-span-1 flex flex-col justify-between h-full">
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
+                <Card className="shadow-md mb-6 lg:mb-0">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
                     </CardHeader>
@@ -190,7 +190,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
+                <Card className="shadow-md mb-6 lg:mb-0">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
                     </CardHeader>
@@ -199,7 +199,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Aguardando revisão</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center">
+                <Card className="shadow-md mb-6 lg:mb-0">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
                     </CardHeader>
@@ -208,7 +208,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md aspect-square flex flex-col justify-center">
+                <Card className="shadow-md">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
                     </CardHeader>
