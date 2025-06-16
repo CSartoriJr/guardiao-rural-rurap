@@ -5,8 +5,7 @@ const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
 // --- Default Data ---
-const VISIBLE_PLACEHOLDER_URI = 'https://placehold.co/60x60.png?text=P';
-const placeholderImage2 = 'https://placehold.co/300x300.png';
+const defaultPlaceholderUri = 'https://placehold.co/300x300.png'; // Corrected and centralized
 
 const defaultMockUsers: User[] = [
   { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Claudemir Sartori Junior', password: '23jr02cs' },
@@ -22,7 +21,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRS Formosa',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [VISIBLE_PLACEHOLDER_URI, placeholderImage2, VISIBLE_PLACEHOLDER_URI],
+    photoDataUris: [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
@@ -39,7 +38,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'Vassourinha',
     isMandioca: false,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI],
+    photoDataUris: [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri],
     status: 'Positive',
     recommendation: 'Planta parece saudável. Continue com as boas práticas de manejo.',
     submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -107,8 +106,8 @@ const loadMockData = () => {
             ...req,
             photoDataUris: (
               Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
-              ? req.photoDataUris
-              : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
+              ? req.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure individual URIs are not null/empty
+              : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]
             ) as [string, string, string]
           }));
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
@@ -150,8 +149,8 @@ const persistRequests = () => {
     const requestsToStore = mockRequests.map(req => {
       const photoUrisToStore = (req.photoDataUris && req.photoDataUris.length === 3
         ? req.photoDataUris
-        : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
-      ).map(uri => uri || VISIBLE_PLACEHOLDER_URI) as [string, string, string];
+        : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]
+      ).map(uri => uri || defaultPlaceholderUri) as [string, string, string];
 
       return {
         ...req,
@@ -230,8 +229,8 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
     submissionDate: new Date().toISOString(),
     status: 'Pending',
     photoDataUris: (newRequestData.photoDataUris && newRequestData.photoDataUris.length === 3
-        ? newRequestData.photoDataUris
-        : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]) as [string, string, string],
+        ? newRequestData.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure no null/empty strings from upload
+        : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]) as [string, string, string],
   };
   mockRequests.unshift(newRequest);
   persistRequests();
@@ -247,8 +246,8 @@ export const updateMockRequest = async (updatedRequestData: AgriRequest): Promis
           ...mockRequests[index],
           ...updatedRequestData,
           photoDataUris: (updatedRequestData.photoDataUris && updatedRequestData.photoDataUris.length === 3
-            ? updatedRequestData.photoDataUris
-            : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]) as [string, string, string],
+            ? updatedRequestData.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure no null/empty strings
+            : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]) as [string, string, string],
         };
         persistRequests();
         console.log('[MockData] Updated request:', updatedRequestData.id);
