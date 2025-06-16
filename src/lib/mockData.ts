@@ -250,6 +250,9 @@ const loadMockData = () => {
   if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
     console.log('[MockData] Initializing requests.');
     const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
+    let dataLoadedFromStorage = false;
+    let madeOverrideForSpecificRequest = false;
+
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
       try {
@@ -263,22 +266,65 @@ const loadMockData = () => {
               : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]
             ) as [string, string, string]
           }));
+          dataLoadedFromStorage = true;
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
           console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
-          mockRequests = [...defaultMockRequests];
-          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
+          mockRequests = [...defaultMockRequests]; 
         }
-      } catch (e)
-      {
+      } catch (e) {
         console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
         mockRequests = [...defaultMockRequests];
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
       }
     } else {
-      console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
+      console.log('[MockData] No stored requests found, using default requests.');
       mockRequests = [...defaultMockRequests];
-      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(defaultMockRequests));
+    }
+
+    // Ensure req1749935232522 specifically has municipality 'Santana'
+    // This acts as an override or ensures the default is correctly applied.
+    const targetReqId = 'req1749935232522';
+    const targetReqIndex = mockRequests.findIndex(req => req.id === targetReqId);
+    
+    if (targetReqIndex !== -1) {
+      if (mockRequests[targetReqIndex].municipality !== 'Santana') {
+        console.log(`[MockData] Overriding municipality for ${targetReqId} to 'Santana'.`);
+        mockRequests[targetReqIndex].municipality = 'Santana';
+        madeOverrideForSpecificRequest = true; // Mark that an override was made
+      }
+    } else {
+       // If the target request is not found in mockRequests (e.g., fresh localStorage or it got deleted)
+       // and we want to ensure it exists from defaults, we can re-add it from defaultMockRequests.
+       const defaultTargetReq = defaultMockRequests.find(req => req.id === targetReqId);
+       if (defaultTargetReq) {
+         console.log(`[MockData] Target request ${targetReqId} not found, adding from defaults with municipality 'Santana'.`);
+         mockRequests.push({...defaultTargetReq, municipality: 'Santana'}); // Ensure municipality is Santana
+         madeOverrideForSpecificRequest = true; // Mark that a change (addition) was made
+       } else {
+        console.warn(`[MockData] Target request ${targetReqId} not found in defaultMockRequests either.`);
+       }
+    }
+
+    // Persist changes if:
+    // 1. Data was loaded from storage AND an override was made for the specific request.
+    // 2. No data was in storage initially (so defaults were loaded and should be persisted).
+    if ((dataLoadedFromStorage && madeOverrideForSpecificRequest) || !storedRequests) {
+      console.log('[MockData] Persisting requests to localStorage after potential override or initial load.');
+      const requestsToStore = mockRequests.map(req => {
+        const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
+          if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
+            return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
+          }
+          return uri;
+        }) as [string, string, string];
+        return { ...req, photoDataUris: sanitizedPhotoUris };
+      });
+      try {
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
+        console.log('[MockData] Successfully persisted (potentially overridden/initialized) requests.');
+      } catch (error) {
+        console.error('[MockData] Error persisting requests to localStorage:', error);
+      }
     }
     R_MOCK_REQUESTS_INITIALIZED = true;
   }
@@ -449,3 +495,4 @@ defaultMockRequests.forEach(req => {
     req.municipality = 'Santana';
   }
 });
+
