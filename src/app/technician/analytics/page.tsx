@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { AgriRequest } from '@/types';
 import { mockRequests, amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon, AlertTriangle } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon as BarChart3IconLucide, AlertTriangle } from 'lucide-react'; // Renamed to avoid conflict
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 
@@ -64,8 +64,6 @@ export default function TechnicianAnalyticsPage() {
       .sort((a, b) => b.count - a.count);
 
     const requestsByMunGeneral: { [key: string]: number } = {};
-    // Use all requests for the "Pedidos por Município" chart if no municipality is selected for the overall dashboard,
-    // to show the global distribution. If a municipality IS selected, this chart will reflect that filter.
     const sourceForMunChart = selectedMunicipality ? filteredRequests : requests;
     sourceForMunChart.forEach(req => {
       if (req.municipality) {
@@ -105,8 +103,8 @@ export default function TechnicianAnalyticsPage() {
             <Skeleton className="h-10 w-1/4" />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> {/* Updated to 4 columns for skeleton */}
+            <div className="lg:col-span-3"> {/* Map skeleton takes 3 columns */}
               <Card>
                 <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
                 <CardContent className="pt-2">
@@ -116,7 +114,7 @@ export default function TechnicianAnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full gap-4">
+            <div className="lg:col-span-1 flex flex-col justify-between h-full gap-4"> {/* Stats skeletons take 1 column */}
               <Skeleton className="w-full aspect-square rounded-lg" />
               <Skeleton className="w-full aspect-square rounded-lg" />
               <Skeleton className="w-full aspect-square rounded-lg" />
@@ -162,24 +160,22 @@ export default function TechnicianAnalyticsPage() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
-                    <CardContent className="pt-2">
-                        <AmapaInteractiveMap
-                            selectedMunicipality={selectedMunicipality}
-                            onMunicipalitySelect={handleMapMunicipalitySelect}
-                        />
-                        <p className="text-xs text-muted-foreground mt-2 text-center">
-                            Clique em um município para filtrar os dados ou selecione no menu acima.
-                            {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full">
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> {/* Changed to 4 columns */}
+            <Card className="lg:col-span-3"> {/* Map takes 3 columns */}
+                <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
+                <CardContent className="pt-2">
+                    <AmapaInteractiveMap
+                        selectedMunicipality={selectedMunicipality}
+                        onMunicipalitySelect={handleMapMunicipalitySelect}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Clique em um município para filtrar os dados ou selecione no menu acima.
+                        {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
+                    </p>
+                </CardContent>
+            </Card>
+            <div className="lg:col-span-1 flex flex-col justify-between h-full"> {/* Stats take 1 column */}
+                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
                     </CardHeader>
@@ -190,7 +186,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center items-center">
+                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
                     </CardHeader>
@@ -199,7 +195,7 @@ export default function TechnicianAnalyticsPage() {
                     <p className="text-xs text-muted-foreground">Aguardando revisão</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md mb-6 lg:mb-0 aspect-square flex flex-col justify-center items-center">
+                <Card className="shadow-md aspect-square flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
                     </CardHeader>
@@ -247,7 +243,7 @@ export default function TechnicianAnalyticsPage() {
               </Card>
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><BarChart3Icon className="mr-2 h-5 w-5 text-primary"/>Principais Tipos de Mandioca</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><BarChart3IconLucide className="mr-2 h-5 w-5 text-primary"/>Principais Tipos de Mandioca</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {cassavaTypeChartData.length > 0 ? (
