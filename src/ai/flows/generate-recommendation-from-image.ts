@@ -111,9 +111,39 @@ const generateRecommendationFlow = ai.defineFlow(
     inputSchema: GenerateRecommendationInputSchema,
     outputSchema: GenerateRecommendationOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input): Promise<GenerateRecommendationOutput> => {
+    try {
+      const result = await prompt(input); // Call the prompt
+
+      // Check if the result and the output property exist and are valid
+      if (result && result.output && typeof result.output.recommendation === 'string') {
+        // Ensure all required fields of GenerateRecommendationOutput are present or explicitly handled
+        return {
+          recommendation: result.output.recommendation,
+          extractedLatitude: result.output.extractedLatitude,
+          extractedLongitude: result.output.extractedLongitude,
+          determinedMunicipality: result.output.determinedMunicipality,
+        };
+      } else {
+        // Log an error and return a default/error structure that matches the schema
+        console.error(
+          '[generateRecommendationFlow] AI prompt did not return a valid output structure. Result:',
+          JSON.stringify(result, null, 2) // Stringify for better logging if result is an object
+        );
+        return {
+          recommendation: 'Falha ao obter recomendação da IA. A estrutura da resposta foi inesperada ou incompleta.',
+          // Optional fields default to undefined
+        };
+      }
+    } catch (error: any) {
+      // Catch any errors during the prompt execution
+      console.error('[generateRecommendationFlow] Error during AI prompt execution:', error.message ? error.message : error);
+      // Return a default/error structure that matches GenerateRecommendationOutputSchema
+      return {
+        recommendation: `Ocorreu um erro ao processar o pedido com a IA: ${error.message || 'Erro desconhecido'}.`,
+        // Optional fields default to undefined
+      };
+    }
   }
 );
 
