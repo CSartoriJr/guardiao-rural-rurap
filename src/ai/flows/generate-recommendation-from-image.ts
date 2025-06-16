@@ -113,11 +113,11 @@ const generateRecommendationFlow = ai.defineFlow(
   },
   async (input): Promise<GenerateRecommendationOutput> => {
     try {
-      const result = await prompt(input); // Call the prompt
+      const result = await prompt(input); // result is GenerateResponse<GenerateRecommendationOutput>
 
-      // Check if the result and the output property exist and are valid
+      // Check if the result and its output property are valid, and if recommendation (a required field) is a string
       if (result && result.output && typeof result.output.recommendation === 'string') {
-        // Ensure all required fields of GenerateRecommendationOutput are present or explicitly handled
+        // Successfully obtained and validated output
         return {
           recommendation: result.output.recommendation,
           extractedLatitude: result.output.extractedLatitude,
@@ -125,23 +125,29 @@ const generateRecommendationFlow = ai.defineFlow(
           determinedMunicipality: result.output.determinedMunicipality,
         };
       } else {
-        // Log an error and return a default/error structure that matches the schema
+        // Log an error if the result or output structure is not as expected
         console.error(
           '[generateRecommendationFlow] AI prompt did not return a valid output structure. Result:',
-          JSON.stringify(result, null, 2) // Stringify for better logging if result is an object
+          JSON.stringify(result, null, 2)
         );
+        let recommendationText = 'Falha ao obter recomendação da IA. A estrutura da resposta foi inesperada ou incompleta.';
+        // Check for specific error information from Genkit's response if available
+        if (result && (result as any).error) {
+            recommendationText += ` Erro da IA: ${(result as any).error}`;
+        } else if (result && (result as any).blocked) {
+            recommendationText += ` Conteúdo bloqueado pela IA.`;
+        }
         return {
-          recommendation: 'Falha ao obter recomendação da IA. A estrutura da resposta foi inesperada ou incompleta.',
-          // Optional fields default to undefined
+          recommendation: recommendationText,
+          // Optional fields will default to undefined, which is fine for Zod schema
         };
       }
     } catch (error: any) {
-      // Catch any errors during the prompt execution
-      console.error('[generateRecommendationFlow] Error during AI prompt execution:', error.message ? error.message : error);
-      // Return a default/error structure that matches GenerateRecommendationOutputSchema
+      // Catch any errors during the prompt execution or if the prompt() call itself throws an unhandled error
+      console.error('[generateRecommendationFlow] Error during AI prompt execution:', error.message ? error.message : error, error);
       return {
         recommendation: `Ocorreu um erro ao processar o pedido com a IA: ${error.message || 'Erro desconhecido'}.`,
-        // Optional fields default to undefined
+        // Optional fields will default to undefined
       };
     }
   }
