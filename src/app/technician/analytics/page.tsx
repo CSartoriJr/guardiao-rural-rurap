@@ -64,8 +64,10 @@ export default function TechnicianAnalyticsPage() {
       .sort((a, b) => b.count - a.count);
 
     const requestsByMun: { [key: string]: number } = {};
-    const sourceForMunStats = selectedMunicipality ? filteredRequests : requests;
-    sourceForMunStats.forEach(req => {
+    // Use all requests for the "Pedidos por Município" chart if no municipality is selected,
+    // otherwise use filtered requests if a specific municipality is selected for the overall dashboard.
+    const sourceForMunGlobalStats = requests; // Always use all requests for this specific chart's base data
+    sourceForMunGlobalStats.forEach(req => {
       if (req.municipality) {
         requestsByMun[req.municipality] = (requestsByMun[req.municipality] || 0) + 1;
       }
@@ -75,7 +77,7 @@ export default function TechnicianAnalyticsPage() {
       .sort((a,b) => b.count - a.count);
 
     return { total, pending, positive, negative, inconclusive, cassavaTypesArray, requestsByMunicipalityArray };
-  }, [filteredRequests, requests, selectedMunicipality]);
+  }, [filteredRequests, requests]); // Added requests to dependency array for requestsByMunicipalityArray
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
@@ -86,7 +88,7 @@ export default function TechnicianAnalyticsPage() {
 
   const cassavaTypeChartData: ChartDataItem[] = stats.cassavaTypesArray.slice(0, 5); // Top 5
   
-  const municipalityChartData: ChartDataItem[] = stats.requestsByMunicipalityArray; 
+  const municipalityChartData: ChartDataItem[] = stats.requestsByMunicipalityArray;
 
 
   const handleMapMunicipalitySelect = (name: string | null) => {
@@ -107,13 +109,13 @@ export default function TechnicianAnalyticsPage() {
               <Card>
                 <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
                 <CardContent className="pt-2">
-                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full max-w-md mx-auto rounded-lg" />
+                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" /> {/* Map Skeleton */}
                   <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
                   <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
                 </CardContent>
               </Card>
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="lg:col-span-1 flex flex-col justify-between h-full"> {/* Adjusted for vertical distribution */}
               <Skeleton className="h-28 w-full rounded-lg" />
               <Skeleton className="h-28 w-full rounded-lg" />
               <Skeleton className="h-28 w-full rounded-lg" />
@@ -163,7 +165,7 @@ export default function TechnicianAnalyticsPage() {
             <div className="lg:col-span-2">
                 <Card>
                     <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-2">
                         <AmapaInteractiveMap
                             selectedMunicipality={selectedMunicipality}
                             onMunicipalitySelect={handleMapMunicipalitySelect}
@@ -175,41 +177,41 @@ export default function TechnicianAnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="flex flex-col gap-6">
-                <Card className="shadow-md">
-                    <CardHeader className="pb-2">
+            <div className="lg:col-span-1 flex flex-col justify-between"> {/* Adjusted for vertical distribution */}
+                <Card className="shadow-md mb-6 lg:mb-0"> {/* Added margin for smaller screens if needed */}
+                    <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="text-center">
                     <div className="text-2xl font-bold">{stats.total}</div>
                     <p className="text-xs text-muted-foreground">
                         {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
                     </p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md">
-                    <CardHeader className="pb-2">
+                <Card className="shadow-md mb-6 lg:mb-0">
+                    <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="text-center">
                     <div className="text-2xl font-bold">{stats.pending}</div>
                     <p className="text-xs text-muted-foreground">Aguardando revisão</p>
                     </CardContent>
                 </Card>
-                <Card className="shadow-md">
-                    <CardHeader className="pb-2">
+                <Card className="shadow-md mb-6 lg:mb-0">
+                    <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="text-center">
                     <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
                     <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
                     </CardContent>
                 </Card>
                 <Card className="shadow-md">
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="text-center">
                     <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
                     <p className="text-xs text-muted-foreground">Necessitam atenção</p>
                     </CardContent>
@@ -218,7 +220,7 @@ export default function TechnicianAnalyticsPage() {
         </div>
 
 
-        {filteredRequests.length > 0 ? (
+        {filteredRequests.length > 0 || (selectedMunicipality === null && requests.length > 0) ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="shadow-md">
@@ -238,7 +240,7 @@ export default function TechnicianAnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-muted-foreground">Não há dados de status suficientes para exibir o gráfico.</p>
+                    <p className="text-muted-foreground text-center py-10">Não há dados de status suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
                   )}
                 </CardContent>
               </Card>
@@ -259,7 +261,7 @@ export default function TechnicianAnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground">Não há dados de tipo de mandioca suficientes para exibir o gráfico.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de tipo de mandioca suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
                   )}
                 </CardContent>
               </Card>
@@ -267,12 +269,12 @@ export default function TechnicianAnalyticsPage() {
             <div>
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><BarChart3Icon className="mr-2 h-5 w-5 text-primary"/>Pedidos por Município</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Pedidos por Município</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={400}> {/* Increased height */}
-                      <BarChart data={municipalityChartData} layout="vertical" margin={{ right: 20, left: 20 }}>
+                    <ResponsiveContainer width="100%" height={Math.max(400, stats.requestsByMunicipalityArray.length * 30)}> {/* Dynamic height */}
+                      <BarChart data={municipalityChartData} layout="vertical" margin={{ right: 20, left: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis dataKey="name" type="category" width={120} interval={0} />
@@ -282,21 +284,21 @@ export default function TechnicianAnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground">Não há dados de pedidos por município para exibir o gráfico.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de pedidos por município para exibir o gráfico.</p>
                   )}
                 </CardContent>
               </Card>
             </div>
           </div>
         ) : (
-           <Card className="shadow-md">
+           <Card className="shadow-md mt-6">
             <CardContent className="pt-6 text-center">
               <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-semibold text-foreground">Nenhum Pedido Encontrado</p>
               <p className="text-muted-foreground">
                 {selectedMunicipality 
                   ? `Não há pedidos registrados para ${selectedMunicipality}.` 
-                  : "Não há pedidos registrados no sistema."}
+                  : requests.length === 0 ? "Não há pedidos registrados no sistema para exibir análises." : "Ajuste os filtros ou aguarde novos pedidos."}
               </p>
             </CardContent>
           </Card>
