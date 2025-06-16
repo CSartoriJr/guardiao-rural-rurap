@@ -10,7 +10,7 @@ import type { AgriRequest } from '@/types';
 import { mockRequests, amapaMunicipalities } from '@/lib/mockData';
 import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap'; // Import the new map
+import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 
 // Mock function to fetch all requests (in a real app, this would be an API call)
 const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
@@ -43,7 +43,7 @@ export default function TechnicianAnalyticsPage() {
 
   const filteredRequests = useMemo(() => {
     if (!selectedMunicipality) {
-      return requests; // Show all requests if no municipality is selected
+      return requests;
     }
     return requests.filter(req => req.municipality === selectedMunicipality);
   }, [requests, selectedMunicipality]);
@@ -63,7 +63,17 @@ export default function TechnicianAnalyticsPage() {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    return { total, pending, positive, negative, inconclusive, cassavaTypesArray };
+    const requestsByMun: { [key: string]: number } = {};
+    filteredRequests.forEach(req => {
+      if (req.municipality) {
+        requestsByMun[req.municipality] = (requestsByMun[req.municipality] || 0) + 1;
+      }
+    });
+    const requestsByMunicipalityArray = Object.entries(requestsByMun)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a,b) => b.count - a.count);
+
+    return { total, pending, positive, negative, inconclusive, cassavaTypesArray, requestsByMunicipalityArray };
   }, [filteredRequests]);
 
   const statusChartData: ChartDataItem[] = [
@@ -74,6 +84,9 @@ export default function TechnicianAnalyticsPage() {
   ].filter(item => item.count > 0);
 
   const cassavaTypeChartData: ChartDataItem[] = stats.cassavaTypesArray.slice(0, 5); // Top 5
+  
+  const municipalityChartData: ChartDataItem[] = stats.requestsByMunicipalityArray; // Show all or top N
+
 
   const handleMapMunicipalitySelect = (name: string | null) => {
     setSelectedMunicipality(name);
@@ -91,9 +104,10 @@ export default function TechnicianAnalyticsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* Adjusted for 3 charts potentially */}
             <Skeleton className="h-80 rounded-lg" />
             <Skeleton className="h-80 rounded-lg" />
+            <Skeleton className="h-80 rounded-lg" /> {/* New chart skeleton */}
           </div>
         </div>
       </PageWrapper>
@@ -180,7 +194,7 @@ export default function TechnicianAnalyticsPage() {
         </div>
 
         {filteredRequests.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* Adjusted for 3 charts */}
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Distribuição por Status</CardTitle>
@@ -223,6 +237,27 @@ export default function TechnicianAnalyticsPage() {
                 )}
               </CardContent>
             </Card>
+             <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="font-headline text-xl flex items-center"><BarChart3Icon className="mr-2 h-5 w-5 text-primary"/>Pedidos por Município</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {municipalityChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={municipalityChartData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis dataKey="name" type="category" width={120} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Pedidos"/>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                   <p className="text-muted-foreground">Não há dados de pedidos por município para exibir o gráfico.</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         ) : (
            <Card className="shadow-md">
@@ -241,3 +276,4 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
+
