@@ -1,41 +1,46 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import FarmerRequestCard from '@/components/farmer/RequestCard';
-import type { AgriRequest, User } from '@/types';
-import { mockRequests, mockUsers } from '@/lib/mockData'; // Using mock data
+import type { AgriRequest } from '@/types';
+// import { mockRequests, mockUsers } from '@/lib/mockData'; // Replaced with Firestore service
+import { getRequestsForFarmer } from '@/services/requestService'; // Import Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { PlusCircle, Frown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock function to fetch requests for a farmer
-const fetchFarmerRequests = async (farmerId: string): Promise<AgriRequest[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-  return mockRequests.filter(req => req.farmerId === farmerId).sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
-};
 
 export default function FarmerDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchFarmerRequests(user.id)
+      setIsLoading(true);
+      getRequestsForFarmer(user.id)
         .then(data => {
           setRequests(data);
-          setIsLoading(false);
         })
         .catch(error => {
-          console.error("Failed to fetch requests:", error);
+          console.error("Failed to fetch requests from Firestore:", error);
+          toast({
+            title: "Erro ao Carregar Pedidos",
+            description: "Não foi possível buscar seus pedidos. Verifique sua conexão ou tente mais tarde.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
           setIsLoading(false);
-          // Handle error display if needed
         });
     }
-  }, [user]);
+  }, [user, toast]);
 
   return (
     <PageWrapper allowedRoles={['farmer']}>

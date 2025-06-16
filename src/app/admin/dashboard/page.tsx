@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData';
+// import { mockRequests } from '@/lib/mockData'; // Replaced with Firestore service
+import { getAllRequestsForAdmin } from '@/services/requestService'; // Import Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -13,32 +14,35 @@ import { UserPlus, ClipboardList, Frown, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
-
-// Mock function to fetch all requests for admin
-const fetchAllRequestsForAdmin = async (): Promise<AgriRequest[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-  return mockRequests.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()); // Newest first
-};
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [farmerSearchTerm, setFarmerSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (user && user.role === 'admin') {
-      fetchAllRequestsForAdmin()
+      setIsLoading(true);
+      getAllRequestsForAdmin()
         .then(data => {
           setRequests(data);
-          setIsLoading(false);
         })
         .catch(error => {
-          console.error("Falha ao buscar todos os pedidos para admin:", error);
+          console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
+          toast({
+            title: "Erro ao Carregar Pedidos",
+            description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [user]);
+  }, [user, toast]);
 
   const filteredRequests = useMemo(() => {
     if (!farmerSearchTerm.trim()) {
@@ -47,7 +51,7 @@ export default function AdminDashboard() {
     const lowercasedFilter = farmerSearchTerm.toLowerCase();
     return requests.filter(request =>
       (request.farmerName && request.farmerName.toLowerCase().includes(lowercasedFilter)) ||
-      request.farmerId.toLowerCase().includes(lowercasedFilter)
+      (request.farmerId && request.farmerId.toLowerCase().includes(lowercasedFilter))
     );
   }, [requests, farmerSearchTerm]);
 
@@ -126,4 +130,3 @@ const CardSkeleton = () => (
     <Skeleton className="h-10 w-full" />
   </div>
 );
-

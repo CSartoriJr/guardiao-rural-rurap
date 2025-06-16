@@ -1,37 +1,42 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData'; // Using mock data
+// import { mockRequests } from '@/lib/mockData'; // Replaced with Firestore service
+import { getPendingRequestsForTechnician } from '@/services/requestService'; // Import Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Mock function to fetch requests for technicians (e.g., pending requests)
-const fetchTechnicianRequests = async (): Promise<AgriRequest[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-  return mockRequests.filter(req => req.status === 'Pending').sort((a, b) => new Date(a.submissionDate).getTime() - new Date(b.submissionDate).getTime()); // Oldest first
-};
+import { useToast } from '@/hooks/use-toast';
 
 export default function TechnicianDashboard() {
   const { user } = useAuth(); // Technician user
+  const { toast } = useToast();
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user) { // Ensure technician is logged in
-      fetchTechnicianRequests()
+      setIsLoading(true);
+      getPendingRequestsForTechnician()
         .then(data => {
           setRequests(data);
-          setIsLoading(false);
         })
         .catch(error => {
-          console.error("Falha ao buscar pedidos do técnico:", error);
+          console.error("Falha ao buscar pedidos do técnico via Firestore:", error);
+          toast({
+            title: "Erro ao Carregar Pedidos",
+            description: "Não foi possível buscar os pedidos pendentes. Verifique sua conexão ou tente mais tarde.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [user]);
+  }, [user, toast]);
 
   return (
     <PageWrapper allowedRoles={['technician']}>
