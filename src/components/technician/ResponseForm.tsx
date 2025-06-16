@@ -15,35 +15,8 @@ import { Loader2, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-import { updateMockRequest } from '@/lib/mockData'; 
-
-const submitTechnicianResponse = async (
-  requestId: string,
-  technicianId: string,
-  technicianName: string,
-  recommendation: string,
-  status: RequestStatus,
-  originalRequest: AgriRequest
-): Promise<AgriRequest | null> => {
-  console.log("Atualizando pedido:", { requestId, technicianId, recommendation, status });
-  await new Promise(resolve => setTimeout(resolve, 100)); 
-  
-  const updatedRequest: AgriRequest = {
-    ...originalRequest, 
-    id: requestId, 
-    technicianId,
-    technicianName,
-    recommendation,
-    status,
-    responseDate: new Date().toISOString(),
-    // Latitude and longitude from the original request are preserved
-    latitude: originalRequest.latitude, 
-    longitude: originalRequest.longitude,
-    // aiSuggestedRecommendation is no longer set here by the response form
-  };
-  
-  return updateMockRequest(updatedRequest); 
-};
+// import { updateMockRequest } from '@/lib/mockData'; // Replaced by Firestore service
+import { updateRequest } from '@/services/requestService'; // Import Firestore service
 
 const responseFormSchema = z.object({
   recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
@@ -77,7 +50,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
     defaultValues: {
-      recommendation: '', // Default to empty as AI suggestion is removed
+      recommendation: '', 
       status: request.status !== 'Pending' ? request.status : undefined,
     },
   });
@@ -87,24 +60,30 @@ export default function ResponseForm({ request }: ResponseFormProps) {
       toast({ title: "Erro", description: "Técnico não está logado.", variant: "destructive" });
       return;
     }
+    if (!request.id) {
+      toast({ title: "Erro", description: "ID do pedido não encontrado.", variant: "destructive" });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      await submitTechnicianResponse(
-        request.id, 
-        technicianUser.id, 
-        technicianUser.name, 
-        data.recommendation, 
-        data.status, 
-        request
-      );
+      const updates: Partial<AgriRequest> = {
+        technicianId: technicianUser.id,
+        technicianName: technicianUser.name,
+        recommendation: data.recommendation,
+        status: data.status,
+        responseDate: new Date().toISOString(), // Client-side date, Firestore can also use serverTimestamp
+      };
+
+      await updateRequest(request.id, updates);
+      
       toast({
         title: 'Resposta Enviada!',
         description: `Sua resposta para o pedido ID ${request.id} foi salva.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Falha ao enviar resposta:", error);
-      toast({ title: "Falha no Envio", description: "Não foi possível enviar a resposta. Por favor, tente novamente.", variant: "destructive" });
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar a resposta. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }

@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-import { addMockRequest } from '@/lib/mockData';
+// import { addMockRequest } from '@/lib/mockData'; // To be replaced by Firestore service
+import { addRequest } from '@/services/requestService'; // Import Firestore service
 import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
@@ -22,9 +23,9 @@ const requestFormSchema = z.object({
   cassavaVariety: z.string().min(2, { message: 'A variedade deve ter pelo menos 2 caracteres.' }),
   isMandioca: z.boolean().optional(),
   isMacaxeira: z.boolean().optional(),
-  photo1: z.string().nullable().refine(val => val !== null, { message: "A foto Panorâmica é obrigatória." }),
-  photo2: z.string().nullable().refine(val => val !== null, { message: "A foto de Envassoramento é obrigatória." }),
-  photo3: z.string().nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
+  photo1: z.string().url({ message: "A URL da foto Panorâmica é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto Panorâmica é obrigatória." }),
+  photo2: z.string().url({ message: "A URL da foto de Envassoramento é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto de Envassoramento é obrigatória." }),
+  photo3: z.string().url({ message: "A URL da foto do Corte do Ápice é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
 })
@@ -56,7 +57,6 @@ export default function RequestForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<DeviceLocationStatus>('idle');
-
 
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -113,15 +113,21 @@ export default function RequestForm() {
       toast({ title: "Erro", description: "Você deve estar logado para enviar um pedido.", variant: "destructive" });
       return;
     }
+    if (!data.photo1 || !data.photo2 || !data.photo3) {
+      toast({ title: "Fotos Faltando", description: "Por favor, envie todas as três fotos.", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
+      // Data for Firestore (excluding id, submissionDate, status as they are set by the service)
+      const requestDataForService = {
         farmerId: user.id,
-        farmerName: user.name,
+        farmerName: user.name, // Add farmerName
         cassavaType: data.cassavaVariety,
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
-        photoDataUris: [data.photo1!, data.photo2!, data.photo3!],
+        photoDataUris: [data.photo1, data.photo2, data.photo3] as [string, string, string],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
         latitude: latitude ?? undefined, 
@@ -129,7 +135,8 @@ export default function RequestForm() {
         deviceLocationStatus: locationStatus,
         municipality: user.municipality, 
       };
-      const newRequest = await addMockRequest(requestData as AgriRequest); 
+      
+      const newRequest = await addRequest(requestDataForService); 
       
       const plantTypes = [];
       if (data.isMandioca) plantTypes.push('Mandioca');
@@ -138,12 +145,12 @@ export default function RequestForm() {
 
       toast({
         title: 'Pedido Enviado!',
-        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado. ID: ${newRequest.id}.`,
+        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso para o Firestore. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Falha ao enviar pedido:", error);
-      toast({ title: "Falha no Envio", description: "Não foi possível enviar seu pedido. Por favor, tente novamente.", variant: "destructive" });
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar seu pedido. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -234,17 +241,17 @@ export default function RequestForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="photo1">Panorâmica</Label>
-              <ImageUploadInput id="photo1" onImageUpload={(uri) => setValue('photo1', uri, { shouldValidate: true })} />
+              <ImageUploadInput id="photo1" userId={user?.id} onUploadComplete={(url) => setValue('photo1', url, { shouldValidate: true })} />
               {errors.photo1 && <p className="text-sm text-destructive mt-1">{errors.photo1.message}</p>}
             </div>
             <div>
               <Label htmlFor="photo2">Envassoramento</Label>
-              <ImageUploadInput id="photo2" onImageUpload={(uri) => setValue('photo2', uri, { shouldValidate: true })} />
+              <ImageUploadInput id="photo2" userId={user?.id} onUploadComplete={(url) => setValue('photo2', url, { shouldValidate: true })} />
               {errors.photo2 && <p className="text-sm text-destructive mt-1">{errors.photo2.message}</p>}
             </div>
             <div>
               <Label htmlFor="photo3">Corte do Ápice da Planta</Label>
-              <ImageUploadInput id="photo3" onImageUpload={(uri) => setValue('photo3', uri, { shouldValidate: true })} />
+              <ImageUploadInput id="photo3" userId={user?.id} onUploadComplete={(url) => setValue('photo3', url, { shouldValidate: true })} />
               {errors.photo3 && <p className="text-sm text-destructive mt-1">{errors.photo3.message}</p>}
             </div>
           </div>

@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData';
+// import { mockRequests } from '@/lib/mockData'; // Replaced with service
+import { getRequestById } from '@/services/requestService'; // Import Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
@@ -15,13 +16,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog'; // Renamed DialogTitle to UIDialogTitle
-
-// Mock function to fetch a single request
-const fetchRequestById = async (requestId: string): Promise<AgriRequest | undefined> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return mockRequests.find(req => req.id === requestId);
-};
+import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
 
 const StatusDisplay = ({ status, recommendation, technicianName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate'>) => {
   let IconComponent;
@@ -90,7 +85,7 @@ export default function FarmerViewRequestPage() {
   console.log('[FarmerViewRequestPage] Component rendering started.');
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,38 +94,46 @@ export default function FarmerViewRequestPage() {
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
   useEffect(() => {
-    console.log('[FarmerViewRequestPage] useEffect triggered. RequestId:', requestId, 'User:', user ? user.id : 'null');
-    if (requestId && user) {
-      setIsLoading(true);
-      fetchRequestById(requestId)
-        .then(data => {
-          if (data && (data.farmerId === user.id || user.role === 'admin')) { // Admin can also view
-            setRequest(data);
-             console.log('[FarmerViewRequestPage] Request data set:', data);
-          } else if (data) {
-            setError("Você não tem autorização para ver este pedido.");
-            console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
-          } else {
-            setError("Pedido não encontrado.");
-            console.warn('[FarmerViewRequestPage] Request not found:', requestId);
-          }
-          setIsLoading(false);
-        })
-        .catch(err => {
-          console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
-          setError("Falha ao carregar detalhes do pedido.");
-          setIsLoading(false);
-        });
-    } else if (!requestId) {
+    console.log('[FarmerViewRequestPage] useEffect triggered. RequestId:', requestId, 'User:', user ? user.id : 'null', 'Initializing:', initializing);
+    if (initializing) return; // Wait for auth to initialize
+
+    if (!requestId) {
         console.warn('[FarmerViewRequestPage] Invalid or missing requestId.');
         setError("ID do pedido inválido.");
         setIsLoading(false);
-    } else if (!user && !isLoading) { // Only set error if not already loading initial user auth
-      console.warn('[FarmerViewRequestPage] User not available.');
-      // This case should ideally be handled by PageWrapper redirecting.
-      // Adding a specific error here might be redundant if PageWrapper handles it.
+        return;
     }
-  }, [requestId, user, isLoading]); // Added isLoading to dependencies to re-evaluate if user loads after initial mount
+    
+    if (!user) {
+        // This case should be handled by PageWrapper, but as a safeguard:
+        console.warn('[FarmerViewRequestPage] User not authenticated.');
+        // router.replace(APP_ROUTES.LOGIN); // PageWrapper should do this
+        setError("Usuário não autenticado.");
+        setIsLoading(false);
+        return;
+    }
+
+    setIsLoading(true);
+    getRequestById(requestId)
+      .then(data => {
+        if (data && (data.farmerId === user.id || user.role === 'admin')) { // Admin can also view
+          setRequest(data);
+          console.log('[FarmerViewRequestPage] Request data set:', data);
+        } else if (data) {
+          setError("Você não tem autorização para ver este pedido.");
+          console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
+        } else {
+          setError("Pedido não encontrado.");
+          console.warn('[FarmerViewRequestPage] Request not found:', requestId);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
+        setError("Falha ao carregar detalhes do pedido.");
+        setIsLoading(false);
+      });
+  }, [requestId, user, initializing, router]);
 
   const getPlantTypeDisplay = (req: AgriRequest): string => {
     const types = [];
@@ -194,8 +197,8 @@ export default function FarmerViewRequestPage() {
   };
 
 
-  if (isLoading) {
-    console.log('[FarmerViewRequestPage] Rendering Skeleton (isLoading true).');
+  if (isLoading || initializing) { // Keep initializing check for initial auth loading
+    console.log('[FarmerViewRequestPage] Rendering Skeleton (isLoading or initializing true).');
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="max-w-3xl mx-auto">
@@ -253,12 +256,17 @@ export default function FarmerViewRequestPage() {
 
   if (!request) {
     console.log('[FarmerViewRequestPage] Rendering "Não foi possível carregar..." (request is null/undefined).');
+    // This state should ideally be covered by error state from getRequestById if not found
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
-        <p>Não foi possível carregar os detalhes do pedido. Verifique se o ID do pedido é válido ou tente novamente mais tarde.</p>
-         <Button onClick={() => router.push(APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
+        <div className="text-center py-10">
+          <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">Pedido Não Encontrado</h2>
+          <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido. Verifique se o ID do pedido é válido ou tente novamente mais tarde.</p>
+          <Button onClick={() => router.push(APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
+        </div>
       </PageWrapper>
     );
   }
@@ -338,7 +346,7 @@ export default function FarmerViewRequestPage() {
         <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <DialogHeader>
-              <UIDialogTitle>Imagem Expandida</UIDialogTitle>
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle> {/* Added DialogTitle */}
             </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image

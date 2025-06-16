@@ -6,7 +6,9 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-import { mockRequests, deleteMockRequest, updateMockRequest, amapaMunicipalities } from '@/lib/mockData';
+// import { mockRequests, deleteMockRequest, updateMockRequest, amapaMunicipalities } from '@/lib/mockData'; // Replaced
+import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; // Import Firestore service
+import { amapaMunicipalities } from '@/lib/mockData'; // Keep for municipality list
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,21 +17,12 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'; // Renamed DialogTitle to UIDialogTitle
+import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
-
-
-const fetchRequestByIdForTechnician = async (requestId: string): Promise<AgriRequest | undefined> => {
-  console.log('[TechnicianViewRequestPage] Fetching request for ID:', requestId);
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const request = mockRequests.find(req => req.id === requestId);
-  console.log('[TechnicianViewRequestPage] Found request:', request ? request.id : 'not found');
-  return request;
-};
 
 
 export default function TechnicianViewRequestPage() {
@@ -39,8 +32,8 @@ export default function TechnicianViewRequestPage() {
   const { toast } = useToast();
 
   const [request, setRequest] = useState<AgriRequest | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // For initial request data load
-  const [isAiProcessing, setIsAiProcessing] = useState(false); // Specifically for AI step
+  const [isLoading, setIsLoading] = useState(true); 
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
@@ -51,36 +44,27 @@ export default function TechnicianViewRequestPage() {
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
-  // Effect 1: Fetch initial request data
   useEffect(() => {
-    console.log('[TechnicianViewRequestPage Effect1] Triggered. AuthInitializing:', authInitializing, 'RequestId:', requestId, 'User:', user ? user.id : 'null');
-    if (authInitializing) {
-      console.log('[TechnicianViewRequestPage Effect1] Auth still initializing. Aborting.');
-      return;
-    }
+    if (authInitializing) return;
 
     if (!user) {
-      console.log('[TechnicianViewRequestPage Effect1] No user and auth not initializing. Redirecting to LOGIN.');
       router.replace(APP_ROUTES.LOGIN);
       return;
     }
 
     if (!requestId) {
-      console.warn('[TechnicianViewRequestPage Effect1] Invalid or missing requestId. Setting error.');
       setError("ID do pedido inválido.");
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    setError(null); // Reset error before fetching
-    fetchRequestByIdForTechnician(requestId)
+    setError(null);
+    getRequestById(requestId)
       .then((data) => {
         if (data) {
-          console.log('[TechnicianViewRequestPage Effect1] Request data fetched successfully:', data.id);
           setRequest(data);
         } else {
-          console.warn('[TechnicianViewRequestPage Effect1] Request not found for ID:', requestId);
           setError("Pedido não encontrado.");
         }
       })
@@ -89,16 +73,13 @@ export default function TechnicianViewRequestPage() {
         setError("Falha ao carregar detalhes do pedido.");
       })
       .finally(() => {
-        console.log('[TechnicianViewRequestPage Effect1] Finished fetching. Setting isLoading to false.');
         setIsLoading(false);
       });
   }, [requestId, user, authInitializing, router]);
 
 
-  // Effect 2: Process AI data for location if needed, once 'request' state is set and if it's pending
   useEffect(() => {
-    console.log('[TechnicianViewRequestPage Effect2] Triggered. Request state:', request ? request.id : 'null', 'Request status:', request ? request.status : 'n/a');
-    if (!request || request.status !== 'Pending') {
+    if (!request || request.status !== 'Pending' || !requestId) {
       if (request && request.status !== 'Pending') console.log('[TechnicianViewRequestPage Effect2] Request not pending or already processed by AI. Skipping AI step.');
       else if (!request) console.log('[TechnicianViewRequestPage Effect2] Request data not yet available. Skipping AI step.');
       return;
@@ -117,18 +98,18 @@ export default function TechnicianViewRequestPage() {
         cassavaType: request.cassavaType,
         isMandioca: request.isMandioca,
         isMacaxeira: request.isMacaxeira,
-        photoDataUri1: request.photoDataUris[0],
+        photoDataUri1: request.photoDataUris[0], // These are now URLs
         photoDataUri2: request.photoDataUris[1],
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
         infectedArea: request.infectedArea,
-        deviceLatitude: request.latitude, // Pass current lat/lon, may be undefined
-        deviceLongitude: request.longitude, // Pass current lat/lon, may be undefined
+        deviceLatitude: request.latitude,
+        deviceLongitude: request.longitude,
       };
       console.log('[TechnicianViewRequestPage Effect2] AI Input for location:', JSON.stringify(aiInput, null, 2));
 
-      generateRecommendation(aiInput) // Renamed flow but functionality is now location-focused
-        .then(aiOutput => {
+      generateRecommendation(aiInput)
+        .then(async aiOutput => {
           console.log("[TechnicianViewRequestPage Effect2] Raw AI Output received for location:", JSON.stringify(aiOutput, null, 2));
           
           let latFromAI: number | undefined = undefined;
@@ -143,23 +124,33 @@ export default function TechnicianViewRequestPage() {
             console.error("[TechnicianViewRequestPage] AI output from generateRecommendation was unexpectedly undefined.");
           }
           
-          console.log("[TechnicianViewRequestPage Effect2] AI Output for location is valid. Updating request fields.");
-          const updatedFields: Partial<AgriRequest> = {
-            latitude: latFromAI ?? request.latitude,
-            longitude: lonFromAI ?? request.longitude,
-            municipality: munFromAI || request.municipality,
-          };
-          // No longer updating aiSuggestedRecommendation
-          const updatedRequestWithAIData = { ...request, ...updatedFields };
-          return updateMockRequest(updatedRequestWithAIData);
-        })
-        .then(savedUpdatedRequest => {
-          if (savedUpdatedRequest) {
-            console.log("[TechnicianViewRequestPage Effect2] AI location data saved. Updating request state.");
-            setRequest(savedUpdatedRequest);
-            toast({ title: "Dados de Localização da IA Carregados", description: "Localização e município da IA processados." });
+          const updatedFields: Partial<AgriRequest> = {};
+          let needsDBUpdate = false;
+
+          if (latFromAI !== undefined && latFromAI !== request.latitude) {
+            updatedFields.latitude = latFromAI;
+            needsDBUpdate = true;
+          }
+          if (lonFromAI !== undefined && lonFromAI !== request.longitude) {
+            updatedFields.longitude = lonFromAI;
+            needsDBUpdate = true;
+          }
+          if (munFromAI && munFromAI !== request.municipality) {
+            updatedFields.municipality = munFromAI;
+            needsDBUpdate = true;
+          }
+          
+          if (needsDBUpdate && requestId) {
+             console.log("[TechnicianViewRequestPage Effect2] AI Output for location requires DB update. Updating request fields:", updatedFields);
+            const savedUpdatedRequest = await updateRequestInFirestore(requestId, updatedFields);
+            if (savedUpdatedRequest) {
+              setRequest(savedUpdatedRequest); // Update local state with the full updated request from DB
+              toast({ title: "Dados de Localização da IA Atualizados", description: "Localização e município da IA processados e salvos." });
+            } else {
+                 toast({ title: "Erro ao Salvar IA", description: "Não foi possível salvar as atualizações de localização da IA.", variant: "destructive" });
+            }
           } else {
-            console.log("[TechnicianViewRequestPage Effect2] No AI location data saved (either AI failed or no update needed).");
+            console.log("[TechnicianViewRequestPage Effect2] No AI location data update needed or AI failed.");
           }
         })
         .catch(aiError => {
@@ -173,7 +164,8 @@ export default function TechnicianViewRequestPage() {
     } else {
       console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed for request:', request.id);
     }
-  }, [request, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request, toast]); // requestId is not needed here as effect depends on `request` which depends on `requestId`
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -199,18 +191,14 @@ export default function TechnicianViewRequestPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!user || user.role !== 'admin' || !request) return;
+    if (!user || user.role !== 'admin' || !request || !requestId) return;
 
     setIsDeleting(true);
-    if (adminPassword === user.password) {
+    if (adminPassword === user.password) { // This password check is against mock data user password, adjust if real auth is used
       try {
-        const success = await deleteMockRequest(request.id);
-        if (success) {
-          toast({ title: 'Pedido Removido', description: `O pedido ID ${request.id} foi removido com sucesso.` });
-          router.push(APP_ROUTES.ADMIN_DASHBOARD);
-        } else {
-          toast({ title: 'Erro na Remoção', description: 'Não foi possível encontrar o pedido para remover.', variant: 'destructive' });
-        }
+        await deleteRequestFromFirestore(requestId);
+        toast({ title: 'Pedido Removido', description: `O pedido ID ${requestId} foi removido com sucesso.` });
+        router.push(APP_ROUTES.ADMIN_DASHBOARD);
       } catch (e) {
         toast({ title: 'Erro na Remoção', description: 'Ocorreu um erro ao tentar remover o pedido.', variant: 'destructive' });
       }
@@ -242,7 +230,7 @@ export default function TechnicianViewRequestPage() {
     } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
       locationText = "Nenhuma localização GPS finalizada.";
       sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
-    } else if (request.municipality) { // Municipality might be available from AI even if lat/lon are not
+    } else if (request.municipality) { 
         sourceText = "Coordenadas GPS não disponíveis ou não finalizadas.";
     }
 
@@ -270,7 +258,7 @@ export default function TechnicianViewRequestPage() {
   };
 
 
-  if (isLoading || authInitializing) { // Keep authInitializing here for the very first load
+  if (isLoading || authInitializing) { 
     return (
        <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
@@ -287,13 +275,13 @@ export default function TechnicianViewRequestPage() {
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-5 w-1/3" />
               <div>
-                <Skeleton className="h-4 w-1/3 mb-1" /> {/* "Localização" label */}
-                <Skeleton className="h-5 w-3/4 mb-1" /> {/* Coordinates placeholder */}
-                <Skeleton className="h-3 w-1/2" />      {/* Source hint placeholder */}
+                <Skeleton className="h-4 w-1/3 mb-1" />
+                <Skeleton className="h-5 w-3/4 mb-1" /> 
+                <Skeleton className="h-3 w-1/2" />      
               </div>
               <div>
-                <Skeleton className="h-4 w-1/4 mb-1" /> {/* "Município" label */}
-                <Skeleton className="h-5 w-1/2" />    {/* Municipality name placeholder */}
+                <Skeleton className="h-4 w-1/4 mb-1" />
+                <Skeleton className="h-5 w-1/2" />    
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -325,13 +313,13 @@ export default function TechnicianViewRequestPage() {
     );
   }
 
-  if (!request) { // This case should ideally be covered by isLoading or error state
+  if (!request) { 
     return (
       <PageWrapper allowedRoles={['technician', 'admin']}>
          <div className="text-center py-10">
-          <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
-          <h2 className="text-xl font-semibold text-foreground">Carregando pedido ou pedido não encontrado...</h2>
-           <p className="text-muted-foreground">Se esta mensagem persistir, o pedido pode não ter sido encontrado ou houve um problema.</p>
+          <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold text-foreground">Pedido Não Encontrado</h2>
+          <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido. Verifique se o ID é válido.</p>
           <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
@@ -340,7 +328,6 @@ export default function TechnicianViewRequestPage() {
     );
   }
 
-  // If we reach here, request is loaded.
   return (
     <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
@@ -493,7 +480,7 @@ export default function TechnicianViewRequestPage() {
          <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <DialogHeader>
-              <UIDialogTitle>Imagem Expandida</UIDialogTitle>
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle> {/* Added DialogTitle */}
             </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image
