@@ -6,7 +6,7 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest } from '@/types';
-import { mockRequests, deleteMockRequest, updateMockRequest } from '@/lib/mockData';
+import { mockRequests, deleteMockRequest, updateMockRequest, amapaMunicipalities } from '@/lib/mockData';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,13 +40,13 @@ export default function TechnicianViewRequestPage() {
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] useState(false);
+  const [adminPassword, setAdminPassword] useState('');
+  const [isDeleting, setIsDeleting] useState(false);
+  const [showPassword, setShowPassword] useState(false);
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
@@ -66,9 +66,18 @@ export default function TechnicianViewRequestPage() {
       fetchRequestByIdForTechnician(requestId)
         .then(async (data) => {
           if (data) {
-            // If request is pending and AI suggestion is not present, run AI flow
-            // Also check if latitude/longitude from AI are missing, even if a suggestion exists (e.g., from manual entry before AI)
-            if (data.status === 'Pending' && (!data.aiSuggestedRecommendation || data.latitude === undefined || data.longitude === undefined) ) {
+            // Trigger AI processing if:
+            // 1. Status is Pending AND
+            // 2. Either AI suggestion is missing OR GPS coords are missing OR municipality is missing/invalid
+            const needsAiProcessing = data.status === 'Pending' && 
+                                      (!data.aiSuggestedRecommendation || 
+                                       data.latitude === undefined || 
+                                       data.longitude === undefined ||
+                                       !data.municipality || // municipality is missing
+                                       !amapaMunicipalities.includes(data.municipality) // or not a valid Amapa municipality
+                                      );
+
+            if (needsAiProcessing) {
               setIsAiProcessing(true);
               try {
                 const aiInput = {
@@ -80,36 +89,36 @@ export default function TechnicianViewRequestPage() {
                   photoDataUri3: data.photoDataUris[2],
                   plantedArea: data.plantedArea,
                   infectedArea: data.infectedArea,
-                  deviceLatitude: data.latitude, // Pass device-captured lat if available
-                  deviceLongitude: data.longitude, // Pass device-captured lon if available
+                  deviceLatitude: data.latitude, 
+                  deviceLongitude: data.longitude,
                 };
                 const aiOutput = await generateRecommendation(aiInput);
                 
                 const updatedRequestWithAIData: AgriRequest = {
                   ...data,
                   aiSuggestedRecommendation: aiOutput.recommendation,
-                  // AI output (extractedLatitude/Longitude) now becomes the primary source for these fields after AI processing
                   latitude: aiOutput.extractedLatitude, 
                   longitude: aiOutput.extractedLongitude,
+                  municipality: aiOutput.determinedMunicipality || data.municipality, // Use AI municipality, fallback to existing
                 };
                 
                 const savedUpdatedRequest = await updateMockRequest(updatedRequestWithAIData);
                 if (savedUpdatedRequest) {
                   setRequest(savedUpdatedRequest);
-                  toast({ title: "Sugestão e Localização da IA Carregadas", description: "Recomendação e localização (se aplicável) foram processadas pela IA." });
+                  toast({ title: "Sugestão, Localização e Município da IA Carregados", description: "Dados processados pela IA." });
                 } else {
-                  setRequest(data); // Fallback to original data if update fails
-                  toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as sugestões da IA.", variant: "destructive" });
+                  setRequest(data); 
+                  toast({ title: "Erro ao Salvar Dados da IA", description: "Não foi possível salvar as atualizações da IA.", variant: "destructive" });
                 }
               } catch (aiError) {
-                console.error("[TechnicianViewRequestPage] Falha ao gerar recomendação da IA:", aiError);
-                toast({ title: "Falha na IA", description: "Não foi possível obter a sugestão da IA.", variant: "destructive" });
-                setRequest(data); // Set original data if AI fails
+                console.error("[TechnicianViewRequestPage] Falha ao gerar dados da IA:", aiError);
+                toast({ title: "Falha na IA", description: "Não foi possível obter os dados da IA.", variant: "destructive" });
+                setRequest(data); 
               } finally {
                 setIsAiProcessing(false);
               }
             } else {
-              setRequest(data); // AI already processed or not applicable
+              setRequest(data); 
             }
           } else {
             setError("Pedido não encontrado.");
@@ -154,7 +163,7 @@ export default function TechnicianViewRequestPage() {
     if (!user || user.role !== 'admin' || !request) return;
 
     setIsDeleting(true);
-    if (adminPassword === user.password) { // Ensure user.password is available and correct
+    if (adminPassword === user.password) { 
       try {
         const success = await deleteMockRequest(request.id);
         if (success) {
@@ -175,36 +184,53 @@ export default function TechnicianViewRequestPage() {
   };
 
   const LocationDisplay = () => {
+    let locationText = "Localização não disponível para este pedido.";
+    let sourceText = "";
+
     if (typeof request?.latitude === 'number' && typeof request?.longitude === 'number') {
-      let source = "Extraída/Confirmada pela IA";
+      locationText = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
       if (request.deviceLocationStatus === 'success') {
-        source = "Fornecida pelo Dispositivo do Agricultor";
-      } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-        source = `Tentativa do Dispositivo: ${request.deviceLocationStatus}, Localização da IA`;
+        sourceText = "Fonte: Fornecida pelo Dispositivo do Agricultor.";
+         if (request.municipality && amapaMunicipalities.includes(request.municipality)) {
+           sourceText += ` Município (IA/Dispositivo): ${request.municipality}.`;
+         } else if (request.municipality) {
+            sourceText += ` Município (Registrado): ${request.municipality}.`;
+         }
+      } else {
+         sourceText = "Fonte: Extraída/Confirmada pela IA.";
+         if (request.municipality && amapaMunicipalities.includes(request.municipality)) {
+           sourceText += ` Município (IA): ${request.municipality}.`;
+         } else if (request.municipality) {
+            sourceText += ` Município (Registrado): ${request.municipality}.`;
+         }
+         if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
+            sourceText += ` Status GPS Dispositivo: ${request.deviceLocationStatus}.`
+         }
       }
-      return (
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
-          </h3>
-          <p className="text-lg text-foreground">Lat: {request.latitude.toFixed(6)}, Long: {request.longitude.toFixed(6)}</p>
-          <p className="text-xs text-muted-foreground">Fonte: {source}</p>
-        </div>
-      );
     } else if (request?.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-       return (
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-            <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
-          </h3>
-          <p className="text-lg text-muted-foreground flex items-center">
-            <WifiOff className="h-4 w-4 mr-2 text-destructive" /> Nenhuma localização GPS finalizada.
-          </p>
-          <p className="text-xs text-muted-foreground">Status do GPS do agricultor: {request.deviceLocationStatus}. A IA não extraiu das imagens.</p>
-        </div>
-      );
+      locationText = "Nenhuma localização GPS finalizada.";
+      sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}.`;
+      if (request.municipality) {
+        sourceText += ` Município (Registrado): ${request.municipality}.`;
+      }
+       sourceText += " A IA não extraiu coordenadas das imagens.";
+    } else if (request?.municipality) { // Only municipality from registration
+        locationText = `Município (Registrado): ${request.municipality}`;
+        sourceText = "Coordenadas GPS não disponíveis.";
     }
-    return null; // No location data to display
+
+
+    return (
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground flex items-center">
+          <MapPin className="h-4 w-4 mr-2 text-primary" />Localização e Município
+        </h3>
+        <p className={`text-lg ${typeof request?.latitude !== 'number' ? 'text-muted-foreground' : 'text-foreground'}`}>
+          {locationText.startsWith("Lat:") || locationText.startsWith("Município (Registrado):") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
+        </p>
+        {sourceText && <p className="text-xs text-muted-foreground">{sourceText}</p>}
+      </div>
+    );
   };
 
 
@@ -223,9 +249,9 @@ export default function TechnicianViewRequestPage() {
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
               <Skeleton className="h-5 w-1/3" /> 
-              <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
-              <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
-              <Skeleton className="h-5 w-1/3" /> {/* Location */}
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
                 <Skeleton className="h-40 w-full rounded-lg" />

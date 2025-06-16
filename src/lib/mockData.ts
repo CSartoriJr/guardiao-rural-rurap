@@ -36,7 +36,7 @@ const defaultMockUsers: User[] = [
   { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
 ];
 
-const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; // 1x1 black pixel gif
+const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; 
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
 
@@ -73,6 +73,8 @@ const defaultMockRequests: AgriRequest[] = [
     responseDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Santana',
     plantedArea: 5,
+    latitude: 0.0588, // Approx Santana
+    longitude: -51.1782, // Approx Santana
   },
    {
     id: 'req3',
@@ -91,7 +93,7 @@ const defaultMockRequests: AgriRequest[] = [
   },
   {
     id: 'req4',
-    farmerId: 'farmer4',
+    farmerId: 'farmer4', // Bento Agricultor
     farmerName: 'Bento Agricultor',
     cassavaType: 'IAC 90',
     isMandioca: true,
@@ -103,7 +105,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianId: 'tech2',
     technicianName: 'David Moleiro',
     responseDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Macapá',
+    municipality: 'Macapá', // Example, could be Mazagão based on farmer's reg
     plantedArea: 20,
     infectedArea: 8,
   },
@@ -123,7 +125,7 @@ const defaultMockRequests: AgriRequest[] = [
   },
   {
     id: 'req6',
-    farmerId: 'farmer6',
+    farmerId: 'farmer6', // Pedro Alvares
     farmerName: 'Pedro Alvares',
     cassavaType: 'BRS Formosa',
     isMandioca: true,
@@ -141,7 +143,7 @@ const defaultMockRequests: AgriRequest[] = [
   },
   {
     id: 'req7',
-    farmerId: 'farmer7',
+    farmerId: 'farmer7', // Sofia Costa
     farmerName: 'Sofia Costa',
     cassavaType: 'Vassourinha',
     isMandioca: true,
@@ -154,7 +156,6 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'Lúcia Ferreira',
     responseDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Porto Grande',
-    plantedArea: 3,
   },
   {
     id: 'req8',
@@ -174,7 +175,7 @@ const defaultMockRequests: AgriRequest[] = [
   },
   {
     id: 'req9',
-    farmerId: 'farmer9',
+    farmerId: 'farmer9', // Ana Pereira
     farmerName: 'Ana Pereira',
     cassavaType: 'BRS CS01',
     isMandioca: false,
@@ -236,18 +237,15 @@ const loadMockData = () => {
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
       try {
-        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[]; // Assume they are AgriRequest[]
+        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[]; 
         if (Array.isArray(parsedRequests)) {
-          // When loading, ensure photoDataUris are valid, especially if they were stored as placeholders.
-          // For this mock, we'll just load them. A more robust system might re-validate or transform.
            mockRequests = parsedRequests.map(req => ({
             ...req,
-            // Ensure photoDataUris is always an array of 3 strings, falling back to small placeholder if needed
             photoDataUris: (
               Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
               ? req.photoDataUris
               : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]
-            ) as [string, string, string] // Cast to tuple
+            ) as [string, string, string] 
           }));
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
@@ -286,15 +284,13 @@ const persistUsers = () => {
 const persistRequests = () => {
   if (typeof window !== 'undefined') {
     console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
-    // Create a version of requests suitable for localStorage to avoid quota issues.
     const requestsToStore = mockRequests.map(req => {
       const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
-        // If URI is a long base64 string, replace it. Keep URLs or short data URIs.
-        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) { // 256 chars is an arbitrary threshold
+        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) { 
           return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
         }
         return uri;
-      }) as [string, string, string]; // Ensure it's a tuple
+      }) as [string, string, string]; 
 
       return {
         ...req,
@@ -306,8 +302,6 @@ const persistRequests = () => {
       console.log('[MockData] Successfully persisted sanitized requests.');
     } catch (error) {
       console.error('[MockData] Error persisting requests to localStorage:', error);
-      // Potentially, clear localStorage or part of it if quota is still an issue with sanitized data
-      // For now, just log the error. A more robust app might try other strategies.
     }
   }
 };
@@ -368,13 +362,12 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
     id: `req${Date.now()}`,
     submissionDate: new Date().toISOString(),
     status: 'Pending',
-    // Ensure photoDataUris is correctly typed as a tuple if newRequestData provides it
     photoDataUris: (newRequestData.photoDataUris 
         ? newRequestData.photoDataUris 
         : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
   };
-  mockRequests.unshift(newRequest); // Add to the beginning of the array (in-memory full data)
-  persistRequests(); // This will save the sanitized version to localStorage
+  mockRequests.unshift(newRequest); 
+  persistRequests(); 
   console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
 };
@@ -390,7 +383,7 @@ export const updateMockRequest = async (updatedRequestData: AgriRequest): Promis
             ? updatedRequestData.photoDataUris 
             : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
         };
-        persistRequests(); // Persist sanitized version
+        persistRequests(); 
         console.log('[MockData] Updated request:', updatedRequestData.id);
         return mockRequests[index];
     }
@@ -403,7 +396,7 @@ export const deleteMockRequest = async (requestId: string): Promise<boolean> => 
   const initialLength = mockRequests.length;
   mockRequests = mockRequests.filter(req => req.id !== requestId);
   if (mockRequests.length < initialLength) {
-    persistRequests(); // Persist after deletion
+    persistRequests(); 
     console.log('[MockData] Deleted request:', requestId, 'Remaining requests:', mockRequests.length);
     return true;
   }
@@ -420,7 +413,6 @@ export const amapaMunicipalities: string[] = [
   "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
 ];
 
-// Ensure that all default mock requests also use the small placeholder for long data URIs or valid URLs
 defaultMockRequests.forEach(req => {
   req.photoDataUris = (req.photoDataUris || [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]).map(uri => {
     if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
@@ -430,5 +422,3 @@ defaultMockRequests.forEach(req => {
   }) as [string, string, string];
 });
 
-
-  
