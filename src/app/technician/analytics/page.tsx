@@ -270,11 +270,11 @@ export default function TechnicianAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={Math.max(400, municipalityChartData.length * 30)}> {/* Dynamic height */}
-                      <BarChart data={municipalityChartData} layout="vertical" margin={{ right: 20, left: 20, bottom: 20 }}>
+                    <ResponsiveContainer width="100%" height={400}> {/* Reverted height */}
+                      <BarChart data={municipalityChartData} margin={{ top: 5, right: 20, left: 20, bottom: 60 }}> {/* Adjusted bottom margin for labels */}
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis dataKey="name" type="category" width={120} interval={0} />
+                        <XAxis dataKey="name" type="category" interval={0} angle={-45} textAnchor="end" height={80} /> {/* Added angle, textAnchor, and height for XAxis labels */}
+                        <YAxis allowDecimals={false} />
                         <Tooltip />
                         <Legend />
                         <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Pedidos"/>
