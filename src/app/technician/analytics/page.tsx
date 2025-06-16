@@ -103,18 +103,18 @@ export default function TechnicianAnalyticsPage() {
             <Skeleton className="h-10 w-1/4" />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6"> {/* Updated for skeleton */}
-            <div className="lg:col-span-9"> {/* Map skeleton takes 9 columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+            <div className="lg:col-span-9">
               <Card>
                 <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
                 <CardContent className="pt-2">
-                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" /> {/* Map Skeleton */}
+                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" />
                   <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
                   <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full gap-4"> {/* Stats skeletons take 1 column */}
+            <div className="lg:col-span-1 flex flex-col justify-between h-full gap-4">
               <Skeleton className="w-full aspect-square rounded-lg" />
               <Skeleton className="w-full aspect-square rounded-lg" />
               <Skeleton className="w-full aspect-square rounded-lg" />
@@ -160,8 +160,8 @@ export default function TechnicianAnalyticsPage() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6"> {/* Changed to 10 columns */}
-            <Card className="lg:col-span-9"> {/* Map takes 9 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+            <Card className="lg:col-span-9"> 
                 <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
                 <CardContent className="pt-2">
                     <AmapaInteractiveMap
@@ -174,7 +174,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                 </CardContent>
             </Card>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full"> {/* Stats take 1 column */}
+            <div className="lg:col-span-1 flex flex-col justify-between h-full"> 
                 <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
@@ -206,7 +206,7 @@ export default function TechnicianAnalyticsPage() {
                 </Card>
                 <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/Inconclusivos</CardTitle>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/ Inconclusivos</CardTitle>
                     </CardHeader>
                     <CardContent className="text-center">
                     <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
