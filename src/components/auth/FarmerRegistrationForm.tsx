@@ -302,7 +302,7 @@ export default function FarmerRegistrationForm() {
               />
               <div className="grid gap-1.5 leading-none">
                 <Label htmlFor="lgpdConsent" className="font-normal text-sm">
-                  Eu li e concordo com os <Link href="/termos-e-privacidade" className="font-medium text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso e Política de Privacidade</Link>, e autorizo o tratamento dos meus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD).
+                  Eu li e concordo com os <Link href={APP_ROUTES.TERMS_AND_PRIVACY} className="font-medium text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso e Política de Privacidade</Link>, e autorizo o tratamento dos meus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD).
                 </Label>
               </div>
             </div>
@@ -324,5 +324,3 @@ export default function FarmerRegistrationForm() {
     </Card>
   );
 }
-
-    
