@@ -5,7 +5,7 @@ const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
 // --- Default Data ---
-const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+const VISIBLE_PLACEHOLDER_URI = 'https://placehold.co/60x60.png?text=P'; // Changed from VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
 const defaultMockUsers: User[] = [
@@ -22,7 +22,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'BRS Formosa',
     isMandioca: true,
     isMacaxeira: false,
-    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
+    photoDataUris: [VISIBLE_PLACEHOLDER_URI, placeholderImage2, VISIBLE_PLACEHOLDER_URI],
     status: 'Pending',
     submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Macapá',
@@ -39,7 +39,7 @@ const defaultMockRequests: AgriRequest[] = [
     cassavaType: 'Vassourinha',
     isMandioca: false,
     isMacaxeira: true,
-    photoDataUris: [placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
+    photoDataUris: [placeholderImage2, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI],
     status: 'Positive',
     recommendation: 'Planta parece saudável. Continue com as boas práticas de manejo.',
     submissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -51,7 +51,6 @@ const defaultMockRequests: AgriRequest[] = [
     latitude: 0.0588,
     longitude: -51.1782,
     deviceLocationStatus: 'success',
-    // aiSuggestedRecommendation field removed from here
   },
 ];
 
@@ -110,7 +109,7 @@ const loadMockData = () => {
             photoDataUris: (
               Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
               ? req.photoDataUris
-              : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]
+              : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
             ) as [string, string, string]
           }));
           dataLoadedFromStorage = true;
@@ -128,20 +127,14 @@ const loadMockData = () => {
       mockRequests = [...defaultMockRequests];
     }
 
-    // Persist changes if no data was in storage initially (so defaults were loaded and should be persisted).
     if (!storedRequests) {
       console.log('[MockData] Persisting requests to localStorage after initial load from defaults.');
-      const requestsToStore = mockRequests.map(req => {
-        const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
-          if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
-            return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
-          }
-          return uri;
-        }) as [string, string, string];
-        return { ...req, photoDataUris: sanitizedPhotoUris };
-      });
+      // Persist requests (without sanitization that makes images disappear for now)
       try {
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
+        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests.map(req => ({
+          ...req,
+          photoDataUris: req.photoDataUris || [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
+        }))));
         console.log('[MockData] Successfully persisted initialized requests from defaults.');
       } catch (error) {
         console.error('[MockData] Error persisting requests to localStorage:', error);
@@ -167,22 +160,22 @@ const persistUsers = () => {
 const persistRequests = () => {
   if (typeof window !== 'undefined') {
     console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
+    // Removed aggressive sanitization that replaced valid data URIs with tiny placeholders.
+    // Now, it just ensures the photoDataUris array structure is maintained.
     const requestsToStore = mockRequests.map(req => {
-      const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
-        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
-          return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
-        }
-        return uri;
-      }) as [string, string, string];
+      const photoUrisToStore = (req.photoDataUris && req.photoDataUris.length === 3
+        ? req.photoDataUris
+        : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]
+      ).map(uri => uri || VISIBLE_PLACEHOLDER_URI) as [string, string, string];
 
       return {
         ...req,
-        photoDataUris: sanitizedPhotoUris,
+        photoDataUris: photoUrisToStore,
       };
     });
     try {
       localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
-      console.log('[MockData] Successfully persisted sanitized requests.');
+      console.log('[MockData] Successfully persisted requests.');
     } catch (error) {
       console.error('[MockData] Error persisting requests to localStorage:', error);
     }
@@ -193,14 +186,10 @@ const persistRequests = () => {
 // --- Mutating Functions for Users ---
 export const addMockUser = (newUser: User): User => {
   if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
-  // Check if user with this CPF already exists to prevent duplicates
   const existingUser = mockUsers.find(u => u.cpf.replace(/\D/g, '') === newUser.cpf.replace(/\D/g, ''));
   if (existingUser) {
     console.warn('[MockData] Add user failed: User with this CPF already exists', newUser.cpf);
-    // Optionally, throw an error or return the existing user, or handle as per app logic
-    // For now, let's prevent adding and return the existing one or throw an error.
-    // throw new Error("Usuário com este CPF já existe.");
-    return existingUser; // Or null, or throw error
+    return existingUser; 
   }
   mockUsers.push(newUser);
   persistUsers();
@@ -255,9 +244,9 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
     id: `req${Date.now()}`,
     submissionDate: new Date().toISOString(),
     status: 'Pending',
-    photoDataUris: (newRequestData.photoDataUris
+    photoDataUris: (newRequestData.photoDataUris && newRequestData.photoDataUris.length === 3
         ? newRequestData.photoDataUris
-        : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
+        : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]) as [string, string, string],
   };
   mockRequests.unshift(newRequest);
   persistRequests();
@@ -272,9 +261,9 @@ export const updateMockRequest = async (updatedRequestData: AgriRequest): Promis
         mockRequests[index] = {
           ...mockRequests[index],
           ...updatedRequestData,
-          photoDataUris: (updatedRequestData.photoDataUris
+          photoDataUris: (updatedRequestData.photoDataUris && updatedRequestData.photoDataUris.length === 3
             ? updatedRequestData.photoDataUris
-            : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
+            : [VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI, VISIBLE_PLACEHOLDER_URI]) as [string, string, string],
         };
         persistRequests();
         console.log('[MockData] Updated request:', updatedRequestData.id);
@@ -307,17 +296,12 @@ export const amapaMunicipalities: string[] = [
 ];
 
 defaultMockRequests.forEach(req => {
-  // Ensure photoDataUris are always an array of 3 strings
   const currentPhotos = Array.isArray(req.photoDataUris) ? req.photoDataUris : [];
   const photos: [string, string, string] = [
-    currentPhotos[0] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
-    currentPhotos[1] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
-    currentPhotos[2] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
+    currentPhotos[0] || VISIBLE_PLACEHOLDER_URI,
+    currentPhotos[1] || VISIBLE_PLACEHOLDER_URI,
+    currentPhotos[2] || VISIBLE_PLACEHOLDER_URI,
   ];
-  req.photoDataUris = photos.map(uri => {
-    if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
-      return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
-    }
-    return uri;
-  }) as [string, string, string];
+  req.photoDataUris = photos.map(uri => uri || VISIBLE_PLACEHOLDER_URI) as [string, string, string];
 });
+
