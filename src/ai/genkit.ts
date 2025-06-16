@@ -2,7 +2,7 @@
 import {genkit} from 'genkit';
 import type {FlowFn, PromptFn} from 'genkit/action';
 import {googleAI, GoogleAIPluginParams} from '@genkit-ai/googleai';
-import {z} from 'genkit/zod';
+import {z} from 'genkit';
 
 
 const googleApiKey = process.env.GOOGLE_API_KEY;

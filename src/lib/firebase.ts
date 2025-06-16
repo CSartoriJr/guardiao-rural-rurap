@@ -13,6 +13,11 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+let app: FirebaseApp | undefined = undefined;
+let db: Firestore | undefined = undefined;
+let storage: FirebaseStorage | undefined = undefined;
+let firebaseInitializedCorrectly = false;
+
 if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId || !firebaseConfig.storageBucket) {
   const missingKeys = [];
   if (!firebaseConfig.apiKey) missingKeys.push('NEXT_PUBLIC_FIREBASE_API_KEY');
@@ -20,26 +25,46 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
   if (!firebaseConfig.projectId) missingKeys.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
   if (!firebaseConfig.storageBucket) missingKeys.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
   
-  const errorMessage = `Firebase configuration is missing crucial keys: ${missingKeys.join(', ')}. Please set these in your .env file. Halting Firebase initialization.`;
+  const errorMessage = `[Firebase Initialization Warning] Firebase configuration is MISSING CRUCIAL KEYS: ${missingKeys.join(', ')}. Please set these in your .env file or build environment. Firebase services will NOT be available and attempts to use them will fail at runtime.`;
   console.error(errorMessage);
-  // This error will likely stop the app from starting or cause runtime errors when Firebase is accessed.
-  throw new Error(errorMessage);
-}
-
-let app: FirebaseApp;
-let db: Firestore;
-let storage: FirebaseStorage;
-
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-  console.log('Firebase initialized.');
+  // Not throwing an error to allow build to pass, but features will fail at runtime.
 } else {
-  app = getApp();
-  console.log('Firebase app already initialized.');
+  if (getApps().length === 0) {
+    try {
+      app = initializeApp(firebaseConfig);
+      console.log('Firebase initialized.');
+      firebaseInitializedCorrectly = true;
+    } catch (e: any) {
+      console.error('[Firebase Initialization Error] Failed to initialize Firebase app:', e.message);
+      firebaseInitializedCorrectly = false;
+    }
+  } else {
+    app = getApp();
+    console.log('Firebase app already initialized.');
+    // Assuming if getApp() succeeds, it was initialized correctly before.
+    // However, we should still try to get db and storage to confirm.
+    firebaseInitializedCorrectly = true; 
+  }
+
+  if (app && firebaseInitializedCorrectly) {
+    try {
+      db = getFirestore(app);
+    } catch (e: any) {
+      console.error('[Firebase Initialization Error] Failed to initialize Firestore:', e.message);
+      db = undefined; // Ensure db is undefined if it fails
+      firebaseInitializedCorrectly = false; 
+    }
+    try {
+      storage = getStorage(app);
+    } catch (e: any) {
+      console.error('[Firebase Initialization Error] Failed to initialize Firebase Storage:', e.message);
+      storage = undefined; // Ensure storage is undefined if it fails
+      firebaseInitializedCorrectly = false; 
+    }
+  } else {
+    // If app initialization failed or was skipped due to missing initial config
+    firebaseInitializedCorrectly = false;
+  }
 }
 
-db = getFirestore(app);
-storage = getStorage(app);
-
-export { app, db, storage };
-
+export { app, db, storage, firebaseInitializedCorrectly };

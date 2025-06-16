@@ -1,9 +1,18 @@
+
 // src/services/requestService.ts
-import { db } from '@/lib/firebase';
+import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { collection, addDoc, getDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, serverTimestamp } from 'firebase/firestore';
 import type { AgriRequest, RequestStatus } from '@/types';
 
 const REQUESTS_COLLECTION = 'requests';
+
+const ensureFirebaseInitialized = () => {
+  if (!firebaseInitializedCorrectly || !db) {
+    const errorMessage = "[RequestService] Firebase not properly initialized. Cannot perform Firestore operations.";
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+};
 
 // Helper to convert Firestore Timestamps to ISO strings and vice-versa if needed
 const convertTimestamps = (data: any): any => {
@@ -49,6 +58,7 @@ const requestFromFirestore = (docSnap: any): AgriRequest => {
 export const addRequest = async (
   requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>
 ): Promise<AgriRequest> => {
+  ensureFirebaseInitialized();
   try {
     const docData = {
       ...requestData,
@@ -67,10 +77,9 @@ export const addRequest = async (
       deviceLocationStatus: requestData.deviceLocationStatus ?? 'idle',
     };
 
-    const docRef = await addDoc(collection(db, REQUESTS_COLLECTION), docData);
+    const docRef = await addDoc(collection(db!, REQUESTS_COLLECTION), docData);
     console.log('[RequestService] Request added with ID:', docRef.id);
     
-    // Fetch the just-added document to get server-generated fields like submissionDate
     const newDocSnap = await getDoc(docRef);
     if (!newDocSnap.exists()) {
         throw new Error("Failed to fetch newly created request from Firestore.");
@@ -84,8 +93,9 @@ export const addRequest = async (
 };
 
 export const getRequestById = async (requestId: string): Promise<AgriRequest | undefined> => {
+  ensureFirebaseInitialized();
   try {
-    const docRef = doc(db, REQUESTS_COLLECTION, requestId);
+    const docRef = doc(db!, REQUESTS_COLLECTION, requestId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       return requestFromFirestore(docSnap);
@@ -99,9 +109,9 @@ export const getRequestById = async (requestId: string): Promise<AgriRequest | u
 };
 
 export const updateRequest = async (requestId: string, updates: Partial<AgriRequest>): Promise<AgriRequest | null> => {
+  ensureFirebaseInitialized();
   try {
-    const docRef = doc(db, REQUESTS_COLLECTION, requestId);
-    // Convert date strings back to Timestamps if they are part of updates
+    const docRef = doc(db!, REQUESTS_COLLECTION, requestId);
     const firestoreUpdates: any = {};
     for (const key in updates) {
         const typedKey = key as keyof AgriRequest;
@@ -114,7 +124,6 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
     if (updates.responseDate && !(firestoreUpdates.responseDate instanceof Timestamp)) {
         firestoreUpdates.responseDate = serverTimestamp();
     }
-
 
     await updateDoc(docRef, firestoreUpdates);
     console.log(`[RequestService] Request updated: ${requestId}`);
@@ -129,12 +138,10 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
   }
 };
 
-// Add other service functions (getRequestsForFarmer, getPendingRequestsForTechnician, etc.) here later
-// For now, focusing on add and getById for the core flow.
-
 export const getRequestsForFarmer = async (farmerId: string): Promise<AgriRequest[]> => {
+  ensureFirebaseInitialized();
   const q = query(
-    collection(db, REQUESTS_COLLECTION),
+    collection(db!, REQUESTS_COLLECTION),
     where('farmerId', '==', farmerId),
     orderBy('submissionDate', 'desc')
   );
@@ -143,8 +150,9 @@ export const getRequestsForFarmer = async (farmerId: string): Promise<AgriReques
 };
 
 export const getPendingRequestsForTechnician = async (): Promise<AgriRequest[]> => {
+  ensureFirebaseInitialized();
   const q = query(
-    collection(db, REQUESTS_COLLECTION),
+    collection(db!, REQUESTS_COLLECTION),
     where('status', '==', 'Pending'),
     orderBy('submissionDate', 'asc')
   );
@@ -153,16 +161,16 @@ export const getPendingRequestsForTechnician = async (): Promise<AgriRequest[]> 
 };
 
 export const getAllRequestsForAdmin = async (): Promise<AgriRequest[]> => {
-  // Consider pagination for very large datasets in a real production app
-  const q = query(collection(db, REQUESTS_COLLECTION), orderBy('submissionDate', 'desc'));
+  ensureFirebaseInitialized();
+  const q = query(collection(db!, REQUESTS_COLLECTION), orderBy('submissionDate', 'desc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(requestFromFirestore);
 };
 
-
 export const deleteRequestFromFirestore = async (requestId: string): Promise<void> => {
+  ensureFirebaseInitialized();
   try {
-    const docRef = doc(db, REQUESTS_COLLECTION, requestId);
+    const docRef = doc(db!, REQUESTS_COLLECTION, requestId);
     await deleteDoc(docRef);
     console.log(`[RequestService] Request deleted from Firestore: ${requestId}`);
   } catch (error) {
