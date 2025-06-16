@@ -12,6 +12,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+  const missingKeys = [];
+  if (!firebaseConfig.apiKey) missingKeys.push('NEXT_PUBLIC_FIREBASE_API_KEY');
+  if (!firebaseConfig.authDomain) missingKeys.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+  if (!firebaseConfig.projectId) missingKeys.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  
+  const errorMessage = `Firebase configuration is missing: ${missingKeys.join(', ')}. Please set these in your .env file. Halting Firebase initialization.`;
+  console.error(errorMessage);
+  throw new Error(errorMessage);
+}
+
 let app: FirebaseApp;
 let db: Firestore;
 let storage: FirebaseStorage;
