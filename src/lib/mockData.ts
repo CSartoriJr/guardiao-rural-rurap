@@ -105,7 +105,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianId: 'tech2',
     technicianName: 'David Moleiro',
     responseDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Macapá', // Example, could be Mazagão based on farmer's reg
+    municipality: 'Mazagão', 
     plantedArea: 20,
     infectedArea: 8,
   },
@@ -137,7 +137,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianId: 'tech6',
     technicianName: 'Ricardo Neves',
     responseDate: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Mazagão',
+    municipality: 'Porto Grande',
     plantedArea: 12.5,
     infectedArea: 0,
   },
@@ -155,7 +155,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianId: 'tech7',
     technicianName: 'Lúcia Ferreira',
     responseDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Porto Grande',
+    municipality: 'Cutias',
   },
   {
     id: 'req8',
@@ -188,6 +188,22 @@ const defaultMockRequests: AgriRequest[] = [
     technicianName: 'Roberto Dias',
     responseDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     municipality: 'Vitória do Jari',
+  },
+  {
+    id: 'req1749935232522', // This is a new one for testing the update
+    farmerId: 'farmer10',
+    farmerName: 'Lucas Mendes',
+    cassavaType: 'BRS Poti Branca',
+    isMandioca: true,
+    isMacaxeira: false,
+    photoDataUris: [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, placeholderImage2, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI],
+    status: 'Pending',
+    submissionDate: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString(),
+    municipality: 'Santana', // Target municipality
+    plantedArea: 3,
+    infectedArea: 0.2,
+    latitude: 0.05,     // Approx Santana
+    longitude: -51.18,  // Approx Santana
   },
 ];
 
@@ -421,4 +437,17 @@ defaultMockRequests.forEach(req => {
     return uri;
   }) as [string, string, string];
 });
+
+// Ensure the specific request is present and updated, if it's part of the initial defaults
+const specificRequestIndex = defaultMockRequests.findIndex(req => req.id === 'req1749935232522');
+if (specificRequestIndex !== -1) {
+  defaultMockRequests[specificRequestIndex].municipality = 'Santana';
+} else {
+  // If it wasn't in the original default list, and you need it,
+  // you might consider adding it here or ensuring it's added via addMockRequest.
+  // For now, this ensures if it *was* default, it's updated.
+  // If the app relies on localStorage persistence, and this ID was created at runtime,
+  // this specific direct modification to defaultMockRequests won't affect already persisted data.
+  // The updateMockRequest function would be the way to change persisted runtime data.
+}
 
