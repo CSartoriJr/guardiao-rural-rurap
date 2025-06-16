@@ -36,7 +36,7 @@ const defaultMockUsers: User[] = [
   { id: 'admin2', cpf: '961.391.452-87', role: 'admin', name: 'Admin Mestre', password: '23jr02cs' },
 ];
 
-const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; 
+const VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 const placeholderImage2 = 'https://placehold.co/300x300.png';
 
 
@@ -105,7 +105,7 @@ const defaultMockRequests: AgriRequest[] = [
     technicianId: 'tech2',
     technicianName: 'David Moleiro',
     responseDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    municipality: 'Mazagão', 
+    municipality: 'Mazagão',
     plantedArea: 20,
     infectedArea: 8,
   },
@@ -253,7 +253,7 @@ const loadMockData = () => {
     if (storedRequests) {
       console.log('[MockData] Found stored requests in localStorage.');
       try {
-        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[]; 
+        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[];
         if (Array.isArray(parsedRequests)) {
            mockRequests = parsedRequests.map(req => ({
             ...req,
@@ -261,7 +261,7 @@ const loadMockData = () => {
               Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
               ? req.photoDataUris
               : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]
-            ) as [string, string, string] 
+            ) as [string, string, string]
           }));
           console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
         } else {
@@ -302,11 +302,11 @@ const persistRequests = () => {
     console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
     const requestsToStore = mockRequests.map(req => {
       const sanitizedPhotoUris = (req.photoDataUris || []).map(uri => {
-        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) { 
+        if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
           return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
         }
         return uri;
-      }) as [string, string, string]; 
+      }) as [string, string, string];
 
       return {
         ...req,
@@ -378,12 +378,12 @@ export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 's
     id: `req${Date.now()}`,
     submissionDate: new Date().toISOString(),
     status: 'Pending',
-    photoDataUris: (newRequestData.photoDataUris 
-        ? newRequestData.photoDataUris 
+    photoDataUris: (newRequestData.photoDataUris
+        ? newRequestData.photoDataUris
         : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
   };
-  mockRequests.unshift(newRequest); 
-  persistRequests(); 
+  mockRequests.unshift(newRequest);
+  persistRequests();
   console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
   return newRequest;
 };
@@ -392,14 +392,14 @@ export const updateMockRequest = async (updatedRequestData: AgriRequest): Promis
   if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
     const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
     if (index !== -1) {
-        mockRequests[index] = { 
-          ...mockRequests[index], 
+        mockRequests[index] = {
+          ...mockRequests[index],
           ...updatedRequestData,
-          photoDataUris: (updatedRequestData.photoDataUris 
-            ? updatedRequestData.photoDataUris 
+          photoDataUris: (updatedRequestData.photoDataUris
+            ? updatedRequestData.photoDataUris
             : [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]) as [string, string, string],
         };
-        persistRequests(); 
+        persistRequests();
         console.log('[MockData] Updated request:', updatedRequestData.id);
         return mockRequests[index];
     }
@@ -412,7 +412,7 @@ export const deleteMockRequest = async (requestId: string): Promise<boolean> => 
   const initialLength = mockRequests.length;
   mockRequests = mockRequests.filter(req => req.id !== requestId);
   if (mockRequests.length < initialLength) {
-    persistRequests(); 
+    persistRequests();
     console.log('[MockData] Deleted request:', requestId, 'Remaining requests:', mockRequests.length);
     return true;
   }
@@ -430,24 +430,22 @@ export const amapaMunicipalities: string[] = [
 ];
 
 defaultMockRequests.forEach(req => {
-  req.photoDataUris = (req.photoDataUris || [VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI, VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI]).map(uri => {
+  // Ensure photoDataUris are always an array of 3 strings
+  const currentPhotos = Array.isArray(req.photoDataUris) ? req.photoDataUris : [];
+  const photos: [string, string, string] = [
+    currentPhotos[0] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
+    currentPhotos[1] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
+    currentPhotos[2] || VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI,
+  ];
+  req.photoDataUris = photos.map(uri => {
     if (typeof uri === 'string' && uri.startsWith('data:image') && uri.length > 256) {
       return VERY_SMALL_PLACEHOLDER_IMAGE_DATA_URI;
     }
     return uri;
   }) as [string, string, string];
+
+  // Specific update for req1749935232522
+  if (req.id === 'req1749935232522') {
+    req.municipality = 'Santana';
+  }
 });
-
-// Ensure the specific request is present and updated, if it's part of the initial defaults
-const specificRequestIndex = defaultMockRequests.findIndex(req => req.id === 'req1749935232522');
-if (specificRequestIndex !== -1) {
-  defaultMockRequests[specificRequestIndex].municipality = 'Santana';
-} else {
-  // If it wasn't in the original default list, and you need it,
-  // you might consider adding it here or ensuring it's added via addMockRequest.
-  // For now, this ensures if it *was* default, it's updated.
-  // If the app relies on localStorage persistence, and this ID was created at runtime,
-  // this specific direct modification to defaultMockRequests won't affect already persisted data.
-  // The updateMockRequest function would be the way to change persisted runtime data.
-}
-
