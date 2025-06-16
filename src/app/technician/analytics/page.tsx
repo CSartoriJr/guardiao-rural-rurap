@@ -96,7 +96,7 @@ export default function TechnicianAnalyticsPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper allowedRoles={['technician']}>
+      <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="space-y-8">
           <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-1/3" />
@@ -121,7 +121,7 @@ export default function TechnicianAnalyticsPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician']}>
+    <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-headline text-gray-800">Painel de Análise</h1>
@@ -252,8 +252,8 @@ export default function TechnicianAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={municipalityChartData} layout="vertical">
+                    <ResponsiveContainer width="100%" height={400}> {/* Increased height */}
+                      <BarChart data={municipalityChartData} layout="vertical" margin={{ right: 20, left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" allowDecimals={false} />
                         <YAxis dataKey="name" type="category" width={120} interval={0} />
@@ -286,4 +286,3 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
-

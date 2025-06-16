@@ -90,6 +90,12 @@ export default function AppHeader() {
                   <span className="hidden md:inline">Usuários</span>
                 </Button>
               </Link>
+              <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
+                <Button variant="ghost" size="sm">
+                  <BarChart3 className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Análise</span>
+                </Button>
+              </Link>
             </>
           )}
 
