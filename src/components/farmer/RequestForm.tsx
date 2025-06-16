@@ -13,8 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-// import { addMockRequest } from '@/lib/mockData'; // To be replaced by Firestore service
-import { addRequest } from '@/services/requestService'; // Import Firestore service
+import { addMockRequest } from '@/lib/mockData'; // Reverted to mockData
 import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
@@ -23,9 +22,9 @@ const requestFormSchema = z.object({
   cassavaVariety: z.string().min(2, { message: 'A variedade deve ter pelo menos 2 caracteres.' }),
   isMandioca: z.boolean().optional(),
   isMacaxeira: z.boolean().optional(),
-  photo1: z.string().url({ message: "A URL da foto Panorâmica é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto Panorâmica é obrigatória." }),
-  photo2: z.string().url({ message: "A URL da foto de Envassoramento é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto de Envassoramento é obrigatória." }),
-  photo3: z.string().url({ message: "A URL da foto do Corte do Ápice é obrigatória e deve ser válida." }).nullable().refine(val => val !== null, { message: "A foto do Corte do Ápice da Planta é obrigatória." }),
+  photo1: z.string().refine(val => val && val.startsWith('data:image/'), { message: "A foto Panorâmica (Data URI) é obrigatória." }).nullable(),
+  photo2: z.string().refine(val => val && val.startsWith('data:image/'), { message: "A foto de Envassoramento (Data URI) é obrigatória." }).nullable(),
+  photo3: z.string().refine(val => val && val.startsWith('data:image/'), { message: "A foto do Corte do Ápice (Data URI) é obrigatória." }).nullable(),
   plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
 })
@@ -120,14 +119,13 @@ export default function RequestForm() {
 
     setIsSubmitting(true);
     try {
-      // Data for Firestore (excluding id, submissionDate, status as they are set by the service)
-      const requestDataForService = {
+      const requestDataForMock: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'> = {
         farmerId: user.id,
-        farmerName: user.name, // Add farmerName
+        farmerName: user.name,
         cassavaType: data.cassavaVariety,
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
-        photoDataUris: [data.photo1, data.photo2, data.photo3] as [string, string, string],
+        photoDataUris: [data.photo1, data.photo2, data.photo3] as [string, string, string], // These are now Data URIs
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
         latitude: latitude ?? undefined, 
@@ -136,7 +134,7 @@ export default function RequestForm() {
         municipality: user.municipality, 
       };
       
-      const newRequest = await addRequest(requestDataForService); 
+      const newRequest = await addMockRequest(requestDataForMock); 
       
       const plantTypes = [];
       if (data.isMandioca) plantTypes.push('Mandioca');
@@ -145,7 +143,7 @@ export default function RequestForm() {
 
       toast({
         title: 'Pedido Enviado!',
-        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso para o Firestore. ID: ${newRequest.id}.`,
+        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
     } catch (error: any) {
@@ -241,17 +239,17 @@ export default function RequestForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="photo1">Panorâmica</Label>
-              <ImageUploadInput id="photo1" userId={user?.id} onUploadComplete={(url) => setValue('photo1', url, { shouldValidate: true })} />
+              <ImageUploadInput id="photo1" onUploadComplete={(uri) => setValue('photo1', uri, { shouldValidate: true })} />
               {errors.photo1 && <p className="text-sm text-destructive mt-1">{errors.photo1.message}</p>}
             </div>
             <div>
               <Label htmlFor="photo2">Envassoramento</Label>
-              <ImageUploadInput id="photo2" userId={user?.id} onUploadComplete={(url) => setValue('photo2', url, { shouldValidate: true })} />
+              <ImageUploadInput id="photo2" onUploadComplete={(uri) => setValue('photo2', uri, { shouldValidate: true })} />
               {errors.photo2 && <p className="text-sm text-destructive mt-1">{errors.photo2.message}</p>}
             </div>
             <div>
               <Label htmlFor="photo3">Corte do Ápice da Planta</Label>
-              <ImageUploadInput id="photo3" userId={user?.id} onUploadComplete={(url) => setValue('photo3', url, { shouldValidate: true })} />
+              <ImageUploadInput id="photo3" onUploadComplete={(uri) => setValue('photo3', uri, { shouldValidate: true })} />
               {errors.photo3 && <p className="text-sm text-destructive mt-1">{errors.photo3.message}</p>}
             </div>
           </div>

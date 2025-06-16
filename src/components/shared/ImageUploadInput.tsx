@@ -6,32 +6,27 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/services/imageUploadService'; // Import the upload service
+// Removed: import { uploadImage } from '@/services/imageUploadService';
 
 interface ImageUploadInputProps {
-  onUploadComplete: (dataUri: string | null) => void; // Changed from onImageUpload
+  onUploadComplete: (dataUri: string | null) => void;
   id: string;
   currentImageUrl?: string | null;
-  userId?: string; // Added userId prop
+  // Removed: userId?: string; 
 }
 
-export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, userId }: ImageUploadInputProps) {
+export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false); // Covers both reading and uploading
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    setError(null); // Clear previous errors
+    setError(null);
 
     if (file) {
-      if (!userId) {
-        toast({ title: 'Erro', description: 'ID do usuário não fornecido para o upload.', variant: 'destructive' });
-        setError('ID do usuário ausente.');
-        return;
-      }
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({ title: 'Arquivo muito grande', description: 'Por favor, envie uma imagem menor que 5MB.', variant: 'destructive' });
         setError('Arquivo muito grande.');
@@ -46,34 +41,28 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
 
       setIsProcessing(true);
-
-      // Generate local preview
       const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
-      reader.readAsDataURL(file);
-
-      // Upload to Firebase Storage
-      try {
-        const downloadURL = await uploadImage(file, userId);
-        onUploadComplete(downloadURL);
-        // Preview is already set from local FileReader
-      } catch (uploadError: any) {
-        console.error("ImageUploadInput: Error during upload", uploadError);
-        toast({ title: 'Falha no Envio', description: uploadError.message || 'Não foi possível enviar a imagem.', variant: 'destructive' });
-        setError(uploadError.message || 'Falha no envio.');
-        onUploadComplete(null);
-        setPreview(null); // Clear preview on upload error
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      } finally {
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setPreview(dataUri);
+        onUploadComplete(dataUri);
         setIsProcessing(false);
-      }
+      };
+      reader.onerror = () => {
+        console.error("[ImageUploadInput] Error reading file");
+        toast({ title: 'Falha ao Ler Imagem', description: 'Não foi possível processar o arquivo da imagem.', variant: 'destructive' });
+        setError('Falha ao ler arquivo.');
+        onUploadComplete(null);
+        setPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        setIsProcessing(false);
+      };
+      reader.readAsDataURL(file);
     } else {
-      // File selection cancelled
       if (!currentImageUrl) {
         setPreview(null);
         onUploadComplete(null);
       }
-      // Do not reset fileInputRef.current.value here
     }
   };
 
@@ -84,8 +73,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    // Note: This does not delete the image from Firebase Storage if it was already uploaded.
-    // Implementing delete from storage would require additional logic.
   };
 
   return (

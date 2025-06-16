@@ -15,8 +15,8 @@ import { Loader2, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-// import { updateMockRequest } from '@/lib/mockData'; // Replaced by Firestore service
-import { updateRequest } from '@/services/requestService'; // Import Firestore service
+import { updateMockRequest } from '@/lib/mockData'; // Reverted to mockData
+// import { updateRequest } from '@/services/requestService'; // Commented out Firestore service
 
 const responseFormSchema = z.object({
   recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
@@ -66,19 +66,20 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      const updates: Partial<AgriRequest> = {
+      const updatedRequestData: AgriRequest = {
+        ...request,
         technicianId: technicianUser.id,
         technicianName: technicianUser.name,
         recommendation: data.recommendation,
         status: data.status,
-        responseDate: new Date().toISOString(), // Client-side date, Firestore can also use serverTimestamp
+        responseDate: new Date().toISOString(),
       };
 
-      await updateRequest(request.id, updates);
+      await updateMockRequest(updatedRequestData); // Reverted to mockData
       
       toast({
-        title: 'Resposta Enviada!',
-        description: `Sua resposta para o pedido ID ${request.id} foi salva.`,
+        title: 'Resposta Enviada (Mock)!',
+        description: `Sua resposta para o pedido ID ${request.id} foi salva localmente.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error: any) {

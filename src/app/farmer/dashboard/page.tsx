@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import FarmerRequestCard from '@/components/farmer/RequestCard';
 import type { AgriRequest } from '@/types';
-// import { mockRequests, mockUsers } from '@/lib/mockData'; // Replaced with Firestore service
-import { getRequestsForFarmer } from '@/services/requestService'; // Import Firestore service
+import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
+// import { getRequestsForFarmer } from '@/services/requestService'; // Commented out Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -17,30 +17,37 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function FarmerDashboard() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast } = useToast(); // Keep toast for other potential notifications
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       setIsLoading(true);
-      getRequestsForFarmer(user.id)
-        .then(data => {
-          setRequests(data);
-        })
-        .catch(error => {
-          console.error("Failed to fetch requests from Firestore:", error);
-          toast({
-            title: "Erro ao Carregar Pedidos",
-            description: "Não foi possível buscar seus pedidos. Verifique sua conexão ou tente mais tarde.",
-            variant: "destructive",
-          });
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      // Revert to mockData: Filter requests from the global mockRequests array
+      const farmerRequests = mockRequests.filter(req => req.farmerId === user.id)
+        .sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
+      setRequests(farmerRequests);
+      setIsLoading(false);
+      
+      // Previous Firestore logic:
+      // getRequestsForFarmer(user.id)
+      //   .then(data => {
+      //     setRequests(data);
+      //   })
+      //   .catch(error => {
+      //     console.error("Failed to fetch requests from Firestore:", error);
+      //     toast({
+      //       title: "Erro ao Carregar Pedidos",
+      //       description: "Não foi possível buscar seus pedidos. Verifique sua conexão ou tente mais tarde.",
+      //       variant: "destructive",
+      //     });
+      //   })
+      //   .finally(() => {
+      //     setIsLoading(false);
+      //   });
     }
-  }, [user, toast]);
+  }, [user]);
 
   return (
     <PageWrapper allowedRoles={['farmer']}>

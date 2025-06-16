@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
 import type { AgriRequest } from '@/types';
-// import { mockRequests } from '@/lib/mockData'; // Replaced with Firestore service
-import { getAllRequestsForAdmin } from '@/services/requestService'; // Import Firestore service
+import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
+// import { getAllRequestsForAdmin } from '@/services/requestService'; // Commented out Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast } = useToast(); // Keep for other potential notifications
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [farmerSearchTerm, setFarmerSearchTerm] = useState<string>('');
@@ -26,23 +26,29 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user && user.role === 'admin') {
       setIsLoading(true);
-      getAllRequestsForAdmin()
-        .then(data => {
-          setRequests(data);
-        })
-        .catch(error => {
-          console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
-          toast({
-            title: "Erro ao Carregar Pedidos",
-            description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
-            variant: "destructive",
-          });
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      // Revert to mockData: Use all requests from the global mockRequests array
+      const allRequests = [...mockRequests].sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
+      setRequests(allRequests);
+      setIsLoading(false);
+
+      // Previous Firestore logic:
+      // getAllRequestsForAdmin()
+      //   .then(data => {
+      //     setRequests(data);
+      //   })
+      //   .catch(error => {
+      //     console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
+      //     toast({
+      //       title: "Erro ao Carregar Pedidos",
+      //       description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
+      //       variant: "destructive",
+      //     });
+      //   })
+      //   .finally(() => {
+      //     setIsLoading(false);
+      //   });
     }
-  }, [user, toast]);
+  }, [user]);
 
   const filteredRequests = useMemo(() => {
     if (!farmerSearchTerm.trim()) {

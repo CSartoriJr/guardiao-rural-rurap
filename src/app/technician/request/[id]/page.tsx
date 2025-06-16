@@ -6,9 +6,8 @@ import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-// import { mockRequests, deleteMockRequest, updateMockRequest, amapaMunicipalities } from '@/lib/mockData'; // Replaced
-import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; // Import Firestore service
-import { amapaMunicipalities } from '@/lib/mockData'; // Keep for municipality list
+import { mockRequests, updateMockRequest, deleteMockRequest, amapaMunicipalities } from '@/lib/mockData'; // Reverted to mockData
+// import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,7 @@ export default function TechnicianViewRequestPage() {
 
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
-  useEffect(() => {
+  useEffect(() => { // Effect for initial data loading
     if (authInitializing) return;
 
     if (!user) {
@@ -60,25 +59,36 @@ export default function TechnicianViewRequestPage() {
 
     setIsLoading(true);
     setError(null);
-    getRequestById(requestId)
-      .then((data) => {
-        if (data) {
-          setRequest(data);
-        } else {
-          setError("Pedido não encontrado.");
-        }
-      })
-      .catch(err => {
-        console.error("[TechnicianViewRequestPage Effect1] Falha ao buscar pedido:", err);
-        setError("Falha ao carregar detalhes do pedido.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    // Revert to mockData
+    const foundRequest = mockRequests.find(r => r.id === requestId);
+    if (foundRequest) {
+        // Technicians and admins can view any request
+        setRequest(foundRequest);
+    } else {
+        setError("Pedido não encontrado.");
+    }
+    setIsLoading(false);
+    
+    // Previous Firestore logic:
+    // getRequestById(requestId)
+    //   .then((data) => {
+    //     if (data) {
+    //       setRequest(data);
+    //     } else {
+    //       setError("Pedido não encontrado.");
+    //     }
+    //   })
+    //   .catch(err => {
+    //     console.error("[TechnicianViewRequestPage Effect1] Falha ao buscar pedido:", err);
+    //     setError("Falha ao carregar detalhes do pedido.");
+    //   })
+    //   .finally(() => {
+    //     setIsLoading(false);
+    //   });
   }, [requestId, user, authInitializing, router]);
 
 
-  useEffect(() => {
+  useEffect(() => { // Effect for AI processing, depends on `request`
     if (!request || request.status !== 'Pending' || !requestId) {
       if (request && request.status !== 'Pending') console.log('[TechnicianViewRequestPage Effect2] Request not pending or already processed by AI. Skipping AI step.');
       else if (!request) console.log('[TechnicianViewRequestPage Effect2] Request data not yet available. Skipping AI step.');
@@ -98,7 +108,7 @@ export default function TechnicianViewRequestPage() {
         cassavaType: request.cassavaType,
         isMandioca: request.isMandioca,
         isMacaxeira: request.isMacaxeira,
-        photoDataUri1: request.photoDataUris[0], // These are now URLs
+        photoDataUri1: request.photoDataUris[0], 
         photoDataUri2: request.photoDataUris[1],
         photoDataUri3: request.photoDataUris[2],
         plantedArea: request.plantedArea,
@@ -125,7 +135,7 @@ export default function TechnicianViewRequestPage() {
           }
           
           const updatedFields: Partial<AgriRequest> = {};
-          let needsDBUpdate = false;
+          let needsDBUpdate = false; // Should be mockData update
 
           if (latFromAI !== undefined && latFromAI !== request.latitude) {
             updatedFields.latitude = latFromAI;
@@ -141,13 +151,15 @@ export default function TechnicianViewRequestPage() {
           }
           
           if (needsDBUpdate && requestId) {
-             console.log("[TechnicianViewRequestPage Effect2] AI Output for location requires DB update. Updating request fields:", updatedFields);
-            const savedUpdatedRequest = await updateRequestInFirestore(requestId, updatedFields);
+             console.log("[TechnicianViewRequestPage Effect2] AI Output for location requires mockData update. Updating request fields:", updatedFields);
+            // Revert to updateMockRequest
+            const fullUpdatedRequest = { ...request, ...updatedFields };
+            const savedUpdatedRequest = await updateMockRequest(fullUpdatedRequest as AgriRequest);
             if (savedUpdatedRequest) {
-              setRequest(savedUpdatedRequest); // Update local state with the full updated request from DB
-              toast({ title: "Dados de Localização da IA Atualizados", description: "Localização e município da IA processados e salvos." });
+              setRequest(savedUpdatedRequest); 
+              toast({ title: "Dados de Localização da IA Atualizados (Mock)", description: "Localização e município da IA processados e salvos localmente." });
             } else {
-                 toast({ title: "Erro ao Salvar IA", description: "Não foi possível salvar as atualizações de localização da IA.", variant: "destructive" });
+                 toast({ title: "Erro ao Salvar IA (Mock)", description: "Não foi possível salvar as atualizações de localização da IA localmente.", variant: "destructive" });
             }
           } else {
             console.log("[TechnicianViewRequestPage Effect2] No AI location data update needed or AI failed.");
@@ -164,8 +176,7 @@ export default function TechnicianViewRequestPage() {
     } else {
       console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed for request:', request.id);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request, toast]); // requestId is not needed here as effect depends on `request` which depends on `requestId`
+  }, [request, toast]); // requestId is implicitly handled by `request` dependency.
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -194,13 +205,13 @@ export default function TechnicianViewRequestPage() {
     if (!user || user.role !== 'admin' || !request || !requestId) return;
 
     setIsDeleting(true);
-    if (adminPassword === user.password) { // This password check is against mock data user password, adjust if real auth is used
+    if (adminPassword === user.password) { 
       try {
-        await deleteRequestFromFirestore(requestId);
-        toast({ title: 'Pedido Removido', description: `O pedido ID ${requestId} foi removido com sucesso.` });
+        await deleteMockRequest(requestId); // Revert to deleteMockRequest
+        toast({ title: 'Pedido Removido (Mock)', description: `O pedido ID ${requestId} foi removido localmente.` });
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       } catch (e) {
-        toast({ title: 'Erro na Remoção', description: 'Ocorreu um erro ao tentar remover o pedido.', variant: 'destructive' });
+        toast({ title: 'Erro na Remoção (Mock)', description: 'Ocorreu um erro ao tentar remover o pedido localmente.', variant: 'destructive' });
       }
     } else {
       toast({ title: 'Senha Incorreta', description: 'A senha de administrador está incorreta.', variant: 'destructive' });
@@ -480,7 +491,7 @@ export default function TechnicianViewRequestPage() {
          <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <DialogHeader>
-              <UIDialogTitle>Imagem Expandida</UIDialogTitle> {/* Added DialogTitle */}
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle> 
             </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image

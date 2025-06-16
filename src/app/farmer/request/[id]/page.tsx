@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import type { AgriRequest } from '@/types';
-// import { mockRequests } from '@/lib/mockData'; // Replaced with service
-import { getRequestById } from '@/services/requestService'; // Import Firestore service
+import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
+// import { getRequestById } from '@/services/requestService'; // Commented out Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
@@ -95,7 +95,7 @@ export default function FarmerViewRequestPage() {
 
   useEffect(() => {
     console.log('[FarmerViewRequestPage] useEffect triggered. RequestId:', requestId, 'User:', user ? user.id : 'null', 'Initializing:', initializing);
-    if (initializing) return; // Wait for auth to initialize
+    if (initializing) return; 
 
     if (!requestId) {
         console.warn('[FarmerViewRequestPage] Invalid or missing requestId.');
@@ -105,34 +105,49 @@ export default function FarmerViewRequestPage() {
     }
     
     if (!user) {
-        // This case should be handled by PageWrapper, but as a safeguard:
         console.warn('[FarmerViewRequestPage] User not authenticated.');
-        // router.replace(APP_ROUTES.LOGIN); // PageWrapper should do this
         setError("Usuário não autenticado.");
         setIsLoading(false);
         return;
     }
 
     setIsLoading(true);
-    getRequestById(requestId)
-      .then(data => {
-        if (data && (data.farmerId === user.id || user.role === 'admin')) { // Admin can also view
-          setRequest(data);
-          console.log('[FarmerViewRequestPage] Request data set:', data);
-        } else if (data) {
-          setError("Você não tem autorização para ver este pedido.");
-          console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
-        } else {
-          setError("Pedido não encontrado.");
-          console.warn('[FarmerViewRequestPage] Request not found:', requestId);
-        }
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
-        setError("Falha ao carregar detalhes do pedido.");
-        setIsLoading(false);
-      });
+    // Revert to mockData
+    const foundRequest = mockRequests.find(r => r.id === requestId);
+    if (foundRequest) {
+      if (foundRequest.farmerId === user.id || user.role === 'admin') {
+        setRequest(foundRequest);
+        console.log('[FarmerViewRequestPage] Request data set from mockData:', foundRequest);
+      } else {
+        setError("Você não tem autorização para ver este pedido.");
+        console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
+      }
+    } else {
+      setError("Pedido não encontrado.");
+      console.warn('[FarmerViewRequestPage] Request not found in mockData:', requestId);
+    }
+    setIsLoading(false);
+
+    // Previous Firestore logic
+    // getRequestById(requestId)
+    //   .then(data => {
+    //     if (data && (data.farmerId === user.id || user.role === 'admin')) { 
+    //       setRequest(data);
+    //       console.log('[FarmerViewRequestPage] Request data set:', data);
+    //     } else if (data) {
+    //       setError("Você não tem autorização para ver este pedido.");
+    //       console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
+    //     } else {
+    //       setError("Pedido não encontrado.");
+    //       console.warn('[FarmerViewRequestPage] Request not found:', requestId);
+    //     }
+    //     setIsLoading(false);
+    //   })
+    //   .catch(err => {
+    //     console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
+    //     setError("Falha ao carregar detalhes do pedido.");
+    //     setIsLoading(false);
+    //   });
   }, [requestId, user, initializing, router]);
 
   const getPlantTypeDisplay = (req: AgriRequest): string => {
@@ -197,7 +212,7 @@ export default function FarmerViewRequestPage() {
   };
 
 
-  if (isLoading || initializing) { // Keep initializing check for initial auth loading
+  if (isLoading || initializing) { 
     console.log('[FarmerViewRequestPage] Rendering Skeleton (isLoading or initializing true).');
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
@@ -212,16 +227,16 @@ export default function FarmerViewRequestPage() {
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-5 w-1/3" /> {/* Planted Area */}
-              <Skeleton className="h-5 w-1/3" /> {/* Infected Area */}
+              <Skeleton className="h-5 w-1/3" /> 
+              <Skeleton className="h-5 w-1/3" /> 
               <div>
-                <Skeleton className="h-4 w-1/3 mb-1" /> {/* "Localização" label */}
-                <Skeleton className="h-5 w-3/4 mb-1" /> {/* Coordinates placeholder */}
-                <Skeleton className="h-3 w-1/2" />      {/* Source hint placeholder */}
+                <Skeleton className="h-4 w-1/3 mb-1" /> 
+                <Skeleton className="h-5 w-3/4 mb-1" /> 
+                <Skeleton className="h-3 w-1/2" />      
               </div>
               <div>
-                <Skeleton className="h-4 w-1/4 mb-1" /> {/* "Município" label */}
-                <Skeleton className="h-5 w-1/2" />    {/* Municipality name placeholder */}
+                <Skeleton className="h-4 w-1/4 mb-1" /> 
+                <Skeleton className="h-5 w-1/2" />    
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Skeleton className="h-40 w-full rounded-lg" />
@@ -256,7 +271,6 @@ export default function FarmerViewRequestPage() {
 
   if (!request) {
     console.log('[FarmerViewRequestPage] Rendering "Não foi possível carregar..." (request is null/undefined).');
-    // This state should ideally be covered by error state from getRequestById if not found
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="text-center py-10">
@@ -346,7 +360,7 @@ export default function FarmerViewRequestPage() {
         <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
             <DialogHeader>
-              <UIDialogTitle>Imagem Expandida</UIDialogTitle> {/* Added DialogTitle */}
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle> 
             </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image
