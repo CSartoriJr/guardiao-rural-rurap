@@ -15,8 +15,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'; // Renamed DialogTitle to UIDialogTitle
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -492,10 +492,13 @@ export default function TechnicianViewRequestPage() {
       {expandedImageUri && (
          <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
+            <DialogHeader>
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle>
+            </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image
                     src={expandedImageUri}
-                    alt="Imagem expandida"
+                    alt="Imagem expandida do pedido"
                     fill
                     style={{ objectFit: 'contain' }}
                 />

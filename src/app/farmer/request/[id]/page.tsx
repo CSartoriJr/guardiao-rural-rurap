@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog'; // Renamed DialogTitle to UIDialogTitle
 
 // Mock function to fetch a single request
 const fetchRequestById = async (requestId: string): Promise<AgriRequest | undefined> => {
@@ -337,10 +337,13 @@ export default function FarmerViewRequestPage() {
       {expandedImageUri && (
         <Dialog open={!!expandedImageUri} onOpenChange={(open) => { if (!open) closeImageModal(); }}>
           <DialogContent className="max-w-screen-md max-h-[90vh] p-2 bg-background overflow-hidden">
+            <DialogHeader>
+              <UIDialogTitle>Imagem Expandida</UIDialogTitle>
+            </DialogHeader>
             <div className="relative w-full h-[85vh]">
                 <Image
                     src={expandedImageUri}
-                    alt="Imagem expandida"
+                    alt="Imagem expandida do pedido"
                     fill
                     style={{objectFit: "contain"}}
                 />
