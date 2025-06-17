@@ -11,14 +11,14 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import { createUserDocument, getUserDocument } from '@/services/userService'; // Assuming userService.ts
+import { createUserDocument, getUserDocument } from '@/services/userService';
 
 interface AuthContextType {
-  user: AppUser | null; // Application user type
-  firebaseUser: FirebaseUserType | null; // Firebase Auth user type
+  user: AppUser | null; 
+  firebaseUser: FirebaseUserType | null; 
   loading: boolean;
   initializing: boolean;
-  login: (cpfAsEmail: string, password: string) => Promise<AppUser | null>;
+  login: (numericCpf: string, password: string) => Promise<AppUser | null>; // Changed parameter name
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
@@ -47,9 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (appUserDoc) {
           setUser(appUserDoc);
         } else {
-          // This case might happen if Firestore doc creation failed or user was deleted from Firestore but not Auth
           console.warn(`[AuthContext] User ${fbUser.uid} authenticated with Firebase, but no Firestore document found. Logging out.`);
-          await signOut(firebaseAuth); // Log out to prevent inconsistent state
+          await signOut(firebaseAuth); 
           setUser(null);
         }
         setLoading(false);
@@ -62,12 +61,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const login = async (cpfAsEmail: string, password: string): Promise<AppUser | null> => {
+  const login = async (numericCpf: string, password: string): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
     try {
-      // Firebase Auth expects an email format. We'll use CPF + a dummy domain.
-      const firebaseCompatibleEmail = `${cpfAsEmail.replace(/\D/g, '')}@cacabruxa.app`;
+      // numericCpf is expected to be only digits here
+      const firebaseCompatibleEmail = `${numericCpf}@cacabruxa.app`;
       const userCredential = await signInWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, password);
       const fbUser = userCredential.user;
       const appUserDoc = await getUserDocument(fbUser.uid);
@@ -76,7 +75,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setFirebaseUser(fbUser);
         return appUserDoc;
       }
-      // Should not happen if user exists in Auth and registration flow ensures Firestore doc
       throw new Error("Documento de usuário não encontrado no Firestore após login.");
     } catch (error: any) {
       console.error("[AuthContext] Login failed:", error.message);
@@ -108,15 +106,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
-      // Update Firebase Auth profile display name immediately
       await updateProfile(fbUser, { displayName: userData.name });
 
       const appUser = await createUserDocument(fbUser, {
         ...userData,
         role: 'farmer',
-        email: firebaseCompatibleEmail, // Store the "email" used for auth
+        email: firebaseCompatibleEmail, 
       });
-      // No need to call setUser/setFirebaseUser here, onAuthStateChanged will handle it.
       return appUser;
     } catch (error: any) {
       console.error("[AuthContext] Farmer registration failed:", error.code, error.message);
@@ -135,9 +131,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
       
-      // Note: Creating users directly like this client-side has security implications.
-      // Ideally, an admin SDK on a backend would create users.
-      // This is a simplified approach for this context.
       const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 

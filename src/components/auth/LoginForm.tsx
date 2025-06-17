@@ -14,7 +14,7 @@ export default function LoginForm() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading: authLoading } = useAuth(); // Renamed loading to authLoading
+  const { login, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -29,7 +29,9 @@ export default function LoginForm() {
       return;
     }
     
-    const loggedInUser = await login(cpf, password); 
+    // Passar o CPF limpo (apenas números) para a função de login
+    const numericCpf = cpf.replace(/\D/g, '');
+    const loggedInUser = await login(numericCpf, password); 
     if (loggedInUser) {
       toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${loggedInUser.name}!` });
       if (loggedInUser.role === 'farmer') {
@@ -52,17 +54,15 @@ export default function LoginForm() {
     let value = e.target.value.replace(/\D/g, ''); 
     if (value.length > 11) value = value.substring(0, 11); 
 
-    // Apply CPF formatting (e.g., 000.000.000-00)
-    // This is primarily for display; the actual value sent to login should be just numbers or the Firebase-compatible email.
-    // For login, we'll use the raw CPF to construct the email: `cpf@cacabruxa.app`
+    let formattedValue = value;
     if (value.length > 9) {
-      value = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
     } else if (value.length > 6) {
-      value = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
     } else if (value.length > 3) {
-      value = `${value.substring(0, 3)}.${value.substring(3)}`;
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3)}`;
     }
-    setCpf(value);
+    setCpf(formattedValue); // O estado `cpf` ainda armazena o valor formatado para exibição
   };
 
 
