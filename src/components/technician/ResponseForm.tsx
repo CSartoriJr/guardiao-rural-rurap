@@ -15,8 +15,7 @@ import { Loader2, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-import { updateMockRequest } from '@/lib/mockData'; // Reverted to mockData
-// import { updateRequest } from '@/services/requestService'; // Commented out Firestore service
+import { updateRequest as updateRequestInFirestore } from '@/services/requestService'; // Use Firestore service
 
 const responseFormSchema = z.object({
   recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
@@ -50,14 +49,14 @@ export default function ResponseForm({ request }: ResponseFormProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
     defaultValues: {
-      recommendation: '', 
+      recommendation: request.recommendation || '', 
       status: request.status !== 'Pending' ? request.status : undefined,
     },
   });
 
   const onSubmit: SubmitHandler<ResponseFormValues> = async (data) => {
-    if (!technicianUser) {
-      toast({ title: "Erro", description: "Técnico não está logado.", variant: "destructive" });
+    if (!technicianUser || !technicianUser.id || !technicianUser.name) {
+      toast({ title: "Erro", description: "Técnico não está logado ou nome não definido.", variant: "destructive" });
       return;
     }
     if (!request.id) {
@@ -66,20 +65,19 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     }
     setIsSubmitting(true);
     try {
-      const updatedRequestData: AgriRequest = {
-        ...request,
+      const updatesForFirestore: Partial<AgriRequest> = {
         technicianId: technicianUser.id,
         technicianName: technicianUser.name,
         recommendation: data.recommendation,
         status: data.status,
-        responseDate: new Date().toISOString(),
+        responseDate: new Date().toISOString(), // Will be converted to Timestamp by service
       };
 
-      await updateMockRequest(updatedRequestData); // Reverted to mockData
+      await updateRequestInFirestore(request.id, updatesForFirestore); 
       
       toast({
-        title: 'Resposta Enviada (Mock)!',
-        description: `Sua resposta para o pedido ID ${request.id} foi salva localmente.`,
+        title: 'Resposta Enviada!',
+        description: `Sua resposta para o pedido ID ${request.id} foi salva no Firestore.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error: any) {

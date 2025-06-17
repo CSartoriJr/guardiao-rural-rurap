@@ -7,16 +7,17 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth'; // Import useAuth
 import type { User } from '@/types';
-import { mockUsers, addMockUser, amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIcon } from 'lucide-react'; // Renamed Users to UsersIcon
+import { amapaMunicipalities } from '@/lib/mockData'; // Keep for municipality list
+import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -29,7 +30,7 @@ const farmerRegistrationFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
   phone: z.string().regex(phoneRegex, { message: 'Telefone inválido. Use (xx)xxxxx-xxxx ou (xx)xxxx-xxxx' }),
-  email: z.string().email({ message: 'E-mail inválido.' }),
+  email: z.string().email({ message: 'E-mail inválido (será usado para notificações, não para login).' }),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
   municipality: z.string().min(1, { message: 'Selecione um município.' }),
   familyMembers: z.coerce.number().int().nonnegative({ message: 'O número de componentes familiares deve ser zero ou mais.' }),
@@ -51,6 +52,7 @@ export default function FarmerRegistrationForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const { registerFarmer } = useAuth(); // Get registerFarmer from useAuth
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<FarmerRegistrationFormValues>({
     resolver: zodResolver(farmerRegistrationFormSchema),
@@ -71,42 +73,35 @@ export default function FarmerRegistrationForm() {
   const onSubmit: SubmitHandler<FarmerRegistrationFormValues> = async (data) => {
     setIsSubmitting(true);
     try {
-      const normalizedNewCpf = data.cpf.replace(/\D/g, '');
-      const cpfExists = mockUsers.some(user => user.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase());
-      if (cpfExists) {
-        toast({
-          title: 'CPF já Existe',
-          description: 'Este CPF já está cadastrado. Tente fazer login.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const newFarmer: User = {
-        id: `farmer${Date.now()}`, 
+      // Data to pass to AuthContext's registerFarmer
+      const registrationData = {
         name: data.name,
-        cpf: data.cpf,
+        cpf: data.cpf, // CPF will be used to form the Firebase Auth email
+        passwordInput: data.password,
+        // Farmer specific details for Firestore document
         phone: data.phone,
-        email: data.email,
+        email: data.email, // Actual email for communication
         address: data.address,
         municipality: data.municipality,
         familyMembers: data.familyMembers,
-        password: data.password,
-        role: 'farmer',
       };
 
-      addMockUser(newFarmer); 
+      const newUser = await registerFarmer(registrationData);
 
-      toast({
-        title: 'Cadastro Realizado!',
-        description: `Bem-vindo(a), ${newFarmer.name}! Seu cadastro foi realizado com sucesso. Faça login para continuar.`,
-      });
-      reset();
-      router.push(APP_ROUTES.LOGIN); 
-    } catch (error) {
+      if (newUser) {
+        toast({
+          title: 'Cadastro Realizado!',
+          description: `Bem-vindo(a), ${newUser.name}! Seu cadastro foi realizado com sucesso. Faça login para continuar.`,
+        });
+        reset();
+        router.push(APP_ROUTES.LOGIN);
+      } else {
+        // This case should ideally be handled by registerFarmer throwing an error
+        toast({ title: "Falha no Cadastro", description: "Não foi possível realizar seu cadastro. Por favor, tente novamente.", variant: "destructive" });
+      }
+    } catch (error: any) {
       console.error("Falha ao cadastrar agricultor:", error);
-      toast({ title: "Falha no Cadastro", description: "Não foi possível realizar seu cadastro. Por favor, tente novamente.", variant: "destructive" });
+      toast({ title: "Falha no Cadastro", description: error.message || "Ocorreu um erro desconhecido.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -167,7 +162,7 @@ export default function FarmerRegistrationForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="cpf">CPF</Label>
+              <Label htmlFor="cpf">CPF (será seu login)</Label>
               <Controller
                 name="cpf"
                 control={control}
@@ -203,7 +198,7 @@ export default function FarmerRegistrationForm() {
           </div>
           
           <div className="space-y-1">
-            <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail</Label>
+            <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (para contato)</Label>
             <Controller
               name="email"
               control={control}

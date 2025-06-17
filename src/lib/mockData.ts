@@ -1,244 +1,122 @@
 
 import type { User, AgriRequest } from '@/types';
 
-const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2';
+// These keys might still be used if some part of the app falls back or for cleanup.
+const MOCK_USERS_STORAGE_KEY = 'app_mock_users_v2'; 
 const MOCK_REQUESTS_STORAGE_KEY = 'app_mock_requests_v2';
 
-// --- Default Data ---
-const defaultPlaceholderUri = 'https://placehold.co/300x300.png';
 
-const defaultMockUsers: User[] = [
-  { id: 'admin_master', cpf: '961.391.452-87', role: 'admin', name: 'Claudemir Sartori Junior', password: '23jr02cs' },
-  { id: 'tech_claudia_sartori', cpf: '291.751.862-68', role: 'technician', name: 'Claudia Sartori', password: 'senha123' },
-  { id: 'farmer_joao_silva', cpf: '141.414.141-41', role: 'farmer', name: 'Agricultor Novo 1', password: 'password123', email: 'joao.silva@example.com', phone: '(96)99999-1111', address: 'Rua das Palmeiras, 123', municipality: 'Macapá', familyMembers: 4 },
-];
-
-const defaultMockRequests: AgriRequest[] = [
-  // Pedidos do Agricultor Novo 1 foram removidos daqui
-];
-
-// --- Initialization and Persistence Logic ---
-let R_MOCK_USERS_INITIALIZED = false;
-export let mockUsers: User[] = [];
-
-let R_MOCK_REQUESTS_INITIALIZED = false;
-export let mockRequests: AgriRequest[] = [];
+// --- Default Data (Primarily for amapaMunicipalities now) ---
+export let mockUsers: User[] = []; // No longer the source of truth for users
+export let mockRequests: AgriRequest[] = []; // No longer the source of truth for requests
 
 
-const loadMockData = () => {
-  console.log('[MockData] Attempting to load data from localStorage.');
-  // Load Users
-  if (typeof window !== 'undefined' && !R_MOCK_USERS_INITIALIZED) {
-    console.log('[MockData] Initializing users.');
-    const storedUsers = localStorage.getItem(MOCK_USERS_STORAGE_KEY);
-    if (storedUsers) {
-      console.log('[MockData] Found stored users in localStorage.');
-      try {
-        const parsedUsers = JSON.parse(storedUsers);
-        if (Array.isArray(parsedUsers)) {
-          mockUsers = parsedUsers;
-          console.log(`[MockData] Successfully parsed ${mockUsers.length} users from localStorage.`);
-        } else {
-          console.warn("[MockData] Malformed users data in localStorage, resetting to default.");
-          mockUsers = [...defaultMockUsers];
-          localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-        }
-      } catch (e) {
-        console.error("[MockData] Failed to parse users from localStorage, resetting to default.", e);
-        mockUsers = [...defaultMockUsers];
-        localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-      }
-    } else {
-      console.log('[MockData] No stored users found, using default users and saving to localStorage.');
-      mockUsers = [...defaultMockUsers];
-      localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-    }
-    R_MOCK_USERS_INITIALIZED = true;
-  }
-
-  // Load Requests
-  if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
-    console.log('[MockData] Initializing requests.');
-    const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
-
-    if (storedRequests) {
-      console.log('[MockData] Found stored requests in localStorage.');
-      try {
-        const parsedRequests = JSON.parse(storedRequests) as AgriRequest[];
-        if (Array.isArray(parsedRequests)) {
-           mockRequests = parsedRequests.map(req => ({
-            ...req,
-            photoDataUris: (
-              Array.isArray(req.photoDataUris) && req.photoDataUris.length === 3
-              ? req.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure individual URIs are not null/empty
-              : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]
-            ) as [string, string, string]
-          }));
-          console.log(`[MockData] Successfully parsed and mapped ${mockRequests.length} requests from localStorage.`);
-        } else {
-          console.warn("[MockData] Malformed requests data in localStorage, resetting to default.");
-          mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
-          localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-        }
-      } catch (e) {
-        console.error("[MockData] Failed to parse requests from localStorage, resetting to default.", e);
-        mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
-        localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-      }
-    } else {
-      console.log('[MockData] No stored requests found, using default requests and saving to localStorage.');
-      mockRequests = [...defaultMockRequests]; // Use the (now potentially empty) defaultMockRequests
-      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
-    }
-    R_MOCK_REQUESTS_INITIALIZED = true;
-  }
-   console.log('[MockData] Data loading complete. Users:', mockUsers.length, 'Requests:', mockRequests.length);
-};
-
-if (typeof window !== 'undefined') {
-  loadMockData();
-}
-
-
-const persistUsers = () => {
-  if (typeof window !== 'undefined') {
-    console.log('[MockData] Persisting users to localStorage:', mockUsers.length);
-    localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-  }
-};
-
-const persistRequests = () => {
-  if (typeof window !== 'undefined') {
-    console.log('[MockData] Persisting requests to localStorage:', mockRequests.length);
-    const requestsToStore = mockRequests.map(req => {
-      const photoUrisToStore = (req.photoDataUris && req.photoDataUris.length === 3
-        ? req.photoDataUris
-        : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]
-      ).map(uri => uri || defaultPlaceholderUri) as [string, string, string];
-
-      return {
-        ...req,
-        photoDataUris: photoUrisToStore,
-      };
-    });
-    try {
-      localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(requestsToStore));
-      console.log('[MockData] Successfully persisted requests.');
-    } catch (error) {
-      console.error('[MockData] Error persisting requests to localStorage:', error);
-    }
-  }
-};
-
-
-// --- Mutating Functions for Users ---
-export const addMockUser = (newUser: User): User => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData(); // Ensure data is loaded
-  const existingUser = mockUsers.find(u => u.cpf.replace(/\D/g, '') === newUser.cpf.replace(/\D/g, ''));
-  if (existingUser) {
-    console.warn('[MockData] Add user failed: User with this CPF already exists', newUser.cpf);
-    return existingUser; 
-  }
-  mockUsers.push(newUser);
-  persistUsers();
-  console.log('[MockData] Added user:', newUser.id, 'Total users:', mockUsers.length);
-  return newUser;
-};
-
-
-export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  if (userIndex === -1) {
-    console.warn('[MockData] Update failed: User not found', userId);
-    return null;
-  }
-
-  if (updatedUserData.cpf) {
-    const normalizedNewCpf = updatedUserData.cpf.replace(/\D/g, '');
-    const existingUserWithCpf = mockUsers.find(
-      u => u.id !== userId && u.cpf.replace(/\D/g, '') === normalizedNewCpf
-    );
-    if (existingUserWithCpf) {
-      console.error('[MockData] Update failed: CPF already exists', updatedUserData.cpf);
-      throw new Error("Este CPF já está cadastrado para outro usuário.");
-    }
-  }
-
-  mockUsers[userIndex] = { ...mockUsers[userIndex], ...updatedUserData };
-  persistUsers();
-  console.log('[MockData] Updated user:', userId);
-  return mockUsers[userIndex];
-};
-
-export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
-  if (!R_MOCK_USERS_INITIALIZED) loadMockData();
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
-  if (userIndex > -1) {
-    mockUsers.splice(userIndex, 1);
-    persistUsers();
-    console.log('[MockData] Deleted user:', userId, 'Remaining users:', mockUsers.length);
-    return true;
-  }
-  console.warn('[MockData] Delete failed: User not found', userId);
-  return false;
-};
-
-// --- Mutating Functions for Requests ---
-export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>): Promise<AgriRequest> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
-  const newRequest: AgriRequest = {
-    ...newRequestData,
-    id: `req${Date.now()}`,
-    submissionDate: new Date().toISOString(),
-    status: 'Pending',
-    photoDataUris: (newRequestData.photoDataUris && newRequestData.photoDataUris.length === 3
-        ? newRequestData.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure no null/empty strings from upload
-        : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]) as [string, string, string],
-  };
-  mockRequests.unshift(newRequest);
-  persistRequests();
-  console.log('[MockData] Added request:', newRequest.id, 'Total requests:', mockRequests.length);
-  return newRequest;
-};
-
-export const updateMockRequest = async (updatedRequestData: AgriRequest): Promise<AgriRequest | null> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
-    const index = mockRequests.findIndex(r => r.id === updatedRequestData.id);
-    if (index !== -1) {
-        mockRequests[index] = {
-          ...mockRequests[index],
-          ...updatedRequestData,
-          photoDataUris: (updatedRequestData.photoDataUris && updatedRequestData.photoDataUris.length === 3
-            ? updatedRequestData.photoDataUris.map(uri => uri || defaultPlaceholderUri) // Ensure no null/empty strings
-            : [defaultPlaceholderUri, defaultPlaceholderUri, defaultPlaceholderUri]) as [string, string, string],
-        };
-        persistRequests();
-        console.log('[MockData] Updated request:', updatedRequestData.id);
-        return mockRequests[index];
-    }
-    console.warn(`[MockData] Update request failed: Request with id ${updatedRequestData.id} not found.`);
-    return null;
-};
-
-export const deleteMockRequest = async (requestId: string): Promise<boolean> => {
-  if (!R_MOCK_REQUESTS_INITIALIZED) loadMockData();
-  const initialLength = mockRequests.length;
-  mockRequests = mockRequests.filter(req => req.id !== requestId);
-  if (mockRequests.length < initialLength) {
-    persistRequests();
-    console.log('[MockData] Deleted request:', requestId, 'Remaining requests:', mockRequests.length);
-    return true;
-  }
-  console.warn('[MockData] Delete failed: Request not found', requestId);
-  return false;
-};
-
-
-// --- Non-mutating Data ---
+// --- Amapá Municipalities List (Still useful) ---
 export const amapaMunicipalities: string[] = [
   "Amapá", "Calçoene", "Cutias", "Ferreira Gomes", "Itaubal",
   "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
   "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
   "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
 ];
+
+// --- Persistence Logic (Commented out as Firebase is the primary store) ---
+/*
+let R_MOCK_USERS_INITIALIZED = false;
+let R_MOCK_REQUESTS_INITIALIZED = false;
+const defaultPlaceholderUri = 'https://placehold.co/300x300.png';
+
+const defaultMockUsers: User[] = [
+  // Default users are now managed via Firebase Auth and Firestore seeding/creation
+];
+
+const defaultMockRequests: AgriRequest[] = [
+  // Default requests are now managed via Firestore
+];
+
+
+const loadMockData = () => {
+  console.log('[MockData] Attempting to load data from localStorage (legacy).');
+  // Load Users
+  if (typeof window !== 'undefined' && !R_MOCK_USERS_INITIALIZED) {
+    const storedUsers = localStorage.getItem(MOCK_USERS_STORAGE_KEY);
+    if (storedUsers) {
+      // ... (parsing logic)
+    } else {
+      // ... (init logic)
+    }
+    R_MOCK_USERS_INITIALIZED = true;
+  }
+
+  // Load Requests
+  if (typeof window !== 'undefined' && !R_MOCK_REQUESTS_INITIALIZED) {
+    const storedRequests = localStorage.getItem(MOCK_REQUESTS_STORAGE_KEY);
+    if (storedRequests) {
+      // ... (parsing logic)
+    } else {
+      // ... (init logic)
+    }
+    R_MOCK_REQUESTS_INITIALIZED = true;
+  }
+   console.log('[MockData] Legacy data loading attempt complete.');
+};
+
+if (typeof window !== 'undefined') {
+  // loadMockData(); // No longer automatically load mock data from localStorage
+}
+
+
+const persistUsers = () => {
+  // if (typeof window !== 'undefined') {
+  //   localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+  // }
+};
+
+const persistRequests = () => {
+  // if (typeof window !== 'undefined') {
+  //   localStorage.setItem(MOCK_REQUESTS_STORAGE_KEY, JSON.stringify(mockRequests));
+  // }
+};
+
+
+// --- Mutating Functions for Users (Legacy - To be removed or adapted for Firestore if needed elsewhere) ---
+export const addMockUser = (newUser: User): User => {
+  // This logic should now primarily interact with Firebase Auth & Firestore
+  console.warn("[MockData] addMockUser is deprecated. Use Firebase services.");
+  return newUser;
+};
+
+
+export const updateUserInMockData = async (userId: string, updatedUserData: Partial<User>): Promise<User | null> => {
+  console.warn("[MockData] updateUserInMockData is deprecated. Use Firebase services.");
+  return null;
+};
+
+export const deleteUserFromMockData = async (userId: string): Promise<boolean> => {
+  console.warn("[MockData] deleteUserFromMockData is deprecated. Use Firebase services.");
+  return false;
+};
+
+// --- Mutating Functions for Requests (Legacy - To be removed or adapted for Firestore) ---
+export const addMockRequest = async (newRequestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>): Promise<AgriRequest> => {
+  console.warn("[MockData] addMockRequest is deprecated. Use Firebase services.");
+  // Dummy implementation to satisfy calls if any remain
+  const newRequest: AgriRequest = {
+    ...newRequestData,
+    id: `mock_req_${Date.now()}`,
+    submissionDate: new Date().toISOString(),
+    status: 'Pending',
+    photoUrls: newRequestData.photoUrls || [defaultPlaceholderUri,defaultPlaceholderUri,defaultPlaceholderUri],
+  };
+  return newRequest;
+};
+
+export const updateMockRequest = async (updatedRequestData: AgriRequest): Promise<AgriRequest | null> => {
+  console.warn("[MockData] updateMockRequest is deprecated. Use Firebase services.");
+  return updatedRequestData;
+};
+
+export const deleteMockRequest = async (requestId: string): Promise<boolean> => {
+  console.warn("[MockData] deleteMockRequest is deprecated. Use Firebase services.");
+  return false;
+};
+*/

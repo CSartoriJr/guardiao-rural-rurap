@@ -14,7 +14,7 @@ export default function LoginForm() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading } = useAuth();
+  const { login, loading: authLoading } = useAuth(); // Renamed loading to authLoading
   const router = useRouter();
   const { toast } = useToast();
 
@@ -29,14 +29,14 @@ export default function LoginForm() {
       return;
     }
     
-    const user = await login(cpf, password); 
-    if (user) {
-      toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${user.name}!` });
-      if (user.role === 'farmer') {
+    const loggedInUser = await login(cpf, password); 
+    if (loggedInUser) {
+      toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${loggedInUser.name}!` });
+      if (loggedInUser.role === 'farmer') {
         router.push(APP_ROUTES.FARMER_DASHBOARD);
-      } else if (user.role === 'technician') {
+      } else if (loggedInUser.role === 'technician') {
         router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
-      } else if (user.role === 'admin') {
+      } else if (loggedInUser.role === 'admin') {
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       }
     } else {
@@ -52,6 +52,9 @@ export default function LoginForm() {
     let value = e.target.value.replace(/\D/g, ''); 
     if (value.length > 11) value = value.substring(0, 11); 
 
+    // Apply CPF formatting (e.g., 000.000.000-00)
+    // This is primarily for display; the actual value sent to login should be just numbers or the Firebase-compatible email.
+    // For login, we'll use the raw CPF to construct the email: `cpf@cacabruxa.app`
     if (value.length > 9) {
       value = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
     } else if (value.length > 6) {
@@ -66,14 +69,14 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="cpf">CPF</Label>
+        <Label htmlFor="cpf">CPF (usado como e-mail de login)</Label>
         <Input
           id="cpf"
           type="text"
           value={cpf}
           onChange={handleCpfChange}
           placeholder="000.000.000-00"
-          maxLength={14}
+          maxLength={14} // Max length with formatting
           required
         />
       </div>
@@ -94,8 +97,8 @@ export default function LoginForm() {
         </div>
          <p className="text-xs text-muted-foreground">Use o CPF e a senha cadastrados.</p>
       </div>
-      <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={loading}>
-        {loading ? (
+      <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={authLoading}>
+        {authLoading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <LogIn className="mr-2 h-4 w-4" />

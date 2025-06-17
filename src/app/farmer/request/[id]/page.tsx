@@ -5,8 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
-// import { getRequestById } from '@/services/requestService'; // Commented out Firestore service
+import { getRequestById } from '@/services/requestService'; // Use Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
@@ -17,6 +16,7 @@ import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 
 const StatusDisplay = ({ status, recommendation, technicianName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate'>) => {
   let IconComponent;
@@ -82,10 +82,10 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
 
 
 export default function FarmerViewRequestPage() {
-  console.log('[FarmerViewRequestPage] Component rendering started.');
   const params = useParams();
   const router = useRouter();
   const { user, initializing } = useAuth();
+  const { toast } = useToast(); // Initialize useToast
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,61 +94,43 @@ export default function FarmerViewRequestPage() {
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
   useEffect(() => {
-    console.log('[FarmerViewRequestPage] useEffect triggered. RequestId:', requestId, 'User:', user ? user.id : 'null', 'Initializing:', initializing);
     if (initializing) return; 
 
     if (!requestId) {
-        console.warn('[FarmerViewRequestPage] Invalid or missing requestId.');
         setError("ID do pedido inválido.");
         setIsLoading(false);
         return;
     }
     
     if (!user) {
-        console.warn('[FarmerViewRequestPage] User not authenticated.');
-        setError("Usuário não autenticado.");
+        // This might be too early if auth is still initializing. Let PageWrapper handle redirect.
+        // setError("Usuário não autenticado.");
         setIsLoading(false);
         return;
     }
 
     setIsLoading(true);
-    // Revert to mockData
-    const foundRequest = mockRequests.find(r => r.id === requestId);
-    if (foundRequest) {
-      if (foundRequest.farmerId === user.id || user.role === 'admin') {
-        setRequest(foundRequest);
-        console.log('[FarmerViewRequestPage] Request data set from mockData:', foundRequest);
-      } else {
-        setError("Você não tem autorização para ver este pedido.");
-        console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
-      }
-    } else {
-      setError("Pedido não encontrado.");
-      console.warn('[FarmerViewRequestPage] Request not found in mockData:', requestId);
-    }
-    setIsLoading(false);
-
-    // Previous Firestore logic
-    // getRequestById(requestId)
-    //   .then(data => {
-    //     if (data && (data.farmerId === user.id || user.role === 'admin')) { 
-    //       setRequest(data);
-    //       console.log('[FarmerViewRequestPage] Request data set:', data);
-    //     } else if (data) {
-    //       setError("Você não tem autorização para ver este pedido.");
-    //       console.warn('[FarmerViewRequestPage] User not authorized for request:', requestId, 'User role:', user.role);
-    //     } else {
-    //       setError("Pedido não encontrado.");
-    //       console.warn('[FarmerViewRequestPage] Request not found:', requestId);
-    //     }
-    //     setIsLoading(false);
-    //   })
-    //   .catch(err => {
-    //     console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
-    //     setError("Falha ao carregar detalhes do pedido.");
-    //     setIsLoading(false);
-    //   });
-  }, [requestId, user, initializing, router]);
+    getRequestById(requestId)
+      .then(data => {
+        if (data && (data.farmerId === user.id || user.role === 'admin')) { 
+          setRequest(data);
+        } else if (data) {
+          setError("Você não tem autorização para ver este pedido.");
+          toast({ title: "Acesso Negado", description: "Você não tem permissão para ver este pedido.", variant: "destructive"});
+        } else {
+          setError("Pedido não encontrado.");
+          toast({ title: "Erro", description: "Pedido não encontrado.", variant: "destructive"});
+        }
+      })
+      .catch(err => {
+        console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
+        setError("Falha ao carregar detalhes do pedido.");
+        toast({ title: "Erro ao Carregar", description: "Falha ao carregar detalhes do pedido. Tente novamente.", variant: "destructive"});
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [requestId, user, initializing, router, toast]);
 
   const getPlantTypeDisplay = (req: AgriRequest): string => {
     const types = [];
@@ -213,7 +195,6 @@ export default function FarmerViewRequestPage() {
 
 
   if (isLoading || initializing) { 
-    console.log('[FarmerViewRequestPage] Rendering Skeleton (isLoading or initializing true).');
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="max-w-3xl mx-auto">
@@ -255,13 +236,12 @@ export default function FarmerViewRequestPage() {
   }
 
   if (error) {
-    console.log('[FarmerViewRequestPage] Rendering Error:', error);
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
-          <Button onClick={() => router.push(APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
+          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -270,14 +250,13 @@ export default function FarmerViewRequestPage() {
   }
 
   if (!request) {
-    console.log('[FarmerViewRequestPage] Rendering "Não foi possível carregar..." (request is null/undefined).');
     return (
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground">Pedido Não Encontrado</h2>
           <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido. Verifique se o ID do pedido é válido ou tente novamente mais tarde.</p>
-          <Button onClick={() => router.push(APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
+           <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -285,12 +264,11 @@ export default function FarmerViewRequestPage() {
     );
   }
   
-  console.log('[FarmerViewRequestPage] Rendering main content for request:', request.id);
   return (
     <PageWrapper allowedRoles={['farmer', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
-          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
+          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar
         </Button>
 
         <Card className="shadow-lg">
@@ -309,7 +287,7 @@ export default function FarmerViewRequestPage() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
-              <p className="text-lg text-foreground">{format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}</p>
+              <p className="text-lg text-foreground">{request.submissionDate ? format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) : 'Data indisponível'}</p>
             </div>
              {typeof request.plantedArea === 'number' && (
               <div>
@@ -327,19 +305,20 @@ export default function FarmerViewRequestPage() {
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {request.photoDataUris.map((uri, index) => (
+                {request.photoUrls.map((url, index) => (
                   <div
                     key={index}
                     className="rounded-lg overflow-hidden border border-border aspect-square bg-muted cursor-pointer"
-                    onClick={() => handleImageClick(uri)}
+                    onClick={() => handleImageClick(url)}
                     data-ai-hint="cassava plant"
                   >
                     <Image
-                      src={uri}
+                      src={url} // Use Firebase Storage URL
                       alt={`Foto enviada ${index + 1}`}
                       width={300}
                       height={300}
                       className="object-cover h-full w-full hover:scale-105 transition-transform duration-300"
+                      unoptimized={url.startsWith('https://placehold.co')}
                     />
                   </div>
                 ))}
@@ -368,6 +347,7 @@ export default function FarmerViewRequestPage() {
                     alt="Imagem expandida do pedido"
                     fill
                     style={{objectFit: "contain"}}
+                    unoptimized={expandedImageUri.startsWith('https://placehold.co')}
                 />
             </div>
           </DialogContent>

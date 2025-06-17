@@ -10,26 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { User } from '@/types'; 
-import { mockUsers, addMockUser } from '@/lib/mockData'; // Import addMockUser
 import { Loader2, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
-
-// This function now uses addMockUser from mockData.ts
-const saveTechnicianUser = async (userData: Pick<User, 'name' | 'cpf' | 'password'>): Promise<User> => {
-  console.log("Salvando novo técnico:", { name: userData.name, cpf: userData.cpf });
-  await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
-  
-  const newTechnician: User = {
-    id: `tech${Date.now()}`,
-    name: userData.name,
-    cpf: userData.cpf,
-    password: userData.password,
-    role: 'technician',
-  };
-  return addMockUser(newTechnician); // Use the new function to add and persist
-};
+import { firebaseInitializedCorrectly, db } from '@/lib/firebase'; // For checking CPF existence
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -40,6 +25,7 @@ const cpfValidation = z.string().refine(cpf => {
 const technicianFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
+  email: z.string().email({ message: 'E-mail inválido (para contato, não para login principal).' }), // Added email for technician
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -54,7 +40,7 @@ export default function CreateTechnicianForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
-  const { user: adminUser } = useAuth();
+  const { user: adminUser, createTechnicianWithAuth } = useAuth(); // Use createTechnicianWithAuth from AuthContext
   const router = useRouter();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<TechnicianFormValues>({
@@ -62,6 +48,7 @@ export default function CreateTechnicianForm() {
     defaultValues: {
       name: '',
       cpf: '',
+      email: '',
       password: '',
       confirmPassword: '',
     },
@@ -72,30 +59,52 @@ export default function CreateTechnicianForm() {
       toast({ title: "Acesso Negado", description: "Apenas administradores podem criar técnicos.", variant: "destructive" });
       return;
     }
+    if (!createTechnicianWithAuth) {
+      toast({ title: "Erro de Configuração", description: "Funcionalidade de criação de técnico não está disponível.", variant: "destructive" });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const normalizedNewCpf = data.cpf.replace(/\D/g, '');
-      // Check against the current mockUsers array which is loaded from localStorage
-      const cpfExists = mockUsers.some(user => user.cpf.replace(/\D/g, '').toLowerCase() === normalizedNewCpf.toLowerCase());
-      if (cpfExists) {
-        toast({
-          title: 'CPF já Existe',
-          description: 'Este CPF já está cadastrado.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
+      // Check if CPF already exists in Firestore users collection
+      if (firebaseInitializedCorrectly && db) {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("cpf", "==", data.cpf));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          toast({
+            title: 'CPF já Existe',
+            description: 'Este CPF já está cadastrado no sistema.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+         throw new Error("Firebase não inicializado para verificar CPF.");
       }
 
-      const newTechnician = await saveTechnicianUser({ name: data.name, cpf: data.cpf, password: data.password });
-      toast({
-        title: 'Técnico Criado!',
-        description: `O técnico ${newTechnician.name} (CPF: ${newTechnician.cpf}) foi criado com sucesso.`,
-      });
-      reset(); 
-    } catch (error) {
+      const technicianData = {
+        name: data.name,
+        cpf: data.cpf,
+        email: data.email, // Pass the actual email for technician document
+        passwordInput: data.password,
+      };
+      
+      const newTechnician = await createTechnicianWithAuth(technicianData);
+      
+      if (newTechnician) {
+        toast({
+          title: 'Técnico Criado!',
+          description: `O técnico ${newTechnician.name} (CPF: ${newTechnician.cpf}) foi criado com sucesso.`,
+        });
+        reset();
+      } else {
+        // This case should ideally be handled by createTechnicianWithAuth throwing an error
+        toast({ title: "Falha na Criação", description: "Não foi possível criar o técnico. Verifique os logs.", variant: "destructive" });
+      }
+    } catch (error: any) {
       console.error("Falha ao criar técnico:", error);
-      toast({ title: "Falha na Criação", description: "Não foi possível criar o técnico. Por favor, tente novamente.", variant: "destructive" });
+      toast({ title: "Falha na Criação", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -139,7 +148,7 @@ export default function CreateTechnicianForm() {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
+                <Label htmlFor="cpf">CPF (usado para login)</Label>
                 <Controller
                 name="cpf"
                 control={control}
@@ -155,6 +164,17 @@ export default function CreateTechnicianForm() {
                 />
                 {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
             </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="email">E-mail (para contato)</Label>
+                <Controller
+                name="email"
+                control={control}
+                render={({ field }) => <Input id="email" type="email" placeholder="email.tecnico@example.com" {...field} />}
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+
 
             <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>

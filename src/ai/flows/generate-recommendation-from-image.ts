@@ -14,24 +14,28 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { amapaMunicipalities } from '@/lib/mockData';
 
+// Input now accepts photo URLs from Firebase Storage instead of Data URIs directly
 const GenerateRecommendationInputSchema = z.object({
   cassavaType: z.string().describe('The variety of the cassava plant (e.g., BRS Formosa, Vassourinha).'),
   isMandioca: z.boolean().optional().describe('Indicates if the plant is classified as Mandioca.'),
   isMacaxeira: z.boolean().optional().describe('Indicates if the plant is classified as Macaxeira.'),
-  photoDataUri1: z
+  photoDataUri1: z // Kept name for compatibility, but this will be a URL
     .string()
+    .url({ message: "Photo URL 1 must be a valid URL."})
     .describe(
-      "A panoramic photo of the cassava plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. This image may contain visible GPS coordinates."
+      "A panoramic photo of the cassava plant, as a public URL (e.g., from Firebase Storage). This image may contain visible GPS coordinates."
     ),
-  photoDataUri2: z
+  photoDataUri2: z // Kept name for compatibility, but this will be a URL
     .string()
+    .url({ message: "Photo URL 2 must be a valid URL."})
     .describe(
-      "A photo showing leaf roll or brooming symptoms, as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo showing leaf roll or brooming symptoms, as a public URL."
     ),
-  photoDataUri3: z
+  photoDataUri3: z // Kept name for compatibility, but this will be a URL
     .string()
+    .url({ message: "Photo URL 3 must be a valid URL."})
     .describe(
-      "A photo of the plant's tip cut, as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of the plant's tip cut, as a public URL."
     ),
   plantedArea: z.number().optional().describe('The total planted area in hectares.'),
   infectedArea: z.number().optional().describe('The infected area in hectares.'),
@@ -57,6 +61,7 @@ const prompt = ai.definePrompt({
   name: 'generateRecommendationPrompt',
   input: {schema: GenerateRecommendationInputSchema},
   output: {schema: GenerateRecommendationOutputSchema},
+  // The prompt now uses {{media url=photoDataUri1}} correctly, as photoDataUri1 will contain a URL.
   prompt: `You are an expert agricultural technician specializing in cassava plants (mandioca/macaxeira) in the state of Amapá, Brazil.
 Your task is to determine the GPS coordinates and identify the Amapá municipality based on the provided plant information and images.
 
@@ -68,7 +73,7 @@ Plant Information:
 {{#if plantedArea}}- Planted Area: {{{plantedArea}}} hectares{{/if}}
 {{#if infectedArea}}- Infected Area: {{{infectedArea}}} hectares (out of {{{plantedArea}}} ha planted){{/if}}
 
-Images Provided:
+Images Provided (as URLs):
 - Photo 1 (Panoramic): {{media url=photoDataUri1}}
 - Photo 2 (Leaf Roll/Brooming): {{media url=photoDataUri2}}
 - Photo 3 (Tip Cut): {{media url=photoDataUri3}}
@@ -104,17 +109,19 @@ const generateRecommendationFlow = ai.defineFlow(
   },
   async (input): Promise<GenerateRecommendationOutput> => {
     try {
+      // Log the input being sent to the AI to verify URLs
+      console.log('[AI Flow] Input to generateRecommendationPrompt:', JSON.stringify(input, null, 2));
+      
       const result = await prompt(input);
 
       if (result && result.output) {
-        // Successfully obtained and validated output structure (location data)
+        console.log('[AI Flow] Output from prompt:', JSON.stringify(result.output, null, 2));
         return {
           extractedLatitude: result.output.extractedLatitude,
           extractedLongitude: result.output.extractedLongitude,
           determinedMunicipality: result.output.determinedMunicipality,
         };
       } else {
-        // Log an error if the result or output structure is not as expected
         console.error(
           '[generateRecommendationFlow] AI prompt did not return a valid output structure for location data. Result:',
           JSON.stringify(result, null, 2)
@@ -125,15 +132,11 @@ const generateRecommendationFlow = ai.defineFlow(
         } else if (result && (result as any).blocked) {
             errorInfo += ` Conteúdo bloqueado pela IA.`;
         }
-        // Return an object that matches the schema but indicates an error implicitly
-        // by having undefined fields, or consider adding an error field to the schema if needed.
-        return {}; // Return empty object for now; schema fields are optional.
+        return {};
       }
     } catch (error: any) {
-      // Catch any errors during the prompt execution
       console.error('[generateRecommendationFlow] Error during AI prompt execution for location data:', error.message ? error.message : error, error);
-      // Return an object that matches the schema
-      return {}; // Return empty object for now; schema fields are optional.
+      return {};
     }
   }
 );

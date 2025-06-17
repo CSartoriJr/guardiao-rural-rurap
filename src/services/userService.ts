@@ -1,0 +1,108 @@
+
+// src/services/userService.ts
+import { db, firebaseInitializedCorrectly, auth as firebaseAuth } from '@/lib/firebase';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
+import type { User as AppUser } from '@/types'; // Your application's user type
+
+const USERS_COLLECTION = 'users';
+
+const ensureFirebaseInitialized = () => {
+  if (!firebaseInitializedCorrectly || !db) {
+    const errorMessage = "[UserService] Firebase not properly initialized. Cannot perform Firestore operations.";
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+};
+
+export const createUserDocument = async (
+  userAuth: AuthUser,
+  additionalData: Partial<Omit<AppUser, 'id' | 'email'>> & { email?: string } // email can be passed to override default
+): Promise<AppUser> => {
+  ensureFirebaseInitialized();
+  if (!userAuth) throw new Error('User object from Firebase Auth is required.');
+
+  const userRef = doc(db!, USERS_COLLECTION, userAuth.uid);
+  const userData: AppUser = {
+    id: userAuth.uid,
+    email: additionalData.email || userAuth.email || '', // Prefer passed email, then auth email
+    name: additionalData.name || userAuth.displayName || 'Usuário Anônimo',
+    cpf: additionalData.cpf || '', // CPF must be provided in additionalData
+    role: additionalData.role || 'farmer', // Default to farmer if not specified
+    phone: additionalData.phone,
+    address: additionalData.address,
+    municipality: additionalData.municipality,
+    familyMembers: additionalData.familyMembers,
+    // Password is not stored in Firestore document
+  };
+
+  // Remove undefined fields before saving
+  Object.keys(userData).forEach(key => {
+    const K = key as keyof AppUser;
+    if (userData[K] === undefined) {
+      delete userData[K];
+    }
+  });
+
+
+  await setDoc(userRef, userData);
+  console.log(`[UserService] User document created for ${userAuth.uid} with email ${userData.email}`);
+  return userData;
+};
+
+export const getUserDocument = async (userId: string): Promise<AppUser | null> => {
+  ensureFirebaseInitialized();
+  const userRef = doc(db!, USERS_COLLECTION, userId);
+  const docSnap = await getDoc(userRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() } as AppUser;
+  }
+  return null;
+};
+
+export const updateUserDocument = async (userId: string, data: Partial<AppUser>): Promise<void> => {
+  ensureFirebaseInitialized();
+  const userRef = doc(db!, USERS_COLLECTION, userId);
+  // Ensure 'id' is not part of the update data if it was accidentally included
+  const { id, ...updateData } = data;
+  await updateDoc(userRef, updateData);
+  console.log(`[UserService] User document updated for ${userId}`);
+};
+
+
+// Important: Deleting a Firebase Auth user from the client-side is generally not recommended
+// and has limitations. True user deletion should be handled by a backend Admin SDK.
+// This function will only delete the Firestore document.
+export const deleteUserFirestoreDocument = async (userId: string): Promise<void> => {
+  ensureFirebaseInitialized();
+  // First, check if the user is an admin and if they are the last admin
+  const currentUserDoc = await getUserDocument(userId);
+  if (currentUserDoc?.role === 'admin') {
+    const adminQuery = query(collection(db!, USERS_COLLECTION), where("role", "==", "admin"));
+    const adminSnapshot = await getDocs(adminQuery);
+    if (adminSnapshot.docs.length <= 1) {
+      throw new Error("Não é possível remover o único administrador do sistema.");
+    }
+  }
+
+  // Check for related requests for farmers or technicians
+   if (currentUserDoc?.role === 'farmer') {
+    const requestQuery = query(collection(db!, 'requests'), where('farmerId', '==', userId));
+    const requestSnapshot = await getDocs(requestQuery);
+    if (!requestSnapshot.empty) {
+      throw new Error('Este agricultor possui pedidos e não pode ser removido. Remova os pedidos primeiro.');
+    }
+  } else if (currentUserDoc?.role === 'technician') {
+    const requestQuery = query(collection(db!, 'requests'), where('technicianId', '==', userId), where('status', '!=', 'Pending'));
+    const requestSnapshot = await getDocs(requestQuery);
+    if (!requestSnapshot.empty) {
+      throw new Error('Este técnico possui respostas associadas a pedidos e não pode ser removido.');
+    }
+  }
+
+  const userRef = doc(db!, USERS_COLLECTION, userId);
+  await deleteDoc(userRef);
+  console.log(`[UserService] User Firestore document deleted for ${userId}. Firebase Auth user may still exist.`);
+  // Note: To delete the Firebase Auth user, you'd typically use an Admin SDK call from a backend.
+  // For client-side, you might disable the user if the SDK allows, or just accept this limitation.
+};

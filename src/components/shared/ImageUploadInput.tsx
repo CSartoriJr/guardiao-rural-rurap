@@ -1,18 +1,18 @@
 
 'use client';
-import React, { useState, ChangeEvent, useRef } from 'react';
+import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-// Removed: import { uploadImage } from '@/services/imageUploadService';
+import { uploadImage } from '@/services/imageUploadService'; // Re-enabled for Firebase Storage
+import { useAuth } from '@/hooks/useAuth'; // To get userId
 
 interface ImageUploadInputProps {
-  onUploadComplete: (dataUri: string | null) => void;
+  onUploadComplete: (url: string | null) => void; // Will now be URL from Firebase Storage
   id: string;
-  currentImageUrl?: string | null;
-  // Removed: userId?: string; 
+  currentImageUrl?: string | null; // To display existing image on edit (if applicable)
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
@@ -21,44 +21,56 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth(); // Get current user for userId
+
+  useEffect(() => {
+    // If currentImageUrl changes (e.g. form reset with existing data), update preview
+    setPreview(currentImageUrl || null);
+  }, [currentImageUrl]);
+
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setError(null);
 
+    if (!user || !user.id) {
+        toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive'});
+        setError('Usuário não identificado.');
+        return;
+    }
+
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({ title: 'Arquivo muito grande', description: 'Por favor, envie uma imagem menor que 5MB.', variant: 'destructive' });
-        setError('Arquivo muito grande.');
+        setError('Arquivo muito grande (máx 5MB).');
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
-      if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-        toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, WEBP, ou GIF.', variant: 'destructive' });
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { // Removed GIF for simplicity, can add back
+        toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, ou WEBP.', variant: 'destructive' });
         setError('Tipo de arquivo inválido.');
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
 
       setIsProcessing(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        setPreview(dataUri);
-        onUploadComplete(dataUri);
-        setIsProcessing(false);
-      };
-      reader.onerror = () => {
-        console.error("[ImageUploadInput] Error reading file");
-        toast({ title: 'Falha ao Ler Imagem', description: 'Não foi possível processar o arquivo da imagem.', variant: 'destructive' });
-        setError('Falha ao ler arquivo.');
+      try {
+        const downloadURL = await uploadImage(file, user.id); // Use uploadImage service
+        setPreview(downloadURL);
+        onUploadComplete(downloadURL);
+        toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!'});
+      } catch (uploadError: any) {
+        console.error("[ImageUploadInput] Error uploading file to Firebase Storage:", uploadError);
+        toast({ title: 'Falha no Upload', description: uploadError.message || 'Não foi possível enviar a imagem.', variant: 'destructive' });
+        setError(uploadError.message || 'Falha no envio.');
         onUploadComplete(null);
-        setPreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        setPreview(null); // Clear preview on error
+        if (fileInputRef.current) fileInputRef.current.value = ''; // Reset file input
+      } finally {
         setIsProcessing(false);
-      };
-      reader.readAsDataURL(file);
+      }
     } else {
+      // If no file is selected after having one, clear it (unless there's a currentImageUrl)
       if (!currentImageUrl) {
         setPreview(null);
         onUploadComplete(null);
@@ -69,9 +81,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleRemoveImage = () => {
     setPreview(null);
     setError(null);
-    onUploadComplete(null);
+    onUploadComplete(null); // Signal removal
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''; // Reset the file input
     }
   };
 
@@ -91,14 +103,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         {isProcessing ? (
           <div className="text-center text-muted-foreground">
             <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-            <p className="mt-2 text-sm">Processando...</p>
+            <p className="mt-2 text-sm">Enviando...</p>
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium">Erro:</p>
             <p className="text-xs break-words">{error}</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Tentar novamente</Button>
+            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); fileInputRef.current?.click(); }}>Tentar novamente</Button>
           </div>
         ) : preview ? (
           <Image src={preview} alt={`Pré-visualização ${id}`} layout="fill" objectFit="contain" className="p-1" />
@@ -106,7 +118,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <div className="text-center text-muted-foreground">
             <UploadCloud className="mx-auto h-12 w-12" />
             <p className="mt-2 text-sm">Clique ou arraste para enviar</p>
-            <p className="text-xs">PNG, JPG, GIF até 5MB</p>
+            <p className="text-xs">PNG, JPG, WEBP até 5MB</p>
           </div>
         )}
         <Input
@@ -114,7 +126,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           id={id}
           ref={fileInputRef}
           className="hidden"
-          accept="image/png, image/jpeg, image/gif, image/webp"
+          accept="image/png, image/jpeg, image/webp"
           onChange={handleFileChange}
           disabled={isProcessing}
         />

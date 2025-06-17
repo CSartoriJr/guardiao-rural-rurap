@@ -14,6 +14,14 @@ interface TechnicianRequestCardProps {
 }
 
 export default function TechnicianRequestCard({ request }: TechnicianRequestCardProps) {
+    // Ensure photoUrls is an array and has at least 3 elements, providing placeholders if not.
+  const photoDisplayUrls = (
+    Array.isArray(request.photoUrls) && request.photoUrls.length >= 3
+    ? request.photoUrls.slice(0, 3)
+    : ['https://placehold.co/48x48.png', 'https://placehold.co/48x48.png', 'https://placehold.co/48x48.png']
+  ).map(url => url || 'https://placehold.co/48x48.png'); // Ensure no null/undefined URLs
+
+
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="flex flex-row justify-between items-start pb-2">
@@ -34,17 +42,18 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <CalendarDays className="h-4 w-4 mr-2 text-primary" />
-          <span>Enviado: {format(new Date(request.submissionDate), "d 'de' MMM, yyyy", { locale: ptBR })}</span>
+          <span>Enviado: {request.submissionDate ? format(new Date(request.submissionDate), "d 'de' MMM, yyyy", { locale: ptBR }) : 'Data Indisponível'}</span>
         </div>
         <div className="flex -space-x-2 overflow-hidden mt-2 justify-center sm:justify-start">
-          {request.photoDataUris.slice(0,3).map((uri, index) => (
+          {photoDisplayUrls.map((url, index) => (
              <div key={index} className="inline-block h-12 w-12 rounded-full ring-2 ring-card bg-muted overflow-hidden" data-ai-hint="cassava plant">
                 <Image
-                    src={uri}
+                    src={url} // Use Firebase Storage URL
                     alt={`Miniatura ${index + 1}`}
                     width={48}
                     height={48}
                     className="object-cover h-full w-full"
+                    unoptimized={url.startsWith('https://placehold.co')} // Avoid optimization for placeholder
                 />
             </div>
           ))}

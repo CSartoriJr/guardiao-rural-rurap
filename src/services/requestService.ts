@@ -8,55 +8,38 @@ const REQUESTS_COLLECTION = 'requests';
 
 const ensureFirebaseInitialized = () => {
   if (!firebaseInitializedCorrectly || !db) {
-    const errorMessage = "[RequestService] Firebase not properly initialized. Cannot perform Firestore operations.";
+    const errorMessage = "[RequestService] Firebase não está devidamente inicializado. Não é possível realizar operações Firestore.";
     console.error(errorMessage);
     throw new Error(errorMessage);
   }
 };
 
-// Helper to convert Firestore Timestamps to ISO strings and vice-versa if needed
-const convertTimestamps = (data: any): any => {
-  const result: any = {};
-  for (const key in data) {
-    if (data[key] instanceof Timestamp) {
-      result[key] = data[key].toDate().toISOString();
-    } else if (key === 'submissionDate' || key === 'responseDate') {
-      // Ensure dates are stored as Timestamps if they are strings
-      if (typeof data[key] === 'string' && data[key]) {
-        result[key] = Timestamp.fromDate(new Date(data[key]));
-      } else if (data[key] === undefined) {
-        result[key] = null; // Or serverTimestamp() if it's a creation
-      } else {
-        result[key] = data[key];
-      }
-    } else {
-      result[key] = data[key];
-    }
-  }
-  return result;
-};
-
 const requestFromFirestore = (docSnap: any): AgriRequest => {
     const data = docSnap.data();
+    // Ensure photoUrls is always an array of 3 strings, defaulting to placeholders if necessary
+    let photoUrls: [string, string, string] = ['https://placehold.co/300x300.png', 'https://placehold.co/300x300.png', 'https://placehold.co/300x300.png'];
+    if (Array.isArray(data.photoUrls) && data.photoUrls.length === 3) {
+        photoUrls = data.photoUrls.map((url: any) => typeof url === 'string' && url ? url : 'https://placehold.co/300x300.png') as [string, string, string];
+    } else if (Array.isArray(data.photoDataUris) && data.photoDataUris.length === 3) {
+      // Legacy support for photoDataUris if migrating or if old data exists
+      console.warn(`[RequestService] Request ${docSnap.id} using legacy photoDataUris. Please ensure data is migrated to photoUrls.`);
+      photoUrls = data.photoDataUris.map((uri: any) => typeof uri === 'string' && uri ? uri : 'https://placehold.co/300x300.png') as [string, string, string];
+    }
+
     const request: AgriRequest = {
       id: docSnap.id,
       ...data,
       submissionDate: data.submissionDate instanceof Timestamp ? data.submissionDate.toDate().toISOString() : data.submissionDate,
-      responseDate: data.responseDate instanceof Timestamp ? data.responseDate.toDate().toISOString() : data.responseDate,
-      photoDataUris: Array.isArray(data.photoDataUris) && data.photoDataUris.length === 3 
-        ? data.photoDataUris 
-        : ['https://placehold.co/300x300.png', 'https://placehold.co/300x300.png', 'https://placehold.co/300x300.png'] // Fallback
+      responseDate: data.responseDate instanceof Timestamp ? data.responseDate.toDate().toISOString() : (data.responseDate || undefined),
+      photoUrls: photoUrls,
     } as AgriRequest;
-    // Ensure photoDataUris is always a tuple of 3 strings
-    if (!Array.isArray(request.photoDataUris) || request.photoDataUris.length !== 3) {
-        request.photoDataUris = ['https://placehold.co/300x300.png', 'https://placehold.co/300x300.png', 'https://placehold.co/300x300.png'];
-    }
+    
     return request;
 };
 
 
 export const addRequest = async (
-  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status'>
+  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'>
 ): Promise<AgriRequest> => {
   ensureFirebaseInitialized();
   try {
@@ -64,17 +47,18 @@ export const addRequest = async (
       ...requestData,
       submissionDate: serverTimestamp(), // Use server timestamp for creation
       status: 'Pending' as RequestStatus,
-      // Ensure optional fields that might be undefined are handled or explicitly set to null
-      recommendation: requestData.recommendation ?? null,
-      technicianId: requestData.technicianId ?? null,
-      technicianName: requestData.technicianName ?? null,
-      responseDate: requestData.responseDate ?? null,
-      aiSuggestedRecommendation: requestData.aiSuggestedRecommendation ?? null,
+      photoUrls: requestData.photoUrls, // Should be an array of 3 Firebase Storage URLs
+      // Ensure optional fields not in Omit are explicitly set or handled
+      recommendation: null,
+      technicianId: null,
+      technicianName: null,
+      responseDate: null,
       plantedArea: requestData.plantedArea ?? null,
       infectedArea: requestData.infectedArea ?? null,
       latitude: requestData.latitude ?? null,
       longitude: requestData.longitude ?? null,
       deviceLocationStatus: requestData.deviceLocationStatus ?? 'idle',
+      municipality: requestData.municipality ?? null,
     };
 
     const docRef = await addDoc(collection(db!, REQUESTS_COLLECTION), docData);
@@ -82,7 +66,7 @@ export const addRequest = async (
     
     const newDocSnap = await getDoc(docRef);
     if (!newDocSnap.exists()) {
-        throw new Error("Failed to fetch newly created request from Firestore.");
+        throw new Error("Falha ao buscar o pedido recém-criado do Firestore.");
     }
     return requestFromFirestore(newDocSnap);
 
@@ -113,17 +97,24 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
   try {
     const docRef = doc(db!, REQUESTS_COLLECTION, requestId);
     const firestoreUpdates: any = {};
+    
+    // Ensure all keys from 'updates' are processed
     for (const key in updates) {
         const typedKey = key as keyof AgriRequest;
-        if ((typedKey === 'submissionDate' || typedKey === 'responseDate') && typeof updates[typedKey] === 'string') {
+        if (updates[typedKey] === undefined) { // Explicitly handle undefined to remove field or set to null
+            firestoreUpdates[key] = null;
+        } else if ((typedKey === 'submissionDate' || typedKey === 'responseDate') && typeof updates[typedKey] === 'string') {
             firestoreUpdates[key] = Timestamp.fromDate(new Date(updates[typedKey] as string));
         } else {
             firestoreUpdates[key] = updates[typedKey];
         }
     }
-    if (updates.responseDate && !(firestoreUpdates.responseDate instanceof Timestamp)) {
-        firestoreUpdates.responseDate = serverTimestamp();
+    
+    // If responseDate is part of updates and is being set (not just cleared)
+    if (updates.responseDate && !(firestoreUpdates.responseDate instanceof Timestamp) && firestoreUpdates.responseDate !== null) {
+        firestoreUpdates.responseDate = serverTimestamp(); // Use server time if being set to a new date
     }
+
 
     await updateDoc(docRef, firestoreUpdates);
     console.log(`[RequestService] Request updated: ${requestId}`);

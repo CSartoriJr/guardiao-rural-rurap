@@ -3,89 +3,118 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
-import type { User } from '@/types';
-import { mockUsers, mockRequests, updateUserInMockData, deleteUserFromMockData } from '@/lib/mockData';
+import type { User as AppUserType } from '@/types'; // Renamed to avoid conflict
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon } from 'lucide-react'; // Added UserCheck, UsersIcon, TractorIcon
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
+import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
+import { updateUserDocument, deleteUserFirestoreDocument } from '@/services/userService';
+import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
 
-const fetchAllUsers = async (): Promise<User[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return [...mockUsers]; 
+const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
+  if (!firebaseInitializedCorrectly || !db) {
+    console.error("Firebase não inicializado. Não é possível buscar usuários.");
+    return [];
+  }
+  const usersCollectionRef = collection(db, 'users');
+  const userSnapshot = await getDocs(usersCollectionRef);
+  const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUserType));
+  return userList;
 };
 
-export type UserWithActivityCount = User & { 
+const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: number; responseCount?: number }> => {
+  if (!firebaseInitializedCorrectly || !db) return {};
+  let activityCount: { requestCount?: number; responseCount?: number } = {};
+
+  if (user.role === 'farmer') {
+    try {
+      const requests = await getRequestsForFarmer(user.id); // Uses Firestore
+      activityCount = { requestCount: requests.length };
+    } catch (e) {
+      console.error(`Erro ao buscar pedidos para agricultor ${user.id}:`, e);
+      activityCount = { requestCount: 0 };
+    }
+  } else if (user.role === 'technician') {
+    try {
+      const q = firestoreQuery(
+        collection(db, 'requests'),
+        where('technicianId', '==', user.id),
+        where('status', '!=', 'Pending')
+      );
+      const snapshot = await getDocs(q);
+      activityCount = { responseCount: snapshot.size };
+    } catch (e) {
+      console.error(`Erro ao buscar respostas para técnico ${user.id}:`, e);
+      activityCount = { responseCount: 0 };
+    }
+  }
+  return activityCount;
+};
+
+export type UserWithActivityCount = AppUserType & { 
   requestCount?: number; 
   responseCount?: number; 
 };
 
 export default function ManageUsersPage() {
-  const { user: adminUser } = useAuth();
+  const { user: adminUser, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [roleFilter, setRoleFilter] = useState<User['role'] | 'all'>('all');
+  const [roleFilter, setRoleFilter] = useState<AppUserType['role'] | 'all'>('all');
 
   useEffect(() => {
-    if (adminUser && adminUser.role === 'admin') {
+    if (authInitializing) return;
+    if (adminUser && adminUser.role === 'admin' && firebaseInitializedCorrectly) {
       setIsLoading(true);
-      fetchAllUsers()
-        .then(data => {
-          const usersWithCounts = data.map(u => {
-            let activityCount: Partial<UserWithActivityCount> = {};
-            if (u.role === 'farmer') {
-              const count = mockRequests.filter(req => req.farmerId === u.id).length;
-              activityCount = { requestCount: count };
-            } else if (u.role === 'technician') {
-              const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
-              activityCount = { responseCount: count };
-            }
-            return { ...u, ...activityCount };
+      fetchAllUsersFromFirestore()
+        .then(async fetchedUsers => {
+          const usersWithCountsPromises = fetchedUsers.map(async u => {
+            const activity = await countUserActivity(u);
+            return { ...u, ...activity };
           });
-          usersWithCounts.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+          const usersWithCounts = await Promise.all(usersWithCountsPromises);
+          usersWithCounts.sort((a, b) => a.name.localeCompare(b.name));
           setUsers(usersWithCounts);
-          setIsLoading(false);
         })
         .catch(error => {
-          console.error("Falha ao buscar usuários:", error);
-          toast({ title: "Erro ao Carregar", description: "Não foi possível buscar os usuários.", variant: "destructive" });
-          setIsLoading(false);
-        });
+          console.error("Falha ao buscar usuários do Firestore:", error);
+          toast({ title: "Erro ao Carregar", description: "Não foi possível buscar os usuários do sistema.", variant: "destructive" });
+        })
+        .finally(() => setIsLoading(false));
+    } else if (!authInitializing && !firebaseInitializedCorrectly) {
+        toast({ title: "Erro de Configuração", description: "Firebase não está configurado. Funcionalidades limitadas.", variant: "destructive" });
+        setIsLoading(false);
     }
-  }, [adminUser, toast]);
+  }, [adminUser, authInitializing, toast]);
 
-  const handleUserUpdate = async (userId: string, updatedData: Partial<User>) => {
+  const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
-      const updatedUser = await updateUserInMockData(userId, updatedData);
-      if (updatedUser) {
+      // Password changes require re-authentication or Admin SDK, not handled directly here for simplicity
+      const { password, ...firestoreData } = updatedData; 
+      await updateUserDocument(userId, firestoreData);
+      
+      // Re-fetch and update the specific user with new counts
+      const userIndex = users.findIndex(u => u.id === userId);
+      if (userIndex !== -1) {
+        const oldUserData = users[userIndex];
+        const updatedUserWithOldCounts = { ...oldUserData, ...firestoreData }; // Apply updates, keep old counts for now
+        const activity = await countUserActivity(updatedUserWithOldCounts as AppUserType); // Recalculate activity
+        const fullyUpdatedUser = { ...updatedUserWithOldCounts, ...activity };
+
         setUsers(prevUsers => {
-          const updatedList = prevUsers.map(u => {
-            if (u.id === userId) {
-              let activityCount: Partial<UserWithActivityCount> = {};
-              if (updatedData.role === 'farmer' || (u.role === 'farmer' && !updatedData.role)) {
-                const count = mockRequests.filter(req => req.farmerId === u.id).length;
-                activityCount = { requestCount: count, responseCount: undefined };
-              } else if (updatedData.role === 'technician' || (u.role === 'technician' && !updatedData.role)) {
-                const count = mockRequests.filter(req => req.technicianId === u.id && req.status !== 'Pending').length;
-                activityCount = { responseCount: count, requestCount: undefined };
-              } else {
-                   activityCount = { requestCount: undefined, responseCount: undefined };
-              }
-              return { ...u, ...updatedUser, ...activityCount };
-            }
-            return u;
-          });
-          updatedList.sort((a, b) => a.name.localeCompare(b.name)); // Re-sort after update
-          return updatedList;
+          const newUsers = [...prevUsers];
+          newUsers[userIndex] = fullyUpdatedUser;
+          newUsers.sort((a, b) => a.name.localeCompare(b.name));
+          return newUsers;
         });
-        toast({ title: "Usuário Atualizado", description: `Os dados de ${updatedUser.name} foram atualizados.` });
-      } else {
-        toast({ title: "Erro na Atualização", description: "Não foi possível encontrar o usuário para atualizar.", variant: "destructive" });
       }
+      toast({ title: "Usuário Atualizado", description: `Os dados de ${updatedData.name || 'usuário'} foram atualizados.` });
     } catch (error: any) {
       console.error("Falha ao atualizar usuário:", error);
       toast({ title: "Falha na Atualização", description: error.message || "Ocorreu um erro.", variant: "destructive" });
@@ -93,21 +122,19 @@ export default function ManageUsersPage() {
   };
 
   const handleUserDelete = async (userId: string, userName: string) => {
+    // Deleting Firebase Auth user client-side is complex and risky.
+    // This will only delete the Firestore document.
     try {
-      const success = await deleteUserFromMockData(userId);
-      if (success) {
-        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId)); // No need to re-sort here as filter preserves order
-        toast({ title: "Usuário Removido", description: `O usuário ${userName} foi removido com sucesso.` });
-      } else {
-        toast({ title: "Erro na Remoção", description: "Não foi possível encontrar o usuário para remover.", variant: "destructive" });
-      }
+      await deleteUserFirestoreDocument(userId);
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+      toast({ title: "Documento de Usuário Removido", description: `O documento do usuário ${userName} foi removido do Firestore.` });
     } catch (error: any) {
-      console.error("Falha ao remover usuário:", error);
-      toast({ title: "Falha na Remoção", description: error.message || "Ocorreu um erro.", variant: "destructive" });
+      console.error("Falha ao remover documento do usuário:", error);
+      toast({ title: "Falha na Remoção do Documento", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     }
   };
   
-  const getRoleDisplayName = (role: User['role']) => {
+  const getRoleDisplayName = (role: AppUserType['role']) => {
     switch (role) {
       case 'admin': return 'Administrador';
       case 'technician': return 'Técnico';
@@ -121,7 +148,6 @@ export default function ManageUsersPage() {
       return users;
     }
     return users.filter(user => user.role === roleFilter);
-    // No need to sort here as `users` is already sorted
   }, [users, roleFilter]);
 
   const totalCounts = useMemo(() => {
@@ -142,7 +168,7 @@ export default function ManageUsersPage() {
         </div>
         <div className="w-full sm:w-auto sm:min-w-[200px]">
           <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
-          <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as User['role'] | 'all')}>
+          <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
             <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
               <ListFilter className="mr-2 h-4 w-4 text-primary" />
               <SelectValue placeholder="Filtrar por função..." />
@@ -188,7 +214,7 @@ export default function ManageUsersPage() {
       </div>
 
 
-      {isLoading ? (
+      {isLoading || authInitializing ? (
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -210,11 +236,10 @@ export default function ManageUsersPage() {
           <p className="text-muted-foreground">
             {roleFilter === 'all' 
               ? "Não há usuários cadastrados no sistema além de você." 
-              : `Não há usuários com a função "${getRoleDisplayName(roleFilter as User['role'])}" cadastrados.`}
+              : `Não há usuários com a função "${getRoleDisplayName(roleFilter as AppUserType['role'])}" cadastrados.`}
           </p>
         </div>
       )}
     </PageWrapper>
   );
 }
-

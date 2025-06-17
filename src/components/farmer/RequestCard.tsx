@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AgriRequest } from '@/types';
@@ -27,6 +28,13 @@ const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
 };
 
 export default function FarmerRequestCard({ request }: RequestCardProps) {
+  // Ensure photoUrls is an array and has at least 3 elements, providing placeholders if not.
+  const photoDisplayUrls = (
+    Array.isArray(request.photoUrls) && request.photoUrls.length >= 3
+    ? request.photoUrls.slice(0, 3)
+    : ['https://placehold.co/64x64.png', 'https://placehold.co/64x64.png', 'https://placehold.co/64x64.png']
+  ).map(url => url || 'https://placehold.co/64x64.png'); // Ensure no null/undefined URLs
+
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="pb-2">
@@ -35,19 +43,20 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
           <StatusBadge status={request.status} />
         </div>
         <CardDescription className="text-xs">
-          Enviado: {format(new Date(request.submissionDate), "d 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR })}
+          Enviado: {request.submissionDate ? format(new Date(request.submissionDate), "d 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR }) : 'Data indisponível'}
         </CardDescription>
       </CardHeader>
       <CardContent className="py-2">
         <div className="flex -space-x-2 overflow-hidden mb-2 justify-center sm:justify-start">
-          {request.photoDataUris.slice(0,3).map((uri, index) => (
+          {photoDisplayUrls.map((url, index) => (
             <div key={index} className="inline-block h-16 w-16 rounded-full ring-2 ring-card bg-muted overflow-hidden" data-ai-hint="cassava plant">
               <Image
-                src={uri}
+                src={url} // Use Firebase Storage URL
                 alt={`Foto da mandioca ${index + 1}`}
                 width={64}
                 height={64}
                 className="object-cover h-full w-full"
+                unoptimized={url.startsWith('https://placehold.co')} // Avoid optimization for placeholder
               />
             </div>
           ))}
