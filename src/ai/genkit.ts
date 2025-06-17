@@ -1,5 +1,4 @@
 
-'use server';
 import { genkit, type InitPlugins, type FlowFn, type PromptFn } from 'genkit';
 import { googleAI, GoogleAIPluginParams } from '@genkit-ai/googleai';
 import { z } from 'genkit'; // Genkit re-exports Zod's 'z'
