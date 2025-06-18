@@ -250,13 +250,13 @@ export default function TechnicianAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                     {statusChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={statusChartData}>
+                        <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={statusChartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis allowDecimals={false}/>
-                            <Tooltip />
-                            <Legend />
+                            <XAxis dataKey="name" fontSize={12} />
+                            <YAxis allowDecimals={false} fontSize={12}/>
+                            <Tooltip wrapperStyle={{ fontSize: '12px' }}/>
+                            <Legend wrapperStyle={{ fontSize: '12px' }} />
                             <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Pedidos"/>
                         </BarChart>
                         </ResponsiveContainer>
@@ -278,12 +278,12 @@ export default function TechnicianAnalyticsPage() {
                 <CardContent>
                   {cassavaTypeChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={cassavaTypeChartData} layout="vertical">
+                      <BarChart data={cassavaTypeChartData} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis dataKey="name" type="category" width={120} />
-                        <Tooltip />
-                        <Legend />
+                        <XAxis type="number" allowDecimals={false} fontSize={12} />
+                        <YAxis dataKey="name" type="category" width={100} fontSize={12} />
+                        <Tooltip wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '12px' }} />
                         <Bar dataKey="count" fill="hsl(var(--accent))" name="Nº de Pedidos"/>
                       </BarChart>
                     </ResponsiveContainer>
@@ -301,10 +301,10 @@ export default function TechnicianAnalyticsPage() {
                     <ResponsiveContainer width="100%" height={400}> {/* Reverted height */}
                       <BarChart data={municipalityChartData} margin={{ top: 5, right: 20, left: 20, bottom: 60 }}> {/* Adjusted bottom margin for labels */}
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" type="category" interval={0} angle={-45} textAnchor="end" height={80} /> {/* Added angle, textAnchor, and height for XAxis labels */}
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Legend />
+                        <XAxis dataKey="name" type="category" interval={0} angle={-45} textAnchor="end" height={80} fontSize={10} /> {/* Added angle, textAnchor, and height for XAxis labels */}
+                        <YAxis allowDecimals={false} fontSize={12} />
+                        <Tooltip wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '12px' }} />
                         <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Pedidos"/>
                       </BarChart>
                     </ResponsiveContainer>
