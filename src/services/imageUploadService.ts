@@ -1,4 +1,3 @@
-
 // src/services/imageUploadService.ts
 import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -30,12 +29,19 @@ export async function uploadImage(file: File, userId: string): Promise<string> {
     return downloadURL;
   } catch (error: any) {
     console.error('[ImageUploadService] Error uploading image:', error);
-    // Provide more specific error messages if possible
+    let message = 'Falha ao enviar imagem. Tente novamente.'; // Default message
     if (error.code === 'storage/unauthorized') {
-      throw new Error('Falha no envio: permissão negada. Verifique as regras do Firebase Storage.');
+      message = 'Falha no envio: permissão negada. Verifique as regras do Firebase Storage.';
     } else if (error.code === 'storage/canceled') {
-      throw new Error('Falha no envio: upload cancelado.');
+      message = 'Falha no envio: upload cancelado.';
+    } else if (error.code === 'storage/unknown') { // Firebase often uses this for network issues
+      message = 'Erro de rede durante o upload. Verifique sua conexão e tente novamente.';
+    } else if (error instanceof ProgressEvent) { // Explicitly check if the error object is a ProgressEvent
+      message = 'Erro de comunicação durante o upload. Verifique sua conexão e tente novamente.';
+    } else if (error.message) { // If there's a message property on the error, use it
+      message = error.message;
     }
-    throw new Error('Falha ao enviar imagem. Tente novamente.');
+    // Always throw a new Error object with a determined message.
+    throw new Error(message);
   }
 }
