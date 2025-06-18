@@ -61,6 +61,17 @@ export default function AdminDashboard() {
     }
   }, [user, toast]);
 
+  const adminStatusCounts = useMemo(() => {
+    if (!requests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, all: 0 };
+    return {
+      Pending: requests.filter(req => req.status === 'Pending').length,
+      Positive: requests.filter(req => req.status === 'Positive').length,
+      Negative: requests.filter(req => req.status === 'Negative').length,
+      Inconclusive: requests.filter(req => req.status === 'Inconclusive').length,
+      all: requests.length,
+    };
+  }, [requests]);
+
   const filteredRequests = useMemo(() => {
     let tempRequests = requests;
 
@@ -110,7 +121,7 @@ export default function AdminDashboard() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
-        <div className="w-full sm:w-auto sm:min-w-[200px]">
+        <div className="w-full sm:w-auto sm:min-w-[250px]"> {/* Adjusted min-width */}
           <Label htmlFor="status-filter" className="text-sm font-medium text-foreground">Filtrar por Status</Label>
            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RequestStatus | 'all')}>
             <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
@@ -119,7 +130,9 @@ export default function AdminDashboard() {
             </SelectTrigger>
             <SelectContent>
               {statusOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label} ({option.value === 'all' ? adminStatusCounts.all : adminStatusCounts[option.value as RequestStatus]})
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -167,4 +180,3 @@ const CardSkeleton = () => (
     <Skeleton className="h-10 w-full" />
   </div>
 );
-

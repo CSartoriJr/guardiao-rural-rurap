@@ -55,6 +55,17 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
+  const statusCounts = useMemo(() => {
+    if (!allRequests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, all: 0 };
+    return {
+      Pending: allRequests.filter(req => req.status === 'Pending').length,
+      Positive: allRequests.filter(req => req.status === 'Positive').length,
+      Negative: allRequests.filter(req => req.status === 'Negative').length,
+      Inconclusive: allRequests.filter(req => req.status === 'Inconclusive').length,
+      all: allRequests.length,
+    };
+  }, [allRequests]);
+
   const filteredRequests = useMemo(() => {
     if (statusFilter === 'all') {
       return allRequests;
@@ -83,7 +94,7 @@ export default function TechnicianDashboard() {
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row justify-start items-center gap-4">
-        <div className="w-full sm:w-auto sm:min-w-[200px]">
+        <div className="w-full sm:w-auto sm:min-w-[250px]"> {/* Adjusted min-width for longer text */}
           <Label htmlFor="status-filter" className="text-sm font-medium text-foreground">Filtrar por Status</Label>
            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RequestStatus | 'all')}>
             <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
@@ -92,7 +103,9 @@ export default function TechnicianDashboard() {
             </SelectTrigger>
             <SelectContent>
               {statusOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label} ({option.value === 'all' ? statusCounts.all : statusCounts[option.value as RequestStatus]})
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -145,4 +158,3 @@ const CardSkeleton = () => (
     </div>
   </div>
 );
-
