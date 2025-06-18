@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
 import { addRequest as addRequestToFirestore } from '@/services/requestService'; // Use Firestore service
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -75,9 +75,11 @@ export default function RequestForm() {
     },
   });
 
-  useEffect(() => {
+  const fetchDeviceLocation = useCallback(() => {
     if (navigator.geolocation) {
       setLocationStatus('fetching');
+      setLatitude(null);
+      setLongitude(null);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLatitude(position.coords.latitude);
@@ -88,27 +90,31 @@ export default function RequestForm() {
         (error) => {
           console.warn("Erro ao obter geolocalização:", error.message);
           let message = "Não foi possível obter sua localização GPS.";
+          let status: DeviceLocationStatus = 'error';
           if (error.code === error.PERMISSION_DENIED) {
             message = "Permissão para acessar a localização foi negada.";
-            setLocationStatus('denied');
+            status = 'denied';
           } else if (error.code === error.POSITION_UNAVAILABLE) {
             message = "Informação de localização não está disponível.";
-            setLocationStatus('unavailable');
+            status = 'unavailable';
           } else if (error.code === error.TIMEOUT) {
             message = "Tempo esgotado ao tentar obter a localização.";
-            setLocationStatus('timeout');
-          } else {
-            setLocationStatus('error');
+            status = 'timeout';
           }
+          setLocationStatus(status);
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } 
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 } 
       );
     } else {
       setLocationStatus('unsupported');
       toast({ title: "Geolocalização Não Suportada", description: "Seu navegador não suporta geolocalização.", variant: "destructive" });
     }
   }, [toast]);
+
+  useEffect(() => {
+    fetchDeviceLocation();
+  }, [fetchDeviceLocation]);
 
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
@@ -123,20 +129,19 @@ export default function RequestForm() {
 
     setIsSubmitting(true);
     try {
-      // Prepare data for Firestore, using photoUrls now
       const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
         farmerId: user.id,
         farmerName: user.name,
         cassavaType: data.cassavaVariety,
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
-        photoUrls: [data.photoUrl1, data.photoUrl2, data.photoUrl3], // These are Firebase Storage URLs
+        photoUrls: [data.photoUrl1, data.photoUrl2, data.photoUrl3],
         plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
         infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
         latitude: latitude ?? undefined, 
         longitude: longitude ?? undefined, 
         deviceLocationStatus: locationStatus,
-        municipality: user.municipality || undefined, // Farmer's registered municipality as default
+        municipality: user.municipality || undefined,
       };
       
       const newRequest = await addRequestToFirestore(requestDataForFirestore); 
@@ -160,22 +165,58 @@ export default function RequestForm() {
   };
 
   const LocationInfo = () => {
+    let message: React.ReactNode;
+    let showRetryButton = false;
+
     switch (locationStatus) {
       case 'fetching':
-        return <p className="text-sm flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Obtendo sua localização GPS...</p>;
+        message = <p className="text-sm flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Obtendo sua localização GPS...</p>;
+        break;
       case 'success':
-        return <p className="text-sm text-green-600 flex items-center"><LocateFixed className="h-4 w-4 mr-2" /> Localização GPS obtida: Lat {latitude?.toFixed(4)}, Long {longitude?.toFixed(4)}</p>;
+        message = <p className="text-sm text-green-600 flex items-center"><LocateFixed className="h-4 w-4 mr-2" /> Localização GPS obtida: Lat {latitude?.toFixed(4)}, Long {longitude?.toFixed(4)}</p>;
+        break;
       case 'denied':
-        return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. A localização não será anexada.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. A localização não será anexada.</p>;
+        showRetryButton = true;
+        break;
       case 'unavailable':
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Informação de localização indisponível.</p>;
+        showRetryButton = true;
+        break;
       case 'timeout':
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Tempo esgotado ao tentar obter GPS.</p>;
+        showRetryButton = true;
+        break;
       case 'error':
-        return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Falha ao obter GPS. A IA tentará extrair das fotos, se visível.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Falha ao obter GPS.</p>;
+        showRetryButton = true;
+        break;
       case 'unsupported':
-         return <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Geolocalização não suportada pelo seu navegador.</p>;
-      default:
-        return <p className="text-sm text-muted-foreground">A localização GPS será capturada se disponível. A IA também tentará extrair das fotos.</p>;
+         message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Geolocalização não suportada pelo seu navegador.</p>;
+         break;
+      default: // idle
+        message = <p className="text-sm text-muted-foreground">A localização GPS será capturada se disponível. A IA também tentará extrair das fotos.</p>;
+        showRetryButton = true; // Allow retry even from idle if initial fetch didn't occur or was too quick
+        break;
     }
+
+    return (
+      <div className="space-y-2">
+        {message}
+        {showRetryButton && locationStatus !== 'fetching' && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={fetchDeviceLocation}
+            className="mt-2"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar Novamente
+          </Button>
+        )}
+      </div>
+    );
   };
 
 
