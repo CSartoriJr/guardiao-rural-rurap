@@ -88,17 +88,17 @@ export default function RequestForm() {
           toast({ title: "Localização Obtida", description: "Sua localização GPS foi capturada com sucesso." });
         },
         (error) => {
-          console.warn("Erro ao obter geolocalização:", error.message);
+          console.warn("Erro ao obter geolocalização:", error.message, "Code:", error.code);
           let message = "Não foi possível obter sua localização GPS.";
           let status: DeviceLocationStatus = 'error';
           if (error.code === error.PERMISSION_DENIED) {
-            message = "Permissão para acessar a localização foi negada.";
+            message = "Permissão para acessar a localização foi negada. Verifique as configurações do seu navegador/celular.";
             status = 'denied';
           } else if (error.code === error.POSITION_UNAVAILABLE) {
-            message = "Informação de localização não está disponível.";
+            message = "Informação de localização indisponível. Tente em um local aberto ou verifique as configurações de GPS.";
             status = 'unavailable';
           } else if (error.code === error.TIMEOUT) {
-            message = "Tempo esgotado ao tentar obter a localização.";
+            message = "Tempo esgotado ao tentar obter GPS. Verifique sua conexão e tente em um local com melhor visibilidade do céu.";
             status = 'timeout';
           }
           setLocationStatus(status);
@@ -108,7 +108,7 @@ export default function RequestForm() {
       );
     } else {
       setLocationStatus('unsupported');
-      toast({ title: "Geolocalização Não Suportada", description: "Seu navegador não suporta geolocalização.", variant: "destructive" });
+      toast({ title: "Geolocalização Não Suportada", description: "Seu navegador não suporta geolocalização. A IA tentará extrair das fotos.", variant: "destructive" });
     }
   }, [toast]);
 
@@ -170,33 +170,33 @@ export default function RequestForm() {
 
     switch (locationStatus) {
       case 'fetching':
-        message = <p className="text-sm flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Obtendo sua localização GPS...</p>;
+        message = <p className="text-sm flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Obtendo sua localização GPS. Isso pode levar alguns segundos...</p>;
         break;
       case 'success':
         message = <p className="text-sm text-green-600 flex items-center"><LocateFixed className="h-4 w-4 mr-2" /> Localização GPS obtida: Lat {latitude?.toFixed(4)}, Long {longitude?.toFixed(4)}</p>;
         break;
       case 'denied':
-        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. A localização não será anexada.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. Verifique as configurações do seu navegador/celular. A localização não será anexada.</p>;
         showRetryButton = true;
         break;
       case 'unavailable':
-        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Informação de localização indisponível.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Localização indisponível. Tente em um local aberto ou verifique se o GPS do seu celular está ativo.</p>;
         showRetryButton = true;
         break;
       case 'timeout':
-        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Tempo esgotado ao tentar obter GPS.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Tempo esgotado ao tentar obter GPS. Verifique sua conexão e tente em um local com melhor visibilidade do céu.</p>;
         showRetryButton = true;
         break;
       case 'error':
-        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Falha ao obter GPS.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Falha ao obter GPS. Verifique as configurações do seu celular e tente novamente.</p>;
         showRetryButton = true;
         break;
       case 'unsupported':
-         message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Geolocalização não suportada pelo seu navegador.</p>;
+         message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Geolocalização não suportada pelo seu navegador. A IA tentará obter das fotos.</p>;
          break;
       default: // idle
-        message = <p className="text-sm text-muted-foreground">A localização GPS será capturada se disponível. A IA também tentará extrair das fotos.</p>;
-        showRetryButton = true; // Allow retry even from idle if initial fetch didn't occur or was too quick
+        message = <p className="text-sm text-muted-foreground">Aguardando captura da localização GPS. Se falhar, a IA tentará obter das fotos.</p>;
+        showRetryButton = true;
         break;
     }
 
@@ -212,7 +212,7 @@ export default function RequestForm() {
             className="mt-2"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Tentar Novamente
+            Tentar Capturar GPS Novamente
           </Button>
         )}
       </div>
