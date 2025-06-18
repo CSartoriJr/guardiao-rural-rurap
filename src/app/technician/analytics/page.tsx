@@ -7,15 +7,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { AgriRequest } from '@/types';
-import { mockRequests, amapaMunicipalities } from '@/lib/mockData';
+import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; // Updated import
+import { amapaMunicipalities } from '@/lib/mockData'; // Kept for municipality list
 import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon as BarChart3IconLucide, AlertTriangle } from 'lucide-react'; // Renamed to avoid conflict
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock function to fetch all requests (in a real app, this would be an API call)
+
+// Fetch all requests from Firestore
 const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
-  await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
-  return mockRequests; // Using all mock requests for analytics
+  console.log("[TechnicianAnalyticsPage] Fetching all requests from Firestore for analytics.");
+  try {
+    const requests = await getAllRequestsSystemWide();
+    console.log(`[TechnicianAnalyticsPage] Fetched ${requests.length} requests from Firestore.`);
+    return requests;
+  } catch (error) {
+    console.error("[TechnicianAnalyticsPage] Error fetching requests from Firestore for analytics:", error);
+    // Error will be handled in the useEffect hook that calls this function.
+    throw error; // Re-throw to be caught by the caller
+  }
 };
 
 interface ChartDataItem {
@@ -27,19 +38,34 @@ export default function TechnicianAnalyticsPage() {
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsLoading(true);
     fetchAllTechnicianRequests()
       .then(data => {
         setRequests(data);
-        setIsLoading(false);
+        if (data.length === 0) {
+          toast({
+            title: "Nenhum Dado de Pedido",
+            description: "Não foram encontrados pedidos no sistema para exibir nas análises.",
+            variant: "default"
+          });
+        }
       })
       .catch(error => {
         console.error("Falha ao buscar pedidos para análise:", error);
+        toast({
+          title: "Erro ao Carregar Dados",
+          description: "Não foi possível buscar os dados dos pedidos para análise. Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        setRequests([]); // Define como vazio em caso de erro
+      })
+      .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [toast]);
 
   const filteredRequests = useMemo(() => {
     if (!selectedMunicipality) {
@@ -64,6 +90,7 @@ export default function TechnicianAnalyticsPage() {
       .sort((a, b) => b.count - a.count);
 
     const requestsByMunGeneral: { [key: string]: number } = {};
+    // Use 'requests' (all data) for the municipality chart unless a municipality is already selected for filtering the whole page
     const sourceForMunChart = selectedMunicipality ? filteredRequests : requests;
     sourceForMunChart.forEach(req => {
       if (req.municipality) {
@@ -174,7 +201,7 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                 </CardContent>
             </Card>
-            <div className="lg:col-span-1 flex flex-col justify-between h-full"> 
+            <div className="lg:col-span-1 flex flex-col justify-between h-full gap-4 lg:gap-0"> 
                 <Card className="w-full aspect-square shadow-md flex flex-col justify-center items-center">
                     <CardHeader className="pb-2 text-center">
                     <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
@@ -293,7 +320,8 @@ export default function TechnicianAnalyticsPage() {
               <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-semibold text-foreground">Nenhum Pedido Encontrado</p>
               <p className="text-muted-foreground">
-                {selectedMunicipality 
+                {isLoading ? "Carregando dados..." : 
+                  selectedMunicipality 
                   ? `Não há pedidos registrados para ${selectedMunicipality}.` 
                   : requests.length === 0 ? "Não há pedidos registrados no sistema para exibir análises." : "Ajuste os filtros ou aguarde novos pedidos."}
               </p>
