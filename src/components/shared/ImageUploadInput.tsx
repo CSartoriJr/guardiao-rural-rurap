@@ -37,31 +37,29 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
 
-  const resetInputState = () => {
+  const resetInputStateAndCapture = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Crucial para permitir re-seleção do mesmo arquivo
-      fileInputRef.current.removeAttribute('capture'); // Garante que o modo câmera seja resetado
+      fileInputRef.current.value = ''; 
+      fileInputRef.current.removeAttribute('capture');
+      console.log(`[ImageUploadInput ${id}] Input state and capture attribute reset.`);
     }
   };
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Limpa o valor para permitir re-seleção do mesmo arquivo
+    }
     const file = event.target.files?.[0];
     console.log(`[ImageUploadInput ${id}] handleFileChange triggered. File selected: ${file?.name}`);
 
-    // Importante: Resetar o atributo capture APÓS o input ter sido usado
-    // Isso é feito no `triggerFileInput` após o clique, ou aqui como fallback.
-    if (fileInputRef.current) {
-        fileInputRef.current.removeAttribute('capture');
-    }
-
     if (!file) {
       console.log(`[ImageUploadInput ${id}] No file selected.`);
-      resetInputState();
+      resetInputStateAndCapture();
       return;
     }
 
     setError(null);
-    setUploadProgress(0); // Inicializa o progresso para a barra aparecer
+    setUploadProgress(0); 
     setCurrentUploadTask(null);
     setPreview(null);
     onUploadComplete(null);
@@ -73,10 +71,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive' });
       setError('Usuário não identificado.');
       setIsProcessing(false);
-      setPreview(currentImageUrl || null); // Reverte para imagem original, se houver
+      setPreview(currentImageUrl || null); 
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
-      resetInputState();
+      resetInputStateAndCapture();
       return;
     }
 
@@ -87,7 +85,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
-      resetInputState();
+      resetInputStateAndCapture();
       return;
     }
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type.toLowerCase())) {
@@ -97,12 +95,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
-      resetInputState();
+      resetInputStateAndCapture();
       return;
     }
 
     const localPreviewUrl = URL.createObjectURL(file);
-    setPreview(localPreviewUrl);
+    setPreview(localPreviewUrl); // Show local preview immediately
 
     try {
       console.log(`[ImageUploadInput ${id}] Uploading original file: ${file.name}, Size: ${(file.size / (1024*1024)).toFixed(2)}MB, Type: ${file.type}`);
@@ -118,13 +116,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       const downloadURL = await uploadPromise;
       console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
-      if (preview === localPreviewUrl) URL.revokeObjectURL(localPreviewUrl); // Limpa o preview local
-      setPreview(downloadURL);
+      if (preview === localPreviewUrl) URL.revokeObjectURL(localPreviewUrl); 
+      setPreview(downloadURL); // Update preview to final URL
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: `Imagem ${fileNameForDisplay} enviada!` });
     } catch (uploadError: any) {
-      console.error(`[ImageUploadInput ${id}] Error during image upload:`, uploadError);
-      if (preview === localPreviewUrl) URL.revokeObjectURL(localPreviewUrl); // Limpa o preview local em caso de erro
+      console.error(`[ImageUploadInput ${id}] Error during image upload from handleFileChange:`, uploadError);
+      if (preview === localPreviewUrl) URL.revokeObjectURL(localPreviewUrl); 
+      
       let title = 'Falha no Upload';
       let description = uploadError.message || 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
       
@@ -135,18 +134,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       
       toast({ title, description, variant: title === 'Upload Cancelado' ? 'default' : 'destructive' });
       setError(description);
-      setPreview(currentImageUrl || null); // Reverte para imagem original, se houver
+      setPreview(currentImageUrl || null); 
       onUploadComplete(currentImageUrl || null);
     } finally {
       setIsProcessing(false);
       setCurrentUploadTask(null);
-      resetInputState(); // Sempre resetar o input no final
+      resetInputStateAndCapture(); 
     }
   };
 
   const triggerFileInput = (useCamera: boolean) => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Limpa seleções anteriores ANTES de definir capture
+      fileInputRef.current.value = ''; 
       if (useCamera) {
         console.log(`[ImageUploadInput ${id}] Setting capture attribute for camera.`);
         fileInputRef.current.setAttribute('capture', 'environment');
@@ -155,7 +154,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         fileInputRef.current.removeAttribute('capture');
       }
       fileInputRef.current.click();
-      // O reset do atributo 'capture' será feito no final do handleFileChange ou ao cancelar.
     }
     setIsChoiceDialogOpen(false);
   };
@@ -163,7 +161,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (currentUploadTask) currentUploadTask.cancel();
+    if (currentUploadTask) {
+      console.log(`[ImageUploadInput ${id}] Cancelling active upload task due to remove image.`);
+      currentUploadTask.cancel();
+    }
     if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
     setPreview(null);
     setError(null);
@@ -172,17 +173,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setCurrentUploadTask(null);
     onUploadComplete(null);
     setFileNameForDisplay(null);
-    resetInputState();
+    resetInputStateAndCapture();
     toast({ title: 'Imagem Removida', description: 'A imagem foi removida do campo.' });
   };
 
   const handleCancelUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (currentUploadTask) {
-      console.log(`[ImageUploadInput ${id}] Cancelling upload task for ${fileNameForDisplay}`);
+      console.log(`[ImageUploadInput ${id}] User explicitly cancelling upload task for ${fileNameForDisplay}`);
       currentUploadTask.cancel();
+      // O tratamento do erro 'storage/canceled' no `handleFileChange` cuidará do reset do estado.
     } else {
-      // Se não houver currentUploadTask (raro, mas possível se clicado muito rápido)
+      // Caso não haja task (pouco provável se o botão está visível)
       setIsProcessing(false);
       setUploadProgress(0);
       setError("Upload cancelado pelo usuário.");
@@ -192,19 +194,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
-      resetInputState();
+      resetInputStateAndCapture();
     }
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (isProcessing || preview || error) {
-      if (error && !isProcessing) {
+      if (error && !isProcessing) { // Se há erro e não está processando, permite tentar de novo
         setIsChoiceDialogOpen(true);
       }
-      return;
+      return; // Não faz nada se já tem preview, está processando, ou erro (exceto se permite tentar de novo)
     }
-    setIsChoiceDialogOpen(true);
+    setIsChoiceDialogOpen(true); // Abre diálogo se estiver limpo
   };
 
   return (
@@ -217,14 +219,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               De onde você gostaria de adicionar a imagem?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          {/* Ajuste no AlertDialogFooter para melhor responsividade e espaçamento */}
+          <AlertDialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:space-x-2">
             <Button onClick={() => triggerFileInput(true)} className="w-full sm:w-auto">
               <Camera className="mr-2 h-4 w-4" /> Tirar Foto com a Câmera
             </Button>
             <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full sm:w-auto">
               <ImageIconLucide className="mr-2 h-4 w-4" /> Selecionar da Galeria
             </Button>
-            <AlertDialogCancel className="w-full sm:w-auto mt-2 sm:mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -275,7 +278,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           id={id}
           ref={fileInputRef}
           className="hidden"
-          accept="image/*"
+          accept="image/*" // Permite qualquer tipo de imagem
           onChange={handleFileChange}
           disabled={isProcessing}
           aria-hidden="true"
@@ -294,3 +297,4 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     </div>
   );
 }
+
