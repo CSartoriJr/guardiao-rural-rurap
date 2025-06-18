@@ -11,23 +11,32 @@ const ensureFirebaseInitialized = () => {
   }
 };
 
-export async function uploadImage(
+interface UploadImageResult {
+  uploadTask: UploadTask;
+  promise: Promise<string>;
+}
+
+export function uploadImage(
   file: File,
   userId: string,
   onProgressUpdate?: (percentage: number) => void
-): Promise<string> {
+): UploadImageResult {
   ensureFirebaseInitialized();
   if (!userId) {
-    throw new Error('User ID é obrigatório para o upload da imagem.');
+    const err = new Error('User ID é obrigatório para o upload da imagem.');
+    // Simulate UploadTask for consistent return type in case of early error
+    const dummyTask = { cancel: () => {}, snapshot: { totalBytes: 0, bytesTransferred: 0 } } as unknown as UploadTask;
+    return { uploadTask: dummyTask, promise: Promise.reject(err) };
   }
   const fileExtension = file.name.split('.').pop();
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
   const storagePath = `requests_images/${userId}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
-  return new Promise<string>((resolve, reject) => {
-    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+  console.log(`[ImageUploadService] Uploading ${file.name} to ${storagePath}`);
+  const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
+  const promise = new Promise<string>((resolve, reject) => {
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -38,47 +47,10 @@ export async function uploadImage(
       },
       (error) => {
         console.error(`[ImageUploadService] Error uploading ${file.name}:`, error.code, error.message, error);
-        let message = `Falha ao enviar ${file.name}. Tente novamente.`;
-        // Firebase Storage error codes: https://firebase.google.com/docs/storage/web/handle-errors
-         if (error instanceof ProgressEvent && error.type === 'error') { // Browser network error before/during Firebase init
-            message = 'Erro de rede ao tentar iniciar o upload. Verifique sua conexão.';
-        } else {
-            switch (error.code) {
-                case 'storage/unauthorized':
-                    message = 'Falha no envio: permissão negada. Verifique as regras do Firebase Storage.';
-                    break;
-                case 'storage/canceled':
-                    message = 'Falha no envio: upload cancelado.';
-                    break;
-                case 'storage/unknown': // Can be network issues
-                    message = 'Erro desconhecido durante o upload. Verifique sua conexão e tente novamente.';
-                    break;
-                case 'storage/object-not-found':
-                    message = 'Arquivo não encontrado no servidor (raro durante upload).';
-                    break;
-                case 'storage/bucket-not-found':
-                    message = 'Problema de configuração do armazenamento. Contate o suporte.';
-                    break;
-                case 'storage/project-not-found':
-                    message = 'Problema de configuração do projeto Firebase. Contate o suporte.';
-                    break;
-                case 'storage/quota-exceeded':
-                    message = 'Cota de armazenamento excedida.';
-                    break;
-                case 'storage/unauthenticated':
-                    message = 'Usuário não autenticado para realizar o upload.';
-                    break;
-                case 'storage/retry-limit-exceeded':
-                    message = 'Tempo limite para envio da imagem excedido. Tente novamente.';
-                    break;
-                case 'storage/invalid-argument':
-                    message = 'Argumento inválido fornecido para o upload. Verifique o arquivo.';
-                    break;
-                default:
-                    message = `Falha no upload: ${error.message || 'Erro desconhecido'}`;
-            }
-        }
-        reject(new Error(message));
+        // Firebase error object (error) already has a 'code' and 'message' property
+        // No need to wrap it in a new Error unless we want to customize the message based on code here.
+        // For now, just reject with the original Firebase error object.
+        reject(error);
       },
       async () => {
         try {
@@ -90,9 +62,11 @@ export async function uploadImage(
           resolve(downloadURL);
         } catch (e: any) {
           console.error(`[ImageUploadService] Error getting download URL for ${file.name}:`, e);
-          reject(new Error(e.message || 'Falha ao obter URL de download.'));
+          reject(e); // Reject with the error from getDownloadURL
         }
       }
     );
   });
+
+  return { uploadTask, promise };
 }

@@ -4,11 +4,12 @@ import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIcon } from 'lucide-react';
-import { Progress } from '@/components/ui/progress'; // Import Progress component
+import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIcon, Ban } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { useAuth } from '@/hooks/useAuth';
+import type { UploadTask } from 'firebase/storage';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null); // State for upload progress
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [currentUploadTask, setCurrentUploadTask] = useState<UploadTask | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -45,15 +47,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Always clear the input value after selection to allow re-selection of the same file
-        fileInputRef.current.removeAttribute('capture'); // Reset capture attribute
+        fileInputRef.current.value = '';
+        fileInputRef.current.removeAttribute('capture');
     }
 
     console.log(`[ImageUploadInput ${id}] handleFileChange triggered.`);
     const file = event.target.files?.[0];
     
     setError(null);
-    setUploadProgress(null); // Reset progress
+    setUploadProgress(null);
+    setCurrentUploadTask(null);
 
     if (!user || !user.id) {
       console.error(`[ImageUploadInput ${id}] User not identified for upload.`);
@@ -67,7 +70,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (file) {
       console.log(`[ImageUploadInput ${id}] File selected: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
 
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for original file
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
         console.warn(`[ImageUploadInput ${id}] File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
         toast({ title: 'Arquivo muito grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
         setError('Arquivo muito grande (máx 10MB).');
@@ -85,33 +88,43 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
 
       setIsProcessing(true);
-      setPreview(URL.createObjectURL(file));
-      onUploadComplete(null);
+      setPreview(URL.createObjectURL(file)); // Show local preview immediately
+      onUploadComplete(null); // Clear any previous URL
 
       try {
         console.log(`[ImageUploadInput ${id}] Starting upload for file: ${file.name}`);
         const uploadStartTime = performance.now();
-        const downloadURL = await uploadImage(file, user.id, (percentage) => {
+        
+        const { uploadTask, promise: uploadPromise } = uploadImage(file, user.id, (percentage) => {
           setUploadProgress(percentage);
         });
+        setCurrentUploadTask(uploadTask);
+
+        const downloadURL = await uploadPromise;
+        
         const uploadEndTime = performance.now();
         console.log(`[ImageUploadInput ${id}] Upload for ${file.name} took ${(uploadEndTime - uploadStartTime) / 1000} seconds.`);
         console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
         
-        setPreview(downloadURL);
+        setPreview(downloadURL); // Update preview to final URL
         onUploadComplete(downloadURL);
         toast({ title: 'Upload Concluído', description: `Imagem ${file.name} enviada!` });
       } catch (e: any) {
-        console.error(`[ImageUploadInput ${id}] Error during image upload:`, e.message, e);
-        const userMessage = e.message || 'Falha no envio. Tente novamente.';
-        
-        toast({ title: 'Falha no Upload', description: userMessage, variant: 'destructive' });
+        console.error(`[ImageUploadInput ${id}] Error during image upload:`, e.code, e.message, e);
+        let userMessage = e.message || 'Falha no envio. Tente novamente.';
+        if (e.code === 'storage/canceled') {
+          userMessage = `O envio de ${file.name} foi cancelado.`;
+          toast({ title: 'Upload Cancelado', description: userMessage });
+        } else {
+          toast({ title: 'Falha no Upload', description: userMessage, variant: 'destructive' });
+        }
         setError(userMessage);
-        setPreview(null);
+        setPreview(null); // Clear preview on error/cancel
         onUploadComplete(null);
       } finally {
         setIsProcessing(false);
-        setUploadProgress(null); // Reset progress after completion or error
+        setUploadProgress(null);
+        setCurrentUploadTask(null);
       }
     } else {
       console.log(`[ImageUploadInput ${id}] No file selected or event.target.files is null/empty.`);
@@ -139,21 +152,43 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation(); 
     console.log(`[ImageUploadInput ${id}] handleRemoveImage called.`);
+    if (currentUploadTask) {
+      console.log(`[ImageUploadInput ${id}] Cancelling ongoing upload task before removing.`);
+      currentUploadTask.cancel();
+      setCurrentUploadTask(null);
+    }
     setPreview(null);
     setError(null);
     setUploadProgress(null);
+    setIsProcessing(false);
     onUploadComplete(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.removeAttribute('capture');
     }
   };
+  
+  const handleCancelUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (currentUploadTask) {
+      console.log(`[ImageUploadInput ${id}] User initiated cancel upload.`);
+      currentUploadTask.cancel();
+      // The error handler in uploadTask.on('state_changed') will eventually set isProcessing to false etc.
+      // We can provide immediate feedback if desired.
+      // setIsProcessing(false); // Or let the task's error handler do this.
+      // setUploadProgress(null);
+      // setCurrentUploadTask(null);
+      // setError("Upload cancelado pelo usuário.");
+      // setPreview(null);
+      // onUploadComplete(null);
+    }
+  };
+
 
   const handleContainerClick = () => {
     if (!isProcessing && !preview && !error) {
         setIsChoiceDialogOpen(true);
     } else if (error && !isProcessing) {
-        // If there's an error, clicking the container should re-open choice dialog
         setIsChoiceDialogOpen(true); 
     }
   };
@@ -199,16 +234,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         aria-label={`Enviar imagem ${id}`}
         aria-disabled={isProcessing}
       >
-        {isProcessing ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
+        {isProcessing && uploadProgress === null ? ( // Initial processing state (e.g. compression if it were active)
+           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+            <p className="mt-2 text-sm text-muted-foreground">Processando...</p>
+          </div>
+        ) : isProcessing && uploadProgress !== null ? ( // Uploading state
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
             <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
-            {uploadProgress !== null && (
-              <div className="w-3/4 mt-2">
-                <Progress value={uploadProgress} className="h-2 mb-1" />
-                <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
-              </div>
-            )}
+            <div className="w-3/4 mt-1">
+              <Progress value={uploadProgress} className="h-2 mb-1" />
+              <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
+            </div>
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
@@ -240,6 +278,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       {preview && !isProcessing && !error && (
         <Button variant="outline" size="sm" onClick={handleRemoveImage} className="w-full text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Remover Imagem
+        </Button>
+      )}
+      {isProcessing && uploadProgress !== null && uploadProgress < 100 && currentUploadTask && (
+        <Button variant="outline" size="sm" onClick={handleCancelUpload} className="w-full mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
+          <Ban className="mr-2 h-4 w-4" /> Cancelar Upload
         </Button>
       )}
     </div>
