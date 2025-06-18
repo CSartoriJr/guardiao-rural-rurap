@@ -4,7 +4,8 @@ import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIconLucide } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
@@ -21,12 +22,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(0); // Initialize to 0 for immediate display
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [currentUploadTask, setCurrentUploadTask] = useState<UploadTask | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const [fileNameForDisplay, setFileNameForDisplay] = useState<string | null>(null);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
 
   useEffect(() => {
     if (currentImageUrl !== preview && !isProcessing) {
@@ -35,20 +37,30 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const resetInputState = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''; // Crucial para permitir re-seleção do mesmo arquivo
+      fileInputRef.current.removeAttribute('capture');
     }
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     console.log(`[ImageUploadInput ${id}] handleFileChange triggered. File selected: ${file?.name}`);
 
+    // Reset capture attribute after file dialog is closed, regardless of selection
+    if (fileInputRef.current) {
+        fileInputRef.current.removeAttribute('capture');
+    }
+
     if (!file) {
       console.log(`[ImageUploadInput ${id}] No file selected.`);
+      resetInputState(); // Ensure input is reset
       return;
     }
 
     setError(null);
-    setUploadProgress(0); // Explicitly set to 0 to show progress bar
+    setUploadProgress(0);
     setCurrentUploadTask(null);
     setPreview(null);
     onUploadComplete(null);
@@ -63,6 +75,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
+      resetInputState();
       return;
     }
 
@@ -73,6 +86,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
+      resetInputState();
       return;
     }
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type.toLowerCase())) {
@@ -82,6 +96,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
+      resetInputState();
       return;
     }
 
@@ -110,7 +125,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       let description = uploadError.message || 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
       if (uploadError && uploadError.code === 'storage/canceled') {
         title = 'Upload Cancelado';
-        description = `O envio de ${fileNameForDisplay} foi cancelado.`;
+        description = `O envio de ${fileNameForDisplay || 'imagem'} foi cancelado.`;
       }
       toast({ title, description, variant: title === 'Upload Cancelado' ? 'default' : 'destructive' });
       setError(description);
@@ -119,13 +134,23 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     } finally {
       setIsProcessing(false);
       setCurrentUploadTask(null);
+      resetInputState();
     }
   };
 
-  const triggerFileInput = () => {
+  const triggerFileInput = (useCamera: boolean) => {
     if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Limpa seleções anteriores
+      if (useCamera) {
+        console.log(`[ImageUploadInput ${id}] Setting capture attribute for camera.`);
+        fileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        console.log(`[ImageUploadInput ${id}] Removing capture attribute for gallery.`);
+        fileInputRef.current.removeAttribute('capture');
+      }
       fileInputRef.current.click();
     }
+    setIsChoiceDialogOpen(false);
   };
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -134,52 +159,80 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
     setPreview(null);
     setError(null);
-    setUploadProgress(0); // Reset progress
+    setUploadProgress(0);
     setIsProcessing(false);
     setCurrentUploadTask(null);
     onUploadComplete(null);
     setFileNameForDisplay(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    resetInputState();
     toast({ title: 'Imagem Removida', description: 'A imagem foi removida do campo.' });
   };
 
   const handleCancelUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (currentUploadTask) currentUploadTask.cancel();
-    else {
+    if (currentUploadTask) {
+      currentUploadTask.cancel();
+    } else {
+      // Se não houver currentUploadTask, apenas reseta o estado.
       setIsProcessing(false);
-      setUploadProgress(0); // Reset progress
+      setUploadProgress(0);
       setError("Upload cancelado pelo usuário.");
-      if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
-      setPreview(currentImageUrl || null);
+      if (preview && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
+      setPreview(currentImageUrl || null); // Volta para a imagem original, se houver
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
+      resetInputState();
     }
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (!isProcessing && !preview && !error) {
-        triggerFileInput();
-    } else if (error && !isProcessing) {
-        triggerFileInput(); // Allow re-try on error
+    if (isProcessing || preview || error) {
+      // Se há preview, ou erro, ou processando, não abre o diálogo, deixa o usuário usar os botões de remover/tentar de novo
+      if (error && !isProcessing) { // Permite clicar para tentar de novo se houver erro
+        setIsChoiceDialogOpen(true);
+      }
+      return;
     }
+    setIsChoiceDialogOpen(true);
   };
 
   return (
     <div className="space-y-2">
+      <AlertDialog open={isChoiceDialogOpen} onOpenChange={setIsChoiceDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Escolher Imagem</AlertDialogTitle>
+            <AlertDialogDescription>
+              De onde você gostaria de adicionar a imagem?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button onClick={() => triggerFileInput(true)} className="w-full sm:w-auto">
+              <Camera className="mr-2 h-4 w-4" /> Tirar Foto com a Câmera
+            </Button>
+            <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full sm:w-auto">
+              <ImageIconLucide className="mr-2 h-4 w-4" /> Selecionar da Galeria
+            </Button>
+            <AlertDialogCancel className="w-full sm:w-auto mt-2 sm:mt-0">Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div
         className={`w-full h-48 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden transition-colors ${
           error ? 'border-destructive' : 'border-border hover:border-primary'
-        } ${isProcessing || preview ? 'cursor-default' : 'cursor-pointer'}`}
+        } ${isProcessing || preview || error ? 'cursor-default' : 'cursor-pointer'}`}
         onClick={handleContainerClick}
         role="button"
-        tabIndex={isProcessing || preview ? -1 : 0}
-        onKeyDown={(e) => !isProcessing && !preview && (e.key === 'Enter' || e.key === ' ') && triggerFileInput()}
+        tabIndex={isProcessing || preview || error ? -1 : 0}
+        onKeyDown={(e) => !isProcessing && !preview && !error && (e.key === 'Enter' || e.key === ' ') && setIsChoiceDialogOpen(true)}
         aria-label={`Enviar imagem ${id}`}
         aria-disabled={isProcessing}
       >
-        {isProcessing && typeof uploadProgress === 'number' && uploadProgress < 100 && !error ? (
+        {isProcessing && uploadProgress < 100 && !error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
             <p className="mt-2 text-sm text-muted-foreground">Enviando {fileNameForDisplay ? `"${fileNameForDisplay}"` : 'imagem'}...</p>
@@ -188,17 +241,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
             </div>
           </div>
-        ) : isProcessing && (uploadProgress === null || uploadProgress === 100) && !error ? (
+        ) : isProcessing && uploadProgress === 100 && !error ? (
            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <p className="mt-2 text-sm text-muted-foreground">{uploadProgress === 100 ? 'Finalizando...' : `Preparando ${fileNameForDisplay ? `"${fileNameForDisplay}"` : 'imagem'}...`}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{`Finalizando ${fileNameForDisplay ? `"${fileNameForDisplay}"` : 'imagem'}...`}</p>
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium">Erro:</p>
             <p className="text-xs break-words">{error}</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); setUploadProgress(0); triggerFileInput(); }}>Tentar novamente</Button>
+            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); setUploadProgress(0); setIsChoiceDialogOpen(true); }}>Tentar novamente</Button>
           </div>
         ) : preview ? (
           <Image src={preview} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" />
@@ -214,7 +267,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           id={id}
           ref={fileInputRef}
           className="hidden"
-          accept="image/*" // Standard accept for images, browser handles options
+          accept="image/*"
           onChange={handleFileChange}
           disabled={isProcessing}
           aria-hidden="true"
@@ -225,7 +278,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <X className="mr-2 h-4 w-4" /> Remover Imagem
         </Button>
       )}
-      {isProcessing && typeof uploadProgress === 'number' && uploadProgress < 100 && currentUploadTask && (
+      {isProcessing && uploadProgress < 100 && currentUploadTask && (
         <Button variant="outline" size="sm" onClick={handleCancelUpload} className="w-full mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Cancelar Upload
         </Button>
