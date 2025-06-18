@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
-  AlertDialogAction, // Não usado, mas mantendo para referência caso necessário
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -48,7 +47,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const resetInputAndCaptureState = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Crucial para permitir re-seleção do mesmo arquivo
+      fileInputRef.current.value = ''; 
       fileInputRef.current.removeAttribute('capture');
       console.log(`[ImageUploadInput ${id}] Input value and capture attribute reset.`);
     }
@@ -68,7 +67,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setUploadProgress(0);
     setCurrentUploadTask(null);
     setPreview(null);
-    onUploadComplete(null); // Informa o pai que a imagem anterior (se houver) foi removida
+    onUploadComplete(null); 
     setFileNameForDisplay(file.name);
     setIsProcessing(true);
 
@@ -84,7 +83,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    if (file.size > 10 * 1024 * 1024) { 
       toast({ title: 'Arquivo muito grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
       setError('Arquivo muito grande (máx 10MB).');
       setIsProcessing(false);
@@ -107,7 +106,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     
     const localPreviewUrl = URL.createObjectURL(file);
     setPreview(localPreviewUrl);
-    setUploadProgress(0);
+    setUploadProgress(0); 
 
     try {
       console.log(`[ImageUploadInput ${id}] Uploading original file: ${file.name}`);
@@ -123,7 +122,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       const downloadURL = await uploadPromise;
       console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
-      if (preview === localPreviewUrl) { // Verifica se o preview ainda é o local antes de revogar
+      if (preview === localPreviewUrl) { 
          URL.revokeObjectURL(localPreviewUrl);
       }
       setPreview(downloadURL);
@@ -150,13 +149,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     } finally {
       setIsProcessing(false);
       setCurrentUploadTask(null);
-      resetInputAndCaptureState(); // Garante que o input e o atributo 'capture' sejam resetados.
+      resetInputAndCaptureState(); 
     }
   };
 
   const triggerFileInput = (useCamera: boolean) => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Limpa o valor para permitir a seleção do mesmo arquivo
+      fileInputRef.current.value = ''; 
       if (useCamera) {
         console.log(`[ImageUploadInput ${id}] Setting capture='environment'`);
         fileInputRef.current.setAttribute('capture', 'environment');
@@ -225,14 +224,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               De onde você gostaria de adicionar a imagem?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:space-x-2">
-            <Button onClick={() => triggerFileInput(true)} className="w-full sm:w-auto">
+          <AlertDialogFooter className="flex flex-col gap-2 pt-2">
+            <Button onClick={() => triggerFileInput(true)} className="w-full">
               <Camera className="mr-2 h-4 w-4" /> Tirar Foto com a Câmera
             </Button>
-            <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full sm:w-auto">
+            <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full">
               <ImageIconLucide className="mr-2 h-4 w-4" /> Selecionar da Galeria
             </Button>
-            <AlertDialogCancel className="w-full sm:w-auto mt-0 sm:mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="w-full mt-0">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -302,5 +301,3 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     </div>
   );
 }
-
-    
