@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/services/imageUploadService'; // Re-enabled for Firebase Storage
-import { useAuth } from '@/hooks/useAuth'; // To get userId
+import { uploadImage } from '@/services/imageUploadService';
+import { useAuth } from '@/hooks/useAuth';
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploadInputProps {
-  onUploadComplete: (url: string | null) => void; // Will now be URL from Firebase Storage
+  onUploadComplete: (url: string | null) => void;
   id: string;
-  currentImageUrl?: string | null; // To display existing image on edit (if applicable)
+  currentImageUrl?: string | null;
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
@@ -21,32 +22,30 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth(); // Get current user for userId
+  const { user } = useAuth();
 
   useEffect(() => {
-    // If currentImageUrl changes (e.g. form reset with existing data), update preview
     setPreview(currentImageUrl || null);
   }, [currentImageUrl]);
-
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setError(null);
 
     if (!user || !user.id) {
-        toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive'});
-        setError('Usuário não identificado.');
-        return;
+      toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive' });
+      setError('Usuário não identificado.');
+      return;
     }
 
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({ title: 'Arquivo muito grande', description: 'Por favor, envie uma imagem menor que 5MB.', variant: 'destructive' });
-        setError('Arquivo muito grande (máx 5MB).');
+      if (file.size > 10 * 1024 * 1024) { // Increased initial check slightly, compression will handle more
+        toast({ title: 'Arquivo muito grande', description: 'Por favor, envie uma imagem menor que 10MB.', variant: 'destructive' });
+        setError('Arquivo muito grande (máx 10MB antes da compressão).');
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { // Removed GIF for simplicity, can add back
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, ou WEBP.', variant: 'destructive' });
         setError('Tipo de arquivo inválido.');
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -55,22 +54,46 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       setIsProcessing(true);
       try {
-        const downloadURL = await uploadImage(file, user.id); // Use uploadImage service
+        console.log(`[ImageUploadInput] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB, type: ${file.type}`);
+
+        const options = {
+          maxSizeMB: 1,          // Max final file size in MB
+          maxWidthOrHeight: 1920, // Max width or height in pixels
+          useWebWorker: true,
+          // Opcional: para arquivos PNG, pode ser útil definir um valor para initialQuality
+          // initialQuality: file.type === 'image/png' ? 0.8 : 0.7, // Ajuste conforme necessário
+          // fileType: file.type, // Tenta manter o tipo original se possível e suportado
+        };
+        
+        const compressedFile = await imageCompression(file, options);
+        console.log(`[ImageUploadInput] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB, type: ${compressedFile.type}`);
+
+        const downloadURL = await uploadImage(compressedFile, user.id);
         setPreview(downloadURL);
         onUploadComplete(downloadURL);
-        toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!'});
-      } catch (uploadError: any) {
-        console.error("[ImageUploadInput] Error uploading file to Firebase Storage:", uploadError);
-        toast({ title: 'Falha no Upload', description: uploadError.message || 'Não foi possível enviar a imagem.', variant: 'destructive' });
-        setError(uploadError.message || 'Falha no envio.');
+        toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
+      } catch (uploadOrCompressionError: any) {
+        console.error("[ImageUploadInput] Error during image processing or upload:", uploadOrCompressionError);
+        let userMessage = 'Não foi possível processar ou enviar a imagem. Tente novamente.';
+        if (uploadOrCompressionError.message.includes('Falha na Compressão') || uploadOrCompressionError.message.includes('Falha ao comprimir')) {
+            userMessage = uploadOrCompressionError.message;
+        } else if (uploadOrCompressionError.code) { // Firebase storage errors
+             if (uploadOrCompressionError.code === 'storage/unauthorized') {
+                userMessage = 'Falha no envio: permissão negada.';
+            } else if (uploadOrCompressionError.code === 'storage/canceled') {
+                userMessage = 'Falha no envio: upload cancelado.';
+            }
+        }
+        
+        toast({ title: 'Falha no Envio', description: userMessage, variant: 'destructive' });
+        setError(userMessage);
         onUploadComplete(null);
-        setPreview(null); // Clear preview on error
-        if (fileInputRef.current) fileInputRef.current.value = ''; // Reset file input
+        setPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } finally {
         setIsProcessing(false);
       }
     } else {
-      // If no file is selected after having one, clear it (unless there's a currentImageUrl)
       if (!currentImageUrl) {
         setPreview(null);
         onUploadComplete(null);
@@ -81,9 +104,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleRemoveImage = () => {
     setPreview(null);
     setError(null);
-    onUploadComplete(null); // Signal removal
+    onUploadComplete(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Reset the file input
+      fileInputRef.current.value = '';
     }
   };
 
@@ -103,7 +126,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         {isProcessing ? (
           <div className="text-center text-muted-foreground">
             <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-            <p className="mt-2 text-sm">Enviando...</p>
+            <p className="mt-2 text-sm">Processando...</p>
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
@@ -118,7 +141,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <div className="text-center text-muted-foreground">
             <UploadCloud className="mx-auto h-12 w-12" />
             <p className="mt-2 text-sm">Clique ou arraste para enviar</p>
-            <p className="text-xs">PNG, JPG, WEBP até 5MB</p>
+            <p className="text-xs">PNG, JPG, WEBP (max 1MB após compressão)</p>
           </div>
         )}
         <Input
