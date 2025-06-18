@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { AgriRequest } from '@/types';
-import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; // Updated import
-import { amapaMunicipalities } from '@/lib/mockData'; // Kept for municipality list
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon as BarChart3IconLucide, AlertTriangle } from 'lucide-react'; // Renamed to avoid conflict
+import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
+import { amapaMunicipalities } from '@/lib/mockData';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon as BarChart3IconLucide, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
@@ -135,7 +135,9 @@ export default function TechnicianAnalyticsPage() {
               <Card>
                 <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
                 <CardContent className="pt-2">
-                  <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" />
+                  <div className="w-full mx-auto"> {/* Altered: was w-[70%] */}
+                    <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" />
+                  </div>
                   <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
                   <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
                 </CardContent>
@@ -191,15 +193,15 @@ export default function TechnicianAnalyticsPage() {
             <Card className="lg:col-span-9"> 
                 <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
                 <CardContent className="pt-2">
+                  <div className="w-[70%] mx-auto">
                     <AmapaInteractiveMap
                         selectedMunicipality={selectedMunicipality}
                         onMunicipalitySelect={handleMapMunicipalitySelect}
-                        // Removida a passagem de 'requests' para o mapa
                     />
+                  </div>
                     <p className="text-xs text-muted-foreground mt-2 text-center">
                         Clique em um município para filtrar os dados ou selecione no menu acima.
                         {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
-                        {/* Removida a legenda de cores dos pontos */}
                     </p>
                 </CardContent>
             </Card>
@@ -334,3 +336,4 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
+
