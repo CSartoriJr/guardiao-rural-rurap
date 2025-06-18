@@ -4,7 +4,8 @@ import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIcon } from 'lucide-react'; // Added Camera and ImageIcon
+import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIcon } from 'lucide-react';
+import { Progress } from '@/components/ui/progress'; // Import Progress component
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +18,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface ImageUploadInputProps {
@@ -30,6 +30,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null); // State for upload progress
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -43,15 +44,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   }, [currentImageUrl]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    // Reset capture attribute after selection, regardless of success or failure
     if (fileInputRef.current) {
-        fileInputRef.current.removeAttribute('capture');
+        fileInputRef.current.value = ''; // Always clear the input value after selection to allow re-selection of the same file
+        fileInputRef.current.removeAttribute('capture'); // Reset capture attribute
     }
 
     console.log(`[ImageUploadInput ${id}] handleFileChange triggered.`);
     const file = event.target.files?.[0];
     
     setError(null);
+    setUploadProgress(null); // Reset progress
 
     if (!user || !user.id) {
       console.error(`[ImageUploadInput ${id}] User not identified for upload.`);
@@ -59,7 +61,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setError('Usuário não identificado.');
       onUploadComplete(null);
       setPreview(null);
-       if (fileInputRef.current) fileInputRef.current.value = ''; // Clear the input value
       return;
     }
 
@@ -72,51 +73,53 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         setError('Arquivo muito grande (máx 10MB).');
         onUploadComplete(null);
         setPreview(null);
-         if (fileInputRef.current) fileInputRef.current.value = ''; // Clear the input value
         return;
       }
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type.toLowerCase())) {
         console.warn(`[ImageUploadInput ${id}] Invalid file type: ${file.type}`);
-        toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, ou WEBP.', variant: 'destructive' });
+        toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, WEBP, HEIC ou HEIF.', variant: 'destructive' });
         setError('Tipo de arquivo inválido.');
         onUploadComplete(null);
         setPreview(null);
-         if (fileInputRef.current) fileInputRef.current.value = ''; // Clear the input value
         return;
       }
 
       setIsProcessing(true);
-      setPreview(URL.createObjectURL(file)); // Show local preview immediately
-      onUploadComplete(null); // Clear any previous URL
+      setPreview(URL.createObjectURL(file));
+      onUploadComplete(null);
 
       try {
-        console.log(`[ImageUploadInput ${id}] Uploading original file...`);
+        console.log(`[ImageUploadInput ${id}] Starting upload for file: ${file.name}`);
         const uploadStartTime = performance.now();
-        const downloadURL = await uploadImage(file, user.id);
+        const downloadURL = await uploadImage(file, user.id, (percentage) => {
+          setUploadProgress(percentage);
+        });
         const uploadEndTime = performance.now();
-        console.log(`[ImageUploadInput ${id}] Upload took ${(uploadEndTime - uploadStartTime) / 1000} seconds.`);
+        console.log(`[ImageUploadInput ${id}] Upload for ${file.name} took ${(uploadEndTime - uploadStartTime) / 1000} seconds.`);
         console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
         
-        setPreview(downloadURL); // Update preview with actual Storage URL
+        setPreview(downloadURL);
         onUploadComplete(downloadURL);
-        toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
+        toast({ title: 'Upload Concluído', description: `Imagem ${file.name} enviada!` });
       } catch (e: any) {
-        console.error(`[ImageUploadInput ${id}] Error during image upload:`, e);
+        console.error(`[ImageUploadInput ${id}] Error during image upload:`, e.message, e);
         const userMessage = e.message || 'Falha no envio. Tente novamente.';
         
         toast({ title: 'Falha no Upload', description: userMessage, variant: 'destructive' });
         setError(userMessage);
-        setPreview(null); // Clear preview on error
+        setPreview(null);
         onUploadComplete(null);
       } finally {
         setIsProcessing(false);
-        if (fileInputRef.current) fileInputRef.current.value = ''; // Clear the input value
+        setUploadProgress(null); // Reset progress after completion or error
       }
     } else {
       console.log(`[ImageUploadInput ${id}] No file selected or event.target.files is null/empty.`);
       if (!currentImageUrl && !preview) { 
         setPreview(null);
         onUploadComplete(null);
+        setError(null);
+        setUploadProgress(null);
       }
     }
   };
@@ -138,6 +141,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     console.log(`[ImageUploadInput ${id}] handleRemoveImage called.`);
     setPreview(null);
     setError(null);
+    setUploadProgress(null);
     onUploadComplete(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -149,16 +153,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (!isProcessing && !preview && !error) {
         setIsChoiceDialogOpen(true);
     } else if (error && !isProcessing) {
-        // If there's an error, clicking the container should retry with gallery by default
-        triggerFileInput();
+        // If there's an error, clicking the container should re-open choice dialog
+        setIsChoiceDialogOpen(true); 
     }
-    // If preview is shown or isProcessing, the container click does nothing directly
   };
 
   return (
     <div className="space-y-2">
       <AlertDialog open={isChoiceDialogOpen} onOpenChange={setIsChoiceDialogOpen}>
-        {/* The trigger is now the main container div */}
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Escolher Fonte da Imagem</AlertDialogTitle>
@@ -167,7 +169,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => fileInputRef.current?.removeAttribute('capture')}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => triggerFileInput()}
               className="bg-primary hover:bg-primary/90"
@@ -198,16 +200,22 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         aria-disabled={isProcessing}
       >
         {isProcessing ? (
-          <div className="text-center text-muted-foreground p-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <p className="mt-2 text-sm">Processando...</p>
+            <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
+            {uploadProgress !== null && (
+              <div className="w-3/4 mt-2">
+                <Progress value={uploadProgress} className="h-2 mb-1" />
+                <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
+              </div>
+            )}
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium">Erro:</p>
             <p className="text-xs break-words">{error}</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); handleContainerClick(); }}>Tentar novamente</Button>
+            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); setUploadProgress(null); handleContainerClick(); }}>Tentar novamente</Button>
           </div>
         ) : preview ? (
           <Image src={preview} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" />
@@ -215,7 +223,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <div className="text-center text-muted-foreground p-2">
             <UploadCloud className="mx-auto h-10 w-10" />
             <p className="mt-2 text-sm">Clique para enviar</p>
-            <p className="text-xs">PNG, JPG, WEBP (máx 10MB)</p>
+            <p className="text-xs">PNG, JPG, WEBP, HEIC/F (máx 10MB)</p>
           </div>
         )}
         <Input
@@ -223,7 +231,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           id={id}
           ref={fileInputRef}
           className="hidden"
-          accept="image/*" // Keep it general, capture attribute will handle camera
+          accept="image/*"
           onChange={handleFileChange}
           disabled={isProcessing}
           aria-hidden="true" 
@@ -237,4 +245,3 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     </div>
   );
 }
-
