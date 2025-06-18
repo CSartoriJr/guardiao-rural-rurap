@@ -39,9 +39,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Sincronizar o preview com a imagem atual se ela mudar externamente e não estivermos processando
     if (currentImageUrl !== preview && !isProcessing) {
       setPreview(currentImageUrl || null);
+      if (!currentImageUrl) { // Se currentImageUrl for null/undefined, limpa o nome do arquivo também
+        setFileNameForDisplay(null);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
@@ -50,25 +52,22 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const resetStateBeforeNewUploadAttempt = () => {
     console.log(`[ImageUploadInput ${id}] resetStateBeforeNewUploadAttempt called.`);
     setError(null);
-    setUploadProgress(0); // Iniciar em 0 para visualização imediata da barra
-    setCurrentUploadTask(null);
-    // Não limpar o preview aqui diretamente, pois ele pode ser uma URL de objeto que precisa ser revogada,
-    // ou pode ser revertido para currentImageUrl.
-    // onUploadComplete(null); // Notificar pai que a URL antiga não é mais válida se uma nova tentativa começar
+    setUploadProgress(0); 
     setFileNameForDisplay(null);
+    // currentUploadTask será setado como null no finally do handleFileChange anterior ou antes de um novo upload.
   };
 
   const triggerFileInput = (useCamera: boolean) => {
     console.log(`[ImageUploadInput ${id}] triggerFileInput: Attempting to open file chooser. useCamera: ${useCamera}`);
     if (fileInputRef.current) {
       console.log(`[ImageUploadInput ${id}] triggerFileInput: Resetting input value.`);
-      fileInputRef.current.value = ''; // Crucial para o onChange disparar sempre
+      fileInputRef.current.value = ''; 
 
       if (useCamera) {
         console.log(`[ImageUploadInput ${id}] triggerFileInput: Setting capture='environment'.`);
         fileInputRef.current.setAttribute('capture', 'environment');
       } else {
-        console.log(`[ImageUploadInput ${id}] triggerFileInput: Removing capture attribute.`);
+        console.log(`[ImageUploadInput ${id}] triggerFileInput: Ensuring capture attribute is removed.`);
         fileInputRef.current.removeAttribute('capture');
       }
       fileInputRef.current.click();
@@ -83,12 +82,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     const file = event.target.files?.[0];
     console.log(`[ImageUploadInput ${id}] handleFileChange: File selected - Name: ${file?.name}, Type: ${file?.type}, Size: ${file?.size} bytes. Input value: '${event.target.value}'`);
 
-    // Se o usuário cancelar a seleção de arquivo, o 'file' será undefined.
     if (!file) {
       console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog cancelled by user.`);
-      // O input value já foi resetado por triggerFileInput.
-      // Não precisamos fazer mais nada aqui para não interferir com o estado atual do preview/erro.
-      // Importante: garantir que o atributo capture seja removido se foi setado
       if (fileInputRef.current) {
         fileInputRef.current.removeAttribute('capture');
         console.log(`[ImageUploadInput ${id}] handleFileChange: Capture attribute removed as no file was selected.`);
@@ -99,7 +94,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     resetStateBeforeNewUploadAttempt();
     setFileNameForDisplay(file.name);
     setIsProcessing(true);
-    // Preview local será setado após validações
+    
+    console.log(`[ImageUploadInput ${id}] File object details: `, {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+    });
 
     if (!user || !user.id) {
       console.error(`[ImageUploadInput ${id}] User not identified for upload of ${file.name}.`);
@@ -108,7 +109,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setIsProcessing(false);
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null);
+      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de usuário
       return;
     }
 
@@ -118,7 +119,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setIsProcessing(false);
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null);
+      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de tamanho
       return;
     }
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type.toLowerCase())) {
@@ -127,13 +128,21 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setIsProcessing(false);
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null);
+      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de tipo
       return;
     }
     
     const localPreviewUrl = URL.createObjectURL(file);
-    setPreview(localPreviewUrl); // Mostrar preview local imediatamente
-    setUploadProgress(0); // Garantir que barra de progresso comece em 0
+    setPreview(localPreviewUrl); 
+    setUploadProgress(0); 
+    
+    // Limpar qualquer tarefa de upload anterior antes de iniciar uma nova.
+    if (currentUploadTask) {
+        console.warn(`[ImageUploadInput ${id}] handleFileChange: Cancelling potentially lingering upload task before new upload.`);
+        currentUploadTask.cancel();
+        setCurrentUploadTask(null);
+    }
+
 
     console.log(`[ImageUploadInput ${id}] handleFileChange: Starting upload process for ${file.name}. Local preview URL created: ${localPreviewUrl}`);
 
@@ -146,12 +155,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           setUploadProgress(percentage);
         }
       );
-      setCurrentUploadTask(uploadTask);
+      setCurrentUploadTask(uploadTask); // Armazenar a nova tarefa
 
       const downloadURL = await uploadPromise;
       console.log(`[ImageUploadInput ${id}] Upload successful for ${file.name}. URL: ${downloadURL}`);
       
-      if (preview === localPreviewUrl) {
+      if (preview === localPreviewUrl) { // Revogar somente se o preview atual for o local (evita revogar URL final)
         console.log(`[ImageUploadInput ${id}] Revoking local preview URL (on success): ${localPreviewUrl}`);
         URL.revokeObjectURL(localPreviewUrl);
       }
@@ -164,7 +173,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       console.error(`[ImageUploadInput ${id}] Error during image upload for ${file.name}. Message: ${uploadError.message}`, uploadError);
       
       if (preview === localPreviewUrl) {
-         console.log(`[ImageUploadInput ${id}] Revoking local preview URL (on error): ${localPreviewUrl}`);
+         console.log(`[ImageUploadInput ${id}] Revoking local preview URL (on error/cancel): ${localPreviewUrl}`);
          URL.revokeObjectURL(localPreviewUrl);
       }
       
@@ -180,30 +189,30 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setError(toastDescription);
       setPreview(currentImageUrl || null); 
       onUploadComplete(currentImageUrl || null);
+      // Manter o nome do arquivo se foi cancelado, limpar se foi outro erro.
       if (toastTitle !== 'Upload Cancelado') {
         setFileNameForDisplay(null);
       }
 
     } finally {
+      console.log(`[ImageUploadInput ${id}] handleFileChange: Upload attempt finished for ${fileNameForDisplay}. Cleaning up.`);
       setIsProcessing(false);
-      setCurrentUploadTask(null);
-      // Sempre remover o atributo capture após a tentativa de upload (sucesso, erro ou cancelamento da tarefa)
+      setCurrentUploadTask(null); // Limpar a tarefa atual
       if (fileInputRef.current) {
-        fileInputRef.current.removeAttribute('capture');
-        console.log(`[ImageUploadInput ${id}] handleFileChange: Capture attribute removed in finally block.`);
+        fileInputRef.current.removeAttribute('capture'); // Ensure capture is always removed
+        fileInputRef.current.value = ''; // Also clear the input value post-operation
+        console.log(`[ImageUploadInput ${id}] handleFileChange: Capture attribute removed and input value cleared in finally block.`);
       }
     }
   };
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation(); // Impede que o clique propague para o container e abra o diálogo
+    e.stopPropagation(); 
     console.log(`[ImageUploadInput ${id}] handleRemoveImage called.`);
     if (currentUploadTask) {
       console.log(`[ImageUploadInput ${id}] handleRemoveImage: Cancelling active upload task for ${fileNameForDisplay}.`);
-      currentUploadTask.cancel(); // Isso vai acionar o 'storage/canceled' no catch do uploadImage
-      // O restante da limpeza (preview, onUploadComplete) será tratado pelo catch
+      currentUploadTask.cancel(); 
     } else {
-      // Se não há task ativa, apenas limpamos o estado visual e notificamos o pai
       if (preview && preview.startsWith('blob:')) {
         console.log(`[ImageUploadInput ${id}] handleRemoveImage: Revoking local blob preview: ${preview}`);
         URL.revokeObjectURL(preview);
@@ -215,7 +224,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       onUploadComplete(null);
       setFileNameForDisplay(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Limpar o valor do input também
+        fileInputRef.current.value = ''; 
         fileInputRef.current.removeAttribute('capture');
       }
       toast({ title: 'Imagem Removida', description: 'A imagem foi removida do campo.' });
@@ -223,20 +232,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   };
 
   const handleCancelUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation(); // Impede que o clique propague
+    e.stopPropagation(); 
     if (currentUploadTask) {
       console.log(`[ImageUploadInput ${id}] handleCancelUpload: User explicitly cancelling upload task for ${fileNameForDisplay}`);
-      currentUploadTask.cancel(); // Isso vai acionar o erro 'storage/canceled' no try/catch do handleFileChange
+      currentUploadTask.cancel(); 
     } else {
-      // Caso menos comum: o usuário clicou em cancelar antes da task ser setada, ou após já ter sido limpa.
-      console.warn(`[ImageUploadInput ${id}] handleCancelUpload: No currentUploadTask to cancel, but isProcessing might be true. Resetting relevant state.`);
+      console.warn(`[ImageUploadInput ${id}] handleCancelUpload: No currentUploadTask to cancel. Resetting state.`);
       setIsProcessing(false);
       setUploadProgress(0);
-      setError("Upload cancelado pelo usuário."); // Informar o usuário
-      if (preview && preview.startsWith('blob:')) { // Limpar preview local se houver
+      setError("Upload cancelado pelo usuário."); 
+      if (preview && preview.startsWith('blob:')) {
         URL.revokeObjectURL(preview);
       }
-      setPreview(currentImageUrl || null); // Reverter para a imagem original ou nenhuma
+      setPreview(currentImageUrl || null); 
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
       if (fileInputRef.current) {
@@ -248,7 +256,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    // Não abrir diálogo se já há uma imagem sendo processada ou se já há uma imagem válida (sem erro)
     if (isProcessing || (preview && !error) ) {
       return;
     }
@@ -284,10 +291,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         } ${isProcessing || (preview && !error) ? 'cursor-default' : 'cursor-pointer'}`}
         onClick={handleContainerClick}
         role="button"
-        tabIndex={isProcessing || (preview && !error) ? -1 : 0} // Apenas focável se puder ser clicado
+        tabIndex={isProcessing || (preview && !error) ? -1 : 0} 
         onKeyDown={(e) => !isProcessing && !(preview && !error) && (e.key === 'Enter' || e.key === ' ') && setIsChoiceDialogOpen(true)}
         aria-label={`Enviar imagem ${id}`}
-        aria-disabled={isProcessing || (!!preview && !error)} // Desabilitado se processando ou se já tem imagem válida
+        aria-disabled={isProcessing || (!!preview && !error)}
       >
         {isProcessing && uploadProgress < 100 && !error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
@@ -298,7 +305,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               <p className="text-xs text-muted-foreground">{uploadProgress}%</p>
             </div>
           </div>
-        ) : isProcessing && uploadProgress === 100 && !error ? ( // Estado de finalização
+        ) : isProcessing && uploadProgress === 100 && !error ? ( 
            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
             <p className="mt-2 text-sm text-muted-foreground">{`Finalizando ${fileNameForDisplay ? `"${fileNameForDisplay}"` : 'imagem'}...`}</p>
@@ -321,21 +328,21 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         )}
         <Input
           type="file"
-          id={id} // id único para o input
+          id={id} 
           ref={fileInputRef}
           className="hidden"
-          accept="image/*" // Aceitar todos os tipos de imagem
+          accept="image/*" 
           onChange={handleFileChange}
-          disabled={isProcessing} // Desabilitar o input se estiver processando
+          disabled={isProcessing} 
           aria-hidden="true"
         />
       </div>
-      {preview && !isProcessing && !error && ( // Botão Remover aparece se há preview, não está processando e não há erro
+      {preview && !isProcessing && !error && ( 
         <Button variant="outline" size="sm" onClick={(e) => handleRemoveImage(e)} className="w-full text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Remover Imagem
         </Button>
       )}
-      {isProcessing && uploadProgress < 100 && currentUploadTask && ( // Botão Cancelar aparece durante o upload
+      {isProcessing && uploadProgress < 100 && currentUploadTask && ( 
         <Button variant="outline" size="sm" onClick={(e) => handleCancelUpload(e)} className="w-full mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Cancelar Upload
         </Button>
@@ -343,5 +350,3 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     </div>
   );
 }
-
-  
