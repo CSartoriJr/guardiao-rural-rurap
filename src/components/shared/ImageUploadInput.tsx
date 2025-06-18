@@ -8,7 +8,6 @@ import { X, UploadCloud, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { useAuth } from '@/hooks/useAuth';
-import imageCompression from 'browser-image-compression';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -18,7 +17,7 @@ interface ImageUploadInputProps {
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false); // Renamed from isUploading to isProcessing
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -33,7 +32,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''; // Clear the input value
     }
     console.log(`[ImageUploadInput ${id}] handleFileChange triggered.`);
     const file = event.target.files?.[0];
@@ -52,8 +51,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (file) {
       console.log(`[ImageUploadInput ${id}] File selected: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
 
-      if (file.size > 10 * 1024 * 1024) {
-        console.warn(`[ImageUploadInput ${id}] File too large before compression: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit for original file
+        console.warn(`[ImageUploadInput ${id}] File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
         toast({ title: 'Arquivo muito grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
         setError('Arquivo muito grande (máx 10MB).');
         onUploadComplete(null);
@@ -70,45 +69,25 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
 
       setIsProcessing(true);
-      setPreview(null);
+      setPreview(null); 
       onUploadComplete(null);
 
       try {
-        console.log(`[ImageUploadInput ${id}] Starting compression for file: ${file.name}`);
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        const compressionStartTime = performance.now();
-        const compressedFile = await imageCompression(file, options);
-        const compressionEndTime = performance.now();
-        console.log(`[ImageUploadInput ${id}] Compression took ${(compressionEndTime - compressionStartTime) / 1000} seconds.`);
-        console.log(`[ImageUploadInput ${id}] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB, Type: ${compressedFile.type}`);
-
-        console.log(`[ImageUploadInput ${id}] Uploading compressed file...`);
-        const downloadURL = await uploadImage(compressedFile, user.id);
+        console.log(`[ImageUploadInput ${id}] Uploading original file...`);
+        const uploadStartTime = performance.now();
+        const downloadURL = await uploadImage(file, user.id); // Upload original file directly
+        const uploadEndTime = performance.now();
+        console.log(`[ImageUploadInput ${id}] Upload took ${(uploadEndTime - uploadStartTime) / 1000} seconds.`);
         console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
+        
         setPreview(downloadURL);
         onUploadComplete(downloadURL);
         toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
       } catch (e: any) {
-        console.error(`[ImageUploadInput ${id}] Error during image processing or upload:`, e);
+        console.error(`[ImageUploadInput ${id}] Error during image upload:`, e);
+        // e.message should be set by imageUploadService now
+        const userMessage = e.message || 'Falha no envio. Tente novamente.';
         
-        let userMessage = 'Ocorreu um erro desconhecido. Tente novamente.';
-        // Check if the error object has a 'message' property (standard Error objects do)
-        if (e && typeof e.message === 'string' && e.message.length > 0) {
-          userMessage = e.message; // Use the message from the Error object (now standardized by imageUploadService)
-        }
-        
-        // Specific check for compression related messages that might originate before calling the service
-        if (userMessage.includes('Falha na Compressão') || userMessage.includes('Falha ao comprimir')) {
-          // This message is already specific enough
-        } else if (userMessage.includes('Permission denied') || userMessage.includes('permissão negada')) {
-            userMessage = 'Falha no envio: permissão negada.';
-        }
-
-
         toast({ title: 'Falha no Upload', description: userMessage, variant: 'destructive' });
         setError(userMessage);
         setPreview(null);
@@ -152,7 +131,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         {isProcessing ? (
           <div className="text-center text-muted-foreground p-2">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <p className="mt-2 text-sm">Processando...</p>
+            <p className="mt-2 text-sm">Enviando...</p>
           </div>
         ) : error ? (
           <div className="text-center text-destructive p-2">
@@ -167,7 +146,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <div className="text-center text-muted-foreground p-2">
             <UploadCloud className="mx-auto h-10 w-10" />
             <p className="mt-2 text-sm">Clique ou arraste</p>
-            <p className="text-xs">PNG, JPG, WEBP (10MB orig, ~1MB comp)</p>
+            <p className="text-xs">PNG, JPG, WEBP (máx 10MB)</p>
           </div>
         )}
         <Input
