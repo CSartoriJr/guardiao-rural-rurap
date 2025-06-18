@@ -4,14 +4,28 @@ import Image from 'next/image';
 import type { AgriRequest } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, User, CalendarDays } from 'lucide-react';
+import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface TechnicianRequestCardProps {
   request: AgriRequest;
 }
+
+const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
+  switch (status) {
+    case 'Positive':
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
+    case 'Negative':
+      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
+    case 'Inconclusive':
+      return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusivo</Badge>;
+    default: // Pending
+      return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pendente</Badge>;
+  }
+};
 
 export default function TechnicianRequestCard({ request }: TechnicianRequestCardProps) {
     // Ensure photoUrls is an array and has at least 3 elements, providing placeholders if not.
@@ -24,16 +38,19 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
 
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-      <CardHeader className="flex flex-row justify-between items-start pb-2">
-        <div>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start mb-1">
           <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
-          <CardDescription className="text-xs">ID do Pedido: {request.id}</CardDescription>
+          <StatusBadge status={request.status} />
         </div>
-        <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto">
-          <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
-            <Eye className="mr-1 h-4 w-4" /> Ver
-          </Button>
-        </Link>
+        <div className="flex justify-between items-center">
+            <CardDescription className="text-xs">ID: {request.id}</CardDescription>
+            <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto">
+                <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs">
+                    <Eye className="mr-1 h-3 w-3" /> Ver
+                </Button>
+            </Link>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3 py-3">
         <div className="flex items-center text-sm text-muted-foreground">
