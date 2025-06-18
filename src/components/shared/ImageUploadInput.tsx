@@ -39,7 +39,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
 
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // Increased initial check slightly, compression will handle more
+      if (file.size > 10 * 1024 * 1024) { // Initial check, compression handles more
         toast({ title: 'Arquivo muito grande', description: 'Por favor, envie uma imagem menor que 10MB.', variant: 'destructive' });
         setError('Arquivo muito grande (máx 10MB antes da compressão).');
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -59,13 +59,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         const options = {
           maxSizeMB: 1,          // Max final file size in MB
           maxWidthOrHeight: 1920, // Max width or height in pixels
-          useWebWorker: true,
-          // Opcional: para arquivos PNG, pode ser útil definir um valor para initialQuality
-          // initialQuality: file.type === 'image/png' ? 0.8 : 0.7, // Ajuste conforme necessário
-          // fileType: file.type, // Tenta manter o tipo original se possível e suportado
+          useWebWorker: true,    // Utiliza Web Workers para não bloquear a UI
+          // Não especificar fileType ou initialQuality para deixar a biblioteca otimizar.
         };
         
+        console.log(`[ImageUploadInput] Starting compression for file: ${file.name}`);
+        const compressionStartTime = performance.now();
         const compressedFile = await imageCompression(file, options);
+        const compressionEndTime = performance.now();
+        console.log(`[ImageUploadInput] Compression took ${(compressionEndTime - compressionStartTime) / 1000} seconds.`);
         console.log(`[ImageUploadInput] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB, type: ${compressedFile.type}`);
 
         const downloadURL = await uploadImage(compressedFile, user.id);
