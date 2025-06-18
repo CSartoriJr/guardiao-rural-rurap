@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { AgriRequest } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3Icon as BarChart3IconLucide, AlertTriangle } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
@@ -143,22 +143,20 @@ export default function TechnicianAnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
-            <div className="lg:col-span-3 flex flex-col justify-between h-full gap-4 lg:gap-0">
-              <Skeleton className="w-32 h-32 rounded-lg" /> 
-              <Skeleton className="w-32 h-32 rounded-lg" />
-              <Skeleton className="w-32 h-32 rounded-lg" />
-              <Skeleton className="w-32 h-32 rounded-lg" />
+            <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="w-32 h-32 rounded-lg" /> 
+                    <Skeleton className="w-32 h-32 rounded-lg" />
+                    <Skeleton className="w-32 h-32 rounded-lg" />
+                    <Skeleton className="w-32 h-32 rounded-lg" />
+                </div>
+                <Skeleton className="h-80 rounded-lg" /> {/* For Status Chart */}
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Skeleton className="h-80 rounded-lg" />
-              <Skeleton className="h-80 rounded-lg" />
-            </div>
-            <div>
-              <Skeleton className="h-80 rounded-lg" /> 
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <Skeleton className="h-80 rounded-lg" /> {/* For Cassava Types Chart */}
+            <Skeleton className="h-80 rounded-lg" /> {/* For Municipality Chart */}
           </div>
         </div>
       </PageWrapper>
@@ -205,43 +203,66 @@ export default function TechnicianAnalyticsPage() {
                     </p>
                 </CardContent>
             </Card>
-            <div className="lg:col-span-3 flex flex-col justify-between h-full gap-4 lg:gap-0"> 
-                <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
-                    <CardHeader className="pb-2 text-center">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
+            <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                    <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
+                        <CardHeader className="pb-2 text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                        <div className="text-2xl font-bold">{stats.total}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
+                        </p>
+                        </CardContent>
+                    </Card>
+                    <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
+                        <CardHeader className="pb-2 text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                        <div className="text-2xl font-bold">{stats.pending}</div>
+                        <p className="text-xs text-muted-foreground">Aguardando revisão</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
+                        <CardHeader className="pb-2 text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                        <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
+                        <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
+                        <CardHeader className="pb-2 text-center">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/ Inconclusivos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                        <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
+                        <p className="text-xs text-muted-foreground">Necessitam atenção</p>
+                        </CardContent>
+                    </Card>
+                </div>
+                <Card className="shadow-md">
+                    <CardHeader>
+                    <CardTitle className="font-headline text-xl flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Distribuição por Status</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-center">
-                    <div className="text-2xl font-bold">{stats.total}</div>
-                    <p className="text-xs text-muted-foreground">
-                        {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
-                    </p>
-                    </CardContent>
-                </Card>
-                <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
-                    <CardHeader className="pb-2 text-center">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                    <div className="text-2xl font-bold">{stats.pending}</div>
-                    <p className="text-xs text-muted-foreground">Aguardando revisão</p>
-                    </CardContent>
-                </Card>
-                <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
-                    <CardHeader className="pb-2 text-center">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
-                    <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
-                    </CardContent>
-                </Card>
-                <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
-                    <CardHeader className="pb-2 text-center">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/ Inconclusivos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
-                    <p className="text-xs text-muted-foreground">Necessitam atenção</p>
+                    <CardContent>
+                    {statusChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={statusChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis allowDecimals={false}/>
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Pedidos"/>
+                        </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-10">Não há dados de status suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
+                    )}
                     </CardContent>
                 </Card>
             </div>
@@ -249,29 +270,7 @@ export default function TechnicianAnalyticsPage() {
 
 
         {filteredRequests.length > 0 || (selectedMunicipality === null && requests.length > 0) ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-md">
-                <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Distribuição por Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {statusChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={statusChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis allowDecimals={false}/>
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Pedidos"/>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-10">Não há dados de status suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
-                  )}
-                </CardContent>
-              </Card>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="font-headline text-xl flex items-center"><BarChart3IconLucide className="mr-2 h-5 w-5 text-primary"/>Principais Tipos de Mandioca</CardTitle>
@@ -293,8 +292,6 @@ export default function TechnicianAnalyticsPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-            <div>
               <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Pedidos por Município</CardTitle>
@@ -316,7 +313,6 @@ export default function TechnicianAnalyticsPage() {
                   )}
                 </CardContent>
               </Card>
-            </div>
           </div>
         ) : (
            <Card className="shadow-md mt-6">
