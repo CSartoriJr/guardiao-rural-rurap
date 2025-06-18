@@ -1,3 +1,4 @@
+
 // src/services/imageUploadService.ts
 import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTask } from 'firebase/storage';
@@ -45,14 +46,30 @@ export function uploadImage(
         }
         console.log(`[ImageUploadService] Upload for ${file.name} is ${progress}% done`);
       },
-      (error) => {
-        console.error(`[ImageUploadService] Error uploading ${file.name}:`, error.code, error.message, error);
-        // Firebase error object (error) already has a 'code' and 'message' property
-        // No need to wrap it in a new Error unless we want to customize the message based on code here.
-        // For now, just reject with the original Firebase error object.
-        reject(error);
+      (error: any) => { // Firebase error object or potentially other error types
+        console.error(`[ImageUploadService] Raw error object during upload of ${file.name}:`, error);
+        let finalError: Error;
+
+        if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+          // Likely a Firebase Storage Error (e.g., storage/canceled, storage/unauthorized)
+          console.error(`[ImageUploadService] Firebase Storage Error for ${file.name}: Code: ${error.code}, Message: ${error.message || 'Sem mensagem adicional.'}`);
+          // Create a new error to ensure it's an instance of Error, but carry over code and message
+          finalError = new Error(error.message || `Erro do Firebase Storage: ${error.code}`);
+          (finalError as any).code = error.code; // Preserve the original code if it exists
+        } else if (error instanceof ProgressEvent) {
+          // Explicitly handle ProgressEvent if it's thrown/caught as an error
+          console.error(`[ImageUploadService] ProgressEvent caught as error for ${file.name}. Treating as network/unknown issue.`);
+          finalError = new Error('Falha na comunicação durante o upload. Verifique sua conexão e tente novamente.');
+          (finalError as any).code = 'storage/network-error'; // Assign a custom code for clarity
+        } else {
+          // Generic error or unexpected error type
+          console.error(`[ImageUploadService] Unknown or generic error type for ${file.name}:`, error);
+          finalError = new Error( (error && error.message) || 'Ocorreu um erro desconhecido durante o upload. Tente novamente.');
+          (finalError as any).code = 'storage/unknown'; // Assign a custom code
+        }
+        reject(finalError);
       },
-      async () => {
+      async () => { // Complete callback
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log(`[ImageUploadService] File ${file.name} uploaded successfully. URL:`, downloadURL);
@@ -62,7 +79,9 @@ export function uploadImage(
           resolve(downloadURL);
         } catch (e: any) {
           console.error(`[ImageUploadService] Error getting download URL for ${file.name}:`, e);
-          reject(e); // Reject with the error from getDownloadURL
+          const getUrlError = new Error(e.message || 'Falha ao obter URL de download após o upload.');
+          (getUrlError as any).code = e.code || 'storage/get-url-failed';
+          reject(getUrlError);
         }
       }
     );
