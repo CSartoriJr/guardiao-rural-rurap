@@ -194,10 +194,16 @@ export default function TechnicianAnalyticsPage() {
                     <AmapaInteractiveMap
                         selectedMunicipality={selectedMunicipality}
                         onMunicipalitySelect={handleMapMunicipalitySelect}
+                        requests={filteredRequests} 
                     />
                     <p className="text-xs text-muted-foreground mt-2 text-center">
                         Clique em um município para filtrar os dados ou selecione no menu acima.
                         {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
+                        <br />
+                        <span className="inline-flex items-center mr-2"><svg width="10" height="10" className="mr-1"><circle cx="5" cy="5" r="5" fill="hsl(var(--muted-foreground))"/></svg>Pendente</span>
+                        <span className="inline-flex items-center mr-2"><svg width="10" height="10" className="mr-1"><circle cx="5" cy="5" r="5" fill="hsl(var(--destructive))"/></svg>Positivo</span>
+                        <span className="inline-flex items-center mr-2"><svg width="10" height="10" className="mr-1"><circle cx="5" cy="5" r="5" fill="hsl(var(--chart-2))"/></svg>Negativo</span>
+                        <span className="inline-flex items-center"><svg width="10" height="10" className="mr-1"><circle cx="5" cy="5" r="5" fill="hsl(var(--chart-4))"/></svg>Inconclusivo</span>
                     </p>
                 </CardContent>
             </Card>

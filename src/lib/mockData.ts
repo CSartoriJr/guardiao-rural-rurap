@@ -19,6 +19,28 @@ export const amapaMunicipalities: string[] = [
   "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
 ];
 
+// Approximate seat coordinates (X, Y within SVG viewBox 0 0 2048 2314.0649)
+// These are visual estimations and may need fine-tuning.
+export const municipalitySeatCoordinates: { [key: string]: { x: number; y: number } } = {
+  "Oiapoque": { x: 1000, y: 200 },
+  "Calçoene": { x: 1300, y: 550 },
+  "Amapá": { x: 1150, y: 800 },
+  "Pracuúba": { x: 1300, y: 1150 },
+  "Tartarugalzinho": { x: 1500, y: 1050 },
+  "Serra do Navio": { x: 800, y: 950 },
+  "Pedra Branca do Amaparí": { x: 650, y: 1100 },
+  "Porto Grande": { x: 1150, y: 1500 },
+  "Ferreira Gomes": { x: 1350, y: 1350 },
+  "Cutias": { x: 1550, y: 1450 },
+  "Macapá": { x: 1350, y: 1750 },
+  "Santana": { x: 1450, y: 1850 },
+  "Itaubal": { x: 1650, y: 1600 },
+  "Mazagão": { x: 1050, y: 1700 },
+  "Laranjal do Jari": { x: 700, y: 2000 },
+  "Vitória do Jari": { x: 1150, y: 2200 }
+};
+
+
 // --- Persistence Logic (Commented out as Firebase is the primary store) ---
 /*
 let R_MOCK_USERS_INITIALIZED = false;
@@ -120,3 +142,4 @@ export const deleteMockRequest = async (requestId: string): Promise<boolean> => 
   return false;
 };
 */
+
