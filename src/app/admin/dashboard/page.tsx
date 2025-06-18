@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
-// import { getAllRequestsForAdmin } from '@/services/requestService'; // Commented out Firestore service
+import { getAllRequestsForAdmin } from '@/services/requestService'; // Changed to Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -18,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { toast } = useToast(); // Keep for other potential notifications
+  const { toast } = useToast(); 
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [farmerSearchTerm, setFarmerSearchTerm] = useState<string>('');
@@ -26,29 +25,25 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user && user.role === 'admin') {
       setIsLoading(true);
-      // Revert to mockData: Use all requests from the global mockRequests array
-      const allRequests = [...mockRequests].sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
-      setRequests(allRequests);
-      setIsLoading(false);
-
-      // Previous Firestore logic:
-      // getAllRequestsForAdmin()
-      //   .then(data => {
-      //     setRequests(data);
-      //   })
-      //   .catch(error => {
-      //     console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
-      //     toast({
-      //       title: "Erro ao Carregar Pedidos",
-      //       description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
-      //       variant: "destructive",
-      //     });
-      //   })
-      //   .finally(() => {
-      //     setIsLoading(false);
-      //   });
+      getAllRequestsForAdmin()
+        .then(data => {
+          setRequests(data);
+        })
+        .catch(error => {
+          console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
+          toast({
+            title: "Erro ao Carregar Pedidos",
+            description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (user === null && user?.role !== 'admin') {
+        setIsLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
   const filteredRequests = useMemo(() => {
     if (!farmerSearchTerm.trim()) {
@@ -68,7 +63,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>Pedidos Exibidos: {filteredRequests.length}</span>
+            <span>Pedidos Exibidos: {isLoading ? 'Carregando...' : filteredRequests.length}</span>
           </div>
           <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN} passHref>
             <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
@@ -136,3 +131,4 @@ const CardSkeleton = () => (
     <Skeleton className="h-10 w-full" />
   </div>
 );
+

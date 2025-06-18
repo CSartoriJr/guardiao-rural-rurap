@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest } from '@/types';
-import { mockRequests } from '@/lib/mockData'; // Reverted to mockData
-// import { getPendingRequestsForTechnician } from '@/services/requestService'; // Commented out Firestore service
+import { getPendingRequestsForTechnician } from '@/services/requestService'; // Changed to Firestore service
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,45 +12,40 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function TechnicianDashboard() {
   const { user } = useAuth(); 
-  const { toast } = useToast(); // Keep for other potential notifications
+  const { toast } = useToast();
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user) { 
       setIsLoading(true);
-      // Revert to mockData: Filter pending requests from the global mockRequests array
-      const pendingRequests = mockRequests.filter(req => req.status === 'Pending')
-        .sort((a, b) => new Date(a.submissionDate).getTime() - new Date(b.submissionDate).getTime());
-      setRequests(pendingRequests);
-      setIsLoading(false);
-
-      // Previous Firestore logic:
-      // getPendingRequestsForTechnician()
-      //   .then(data => {
-      //     setRequests(data);
-      //   })
-      //   .catch(error => {
-      //     console.error("Falha ao buscar pedidos do técnico via Firestore:", error);
-      //     toast({
-      //       title: "Erro ao Carregar Pedidos",
-      //       description: "Não foi possível buscar os pedidos pendentes. Verifique sua conexão ou tente mais tarde.",
-      //       variant: "destructive",
-      //     });
-      //   })
-      //   .finally(() => {
-      //     setIsLoading(false);
-      //   });
+      getPendingRequestsForTechnician()
+        .then(data => {
+          setRequests(data);
+        })
+        .catch(error => {
+          console.error("Falha ao buscar pedidos do técnico via Firestore:", error);
+          toast({
+            title: "Erro ao Carregar Pedidos",
+            description: "Não foi possível buscar os pedidos pendentes. Verifique sua conexão ou tente mais tarde.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (user === null) {
+        setIsLoading(false);
     }
-  }, [user]);
+  }, [user, toast]);
 
   return (
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
-        <div className="flex items-center text-primary">
-          <ClipboardList className="h-6 w-6 mr-2"/>
-          <span>{requests.length} Pedido{requests.length !== 1 ? 's' : ''} Pendente{requests.length !== 1 ? 's' : ''}</span>
+        <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
+          <ClipboardList className="h-5 w-5 mr-2"/>
+          <span>{isLoading ? 'Carregando...' : `${requests.length} Pedido${requests.length !== 1 ? 's' : ''} Pendente${requests.length !== 1 ? 's' : ''}`}</span>
         </div>
       </div>
 
@@ -92,3 +86,4 @@ const CardSkeleton = () => (
     <Skeleton className="h-10 w-full" />
   </div>
 );
+
