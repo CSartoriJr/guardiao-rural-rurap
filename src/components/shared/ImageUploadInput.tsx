@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
-  AlertDialogAction,
+  AlertDialogAction, // Não usado, mas mantendo para referência caso necessário
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -47,7 +48,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const resetInputAndCaptureState = () => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''; // Crucial para permitir re-seleção do mesmo arquivo
       fileInputRef.current.removeAttribute('capture');
       console.log(`[ImageUploadInput ${id}] Input value and capture attribute reset.`);
     }
@@ -57,21 +58,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     const file = event.target.files?.[0];
     console.log(`[ImageUploadInput ${id}] handleFileChange. File: ${file?.name}`);
 
-    // It's important to reset the input value here so the onChange fires even if the same file is selected again
-    // However, moving it here might interfere with the capture attribute logic if not handled carefully.
-    // For now, we call resetInputAndCaptureState at the end of the flow or on explicit cancel.
-
     if (!file) {
       console.log(`[ImageUploadInput ${id}] No file selected or selection cancelled by user.`);
-      resetInputAndCaptureState(); // Ensure input is reset if no file is picked
+      resetInputAndCaptureState();
       return;
     }
 
     setError(null);
     setUploadProgress(0);
     setCurrentUploadTask(null);
-    setPreview(null); // Clear previous server-side preview
-    onUploadComplete(null);
+    setPreview(null);
+    onUploadComplete(null); // Informa o pai que a imagem anterior (se houver) foi removida
     setFileNameForDisplay(file.name);
     setIsProcessing(true);
 
@@ -80,7 +77,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive' });
       setError('Usuário não identificado.');
       setIsProcessing(false);
-      setPreview(currentImageUrl || null); 
+      setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
       setFileNameForDisplay(null);
       resetInputAndCaptureState();
@@ -110,7 +107,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     
     const localPreviewUrl = URL.createObjectURL(file);
     setPreview(localPreviewUrl);
-    setUploadProgress(0); // Ensure progress starts at 0 visually
+    setUploadProgress(0);
 
     try {
       console.log(`[ImageUploadInput ${id}] Uploading original file: ${file.name}`);
@@ -126,16 +123,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       const downloadURL = await uploadPromise;
       console.log(`[ImageUploadInput ${id}] Upload successful. URL: ${downloadURL}`);
-      if (preview === localPreviewUrl) {
-        URL.revokeObjectURL(localPreviewUrl); // Clean up local object URL
+      if (preview === localPreviewUrl) { // Verifica se o preview ainda é o local antes de revogar
+         URL.revokeObjectURL(localPreviewUrl);
       }
       setPreview(downloadURL);
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: `Imagem ${fileNameForDisplay} enviada!` });
     } catch (uploadError: any) {
-      console.error(`[ImageUploadInput ${id}] Error during image upload from handleFileChange. Message: ${uploadError.message}`, uploadError);
+      console.error(`[ImageUploadInput ${id}] Error during image upload. Message: ${uploadError.message}`, uploadError);
       if (preview === localPreviewUrl) {
-        URL.revokeObjectURL(localPreviewUrl); // Clean up local object URL
+         URL.revokeObjectURL(localPreviewUrl);
       }
       
       let title = 'Falha no Upload';
@@ -153,15 +150,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     } finally {
       setIsProcessing(false);
       setCurrentUploadTask(null);
-      // It's crucial to reset the input.value here so that if the user selects the same file again,
-      // the onChange event will still fire. This also helps with the capture attribute.
-      resetInputAndCaptureState();
+      resetInputAndCaptureState(); // Garante que o input e o atributo 'capture' sejam resetados.
     }
   };
 
   const triggerFileInput = (useCamera: boolean) => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Reset value before click to ensure onChange fires
+      fileInputRef.current.value = ''; // Limpa o valor para permitir a seleção do mesmo arquivo
       if (useCamera) {
         console.log(`[ImageUploadInput ${id}] Setting capture='environment'`);
         fileInputRef.current.setAttribute('capture', 'environment');
@@ -179,7 +174,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     e.stopPropagation();
     if (currentUploadTask) {
       console.log(`[ImageUploadInput ${id}] Cancelling active upload task due to remove image.`);
-      currentUploadTask.cancel(); // Firebase will emit 'storage/canceled' error, handled in handleFileChange
+      currentUploadTask.cancel();
     }
     if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
     setPreview(null);
@@ -189,7 +184,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setCurrentUploadTask(null);
     onUploadComplete(null);
     setFileNameForDisplay(null);
-    resetInputAndCaptureState(); // Reset here too
+    resetInputAndCaptureState();
     toast({ title: 'Imagem Removida', description: 'A imagem foi removida do campo.' });
   };
 
@@ -198,9 +193,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (currentUploadTask) {
       console.log(`[ImageUploadInput ${id}] User explicitly cancelling upload task for ${fileNameForDisplay}`);
       currentUploadTask.cancel();
-      // The 'storage/canceled' error will be caught by handleFileChange's error handler
     } else {
-      // Fallback if somehow task is null but button is visible
       setIsProcessing(false);
       setUploadProgress(0);
       setError("Upload cancelado pelo usuário.");
@@ -216,10 +209,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (isProcessing || (preview && !error) ) { // If processing, or has preview and no error, do nothing
+    if (isProcessing || (preview && !error) ) {
       return;
     }
-     // If there's an error, or it's empty, open choice dialog
     setIsChoiceDialogOpen(true);
   };
 
@@ -233,14 +225,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               De onde você gostaria de adicionar a imagem?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+          <AlertDialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:space-x-2">
             <Button onClick={() => triggerFileInput(true)} className="w-full sm:w-auto">
               <Camera className="mr-2 h-4 w-4" /> Tirar Foto com a Câmera
             </Button>
-            <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full sm:w-auto sm:ml-2">
+            <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full sm:w-auto">
               <ImageIconLucide className="mr-2 h-4 w-4" /> Selecionar da Galeria
             </Button>
-            <AlertDialogCancel className="w-full sm:w-auto sm:ml-2">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="w-full sm:w-auto mt-0 sm:mt-0">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -310,3 +302,5 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     </div>
   );
 }
+
+    
