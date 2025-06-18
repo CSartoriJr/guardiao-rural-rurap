@@ -13,11 +13,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'Todos os Status' },
   { value: 'Pending', label: 'Pendente' },
   { value: 'Positive', label: 'Positivo' },
   { value: 'Negative', label: 'Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
-  { value: 'all', label: 'Todos os Status' },
 ];
 
 const getStatusDisplayName = (statusValue: RequestStatus | 'all'): string => {
@@ -30,7 +30,7 @@ export default function TechnicianDashboard() {
   const { toast } = useToast();
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('Pending'); // Default to Pending
+  const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all'); // Default to all
 
   useEffect(() => {
     if (user) {
@@ -130,16 +130,19 @@ export default function TechnicianDashboard() {
 
 const CardSkeleton = () => (
   <div className="bg-card p-4 rounded-lg shadow space-y-3">
-    <Skeleton className="h-6 w-3/4" />
-    <Skeleton className="h-4 w-1/2" />
-    <Skeleton className="h-4 w-2/3" />
-    <Skeleton className="h-4 w-1/2" />
+    <div className="flex justify-between items-start">
+      <Skeleton className="h-6 w-3/4" />
+      <Skeleton className="h-5 w-20" />
+    </div>
+     <div className="space-y-1">
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-1/2" />
+     </div>
      <div className="flex justify-center sm:justify-start -space-x-2 overflow-hidden my-2">
       <Skeleton className="h-12 w-12 rounded-full" />
       <Skeleton className="h-12 w-12 rounded-full" />
       <Skeleton className="h-12 w-12 rounded-full" />
     </div>
-    <Skeleton className="h-10 w-full" />
   </div>
 );
 
