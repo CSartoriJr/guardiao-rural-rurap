@@ -8,9 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
 import { updateUserDocument, deleteUserFirestoreDocument } from '@/services/userService';
@@ -166,20 +169,32 @@ export default function ManageUsersPage() {
           <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
         </div>
-        <div className="w-full sm:w-auto sm:min-w-[200px]">
-          <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
-          <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
-            <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
-              <ListFilter className="mr-2 h-4 w-4 text-primary" />
-              <SelectValue placeholder="Filtrar por função..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Funções</SelectItem>
-              <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
-              <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
-              <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row items-center gap-2">
+            <div className="w-full sm:w-auto sm:min-w-[200px]">
+              <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
+              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
+                <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
+                  <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Filtrar por função..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Funções</SelectItem>
+                  <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
+                  <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
+                  <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {adminUser?.name === 'Adm Master' && (
+              <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:self-end">
+                <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
+                    <ShieldPlus className="mr-2 h-4 w-4" />
+                    Adicionar Admin
+                  </Link>
+                </Button>
+              </div>
+            )}
         </div>
       </div>
 

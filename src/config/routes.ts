@@ -12,5 +12,6 @@ export const APP_ROUTES = {
   TECHNICIAN_ANALYTICS_PANEL: '/technician/analytics',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_CREATE_TECHNICIAN: '/admin/create-technician',
+  ADMIN_CREATE_ADMIN: '/admin/create-admin',
   ADMIN_MANAGE_USERS: '/admin/users',
 };

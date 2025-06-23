@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
+  createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -153,9 +154,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const createAdminWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
+    if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
+    setLoading(true);
+    try {
+      const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
+      
+      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
+      const fbUser = userCredential.user;
+
+      await updateProfile(fbUser, { displayName: userData.name });
+
+      const appUser = await createUserDocument(fbUser, {
+        ...userData,
+        role: 'admin',
+        email: firebaseCompatibleEmail,
+      });
+      return appUser;
+    } catch (error: any) {
+      console.error("[AuthContext] Admin creation with auth failed:", error.code, error.message);
+       if (error.code === 'auth/email-already-in-use') {
+        throw new Error('Este CPF (e-mail) já está cadastrado para outro usuário.');
+      }
+      throw new Error(error.message || 'Falha ao criar administrador.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth }}>
       {children}
     </AuthContext.Provider>
   );
