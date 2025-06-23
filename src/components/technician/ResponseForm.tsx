@@ -60,7 +60,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
       return;
     }
     if (!request.id) {
-      toast({ title: "Erro", description: "ID do pedido não encontrado.", variant: "destructive" });
+      toast({ title: "Erro", description: "ID do Levantamento não encontrado.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -77,7 +77,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
       
       toast({
         title: 'Resposta Enviada!',
-        description: `Sua resposta para o pedido ID ${request.id} foi salva no Firestore.`,
+        description: `Sua resposta para o Levantamento ID ${request.id} foi salva no Firestore.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error: any) {

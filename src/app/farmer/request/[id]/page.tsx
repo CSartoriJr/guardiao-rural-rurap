@@ -73,7 +73,7 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
       )}
       {status === 'Pending' && (
         <CardContent>
-          <p className="text-muted-foreground">Seu pedido está atualmente em revisão por um técnico. Você será notificado assim que uma resposta estiver disponível.</p>
+          <p className="text-muted-foreground">Seu Levantamento está atualmente em revisão por um técnico. Você será notificado assim que uma resposta estiver disponível.</p>
         </CardContent>
       )}
     </Card>
@@ -97,7 +97,7 @@ export default function FarmerViewRequestPage() {
     if (initializing) return; 
 
     if (!requestId) {
-        setError("ID do pedido inválido.");
+        setError("ID do Levantamento inválido.");
         setIsLoading(false);
         return;
     }
@@ -115,17 +115,17 @@ export default function FarmerViewRequestPage() {
         if (data && (data.farmerId === user.id || user.role === 'admin')) { 
           setRequest(data);
         } else if (data) {
-          setError("Você não tem autorização para ver este pedido.");
-          toast({ title: "Acesso Negado", description: "Você não tem permissão para ver este pedido.", variant: "destructive"});
+          setError("Você não tem autorização para ver este Levantamento.");
+          toast({ title: "Acesso Negado", description: "Você não tem permissão para ver este Levantamento.", variant: "destructive"});
         } else {
-          setError("Pedido não encontrado.");
-          toast({ title: "Erro", description: "Pedido não encontrado.", variant: "destructive"});
+          setError("Levantamento não encontrado.");
+          toast({ title: "Erro", description: "Levantamento não encontrado.", variant: "destructive"});
         }
       })
       .catch(err => {
-        console.error("[FarmerViewRequestPage] Falha ao buscar pedido:", err);
-        setError("Falha ao carregar detalhes do pedido.");
-        toast({ title: "Erro ao Carregar", description: "Falha ao carregar detalhes do pedido. Tente novamente.", variant: "destructive"});
+        console.error("[FarmerViewRequestPage] Falha ao buscar Levantamento:", err);
+        setError("Falha ao carregar detalhes do Levantamento.");
+        toast({ title: "Erro ao Carregar", description: "Falha ao carregar detalhes do Levantamento. Tente novamente.", variant: "destructive"});
       })
       .finally(() => {
         setIsLoading(false);
@@ -167,7 +167,7 @@ export default function FarmerViewRequestPage() {
       locationString = "Nenhuma localização GPS disponível.";
       sourceHint = ` (Status GPS do dispositivo: ${request.deviceLocationStatus})`;
     } else {
-      locationString = "Localização não disponível para este pedido.";
+      locationString = "Localização não disponível para este Levantamento.";
     }
 
     return (
@@ -254,8 +254,8 @@ export default function FarmerViewRequestPage() {
       <PageWrapper allowedRoles={['farmer', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground">Pedido Não Encontrado</h2>
-          <p className="text-muted-foreground">Não foi possível carregar os detalhes do pedido. Verifique se o ID do pedido é válido ou tente novamente mais tarde.</p>
+          <h2 className="text-xl font-semibold text-foreground">Levantamento Não Encontrado</h2>
+          <p className="text-muted-foreground">Não foi possível carregar os detalhes do Levantamento. Verifique se o ID do Levantamento é válido ou tente novamente mais tarde.</p>
            <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.FARMER_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
@@ -273,7 +273,7 @@ export default function FarmerViewRequestPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Detalhes do Pedido</CardTitle>
+            <CardTitle className="font-headline text-2xl">Detalhes do Levantamento</CardTitle>
             <CardDescription>ID: {request.id}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -344,7 +344,7 @@ export default function FarmerViewRequestPage() {
             <div className="relative w-full h-[85vh]">
                 <Image
                     src={expandedImageUri}
-                    alt="Imagem expandida do pedido"
+                    alt="Imagem expandida do Levantamento"
                     fill
                     style={{objectFit: "contain"}}
                     unoptimized={expandedImageUri.startsWith('https://placehold.co')}

@@ -66,7 +66,7 @@ export const addRequest = async (
     
     const newDocSnap = await getDoc(docRef);
     if (!newDocSnap.exists()) {
-        throw new Error("Falha ao buscar o pedido recém-criado do Firestore.");
+        throw new Error("Falha ao buscar o Levantamento recém-criado do Firestore.");
     }
     return requestFromFirestore(newDocSnap);
 

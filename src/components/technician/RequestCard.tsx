@@ -40,7 +40,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start mb-1">
-          <CardTitle className="font-headline text-lg">Pedido: {request.cassavaType}</CardTitle>
+          <CardTitle className="font-headline text-lg">Levantamento: {request.cassavaType}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <div className="flex justify-between items-center">

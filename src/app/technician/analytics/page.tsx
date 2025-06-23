@@ -47,17 +47,17 @@ export default function TechnicianAnalyticsPage() {
         setRequests(data);
         if (data.length === 0) {
           toast({
-            title: "Nenhum Dado de Pedido",
-            description: "Não foram encontrados pedidos no sistema para exibir nas análises.",
+            title: "Nenhum Dado de Levantamento",
+            description: "Não foram encontrados Levantamentos no sistema para exibir nas análises.",
             variant: "default"
           });
         }
       })
       .catch(error => {
-        console.error("Falha ao buscar pedidos para análise:", error);
+        console.error("Falha ao buscar Levantamentos para análise:", error);
         toast({
           title: "Erro ao Carregar Dados",
-          description: "Não foi possível buscar os dados dos pedidos para análise. Tente novamente mais tarde.",
+          description: "Não foi possível buscar os dados dos Levantamentos para análise. Tente novamente mais tarde.",
           variant: "destructive",
         });
         setRequests([]); // Define como vazio em caso de erro
@@ -207,7 +207,7 @@ export default function TechnicianAnalyticsPage() {
                 <div className="grid grid-cols-2 gap-4">
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
                         <CardHeader className="pb-2 text-center">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total de Levantamentos</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
                         <div className="text-2xl font-bold">{stats.total}</div>
@@ -257,7 +257,7 @@ export default function TechnicianAnalyticsPage() {
                             <YAxis allowDecimals={false} fontSize={12}/>
                             <Tooltip wrapperStyle={{ fontSize: '12px' }}/>
                             <Legend wrapperStyle={{ fontSize: '12px' }} />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Pedidos"/>
+                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Levantamentos"/>
                         </BarChart>
                         </ResponsiveContainer>
                     ) : (
@@ -284,7 +284,7 @@ export default function TechnicianAnalyticsPage() {
                         <YAxis dataKey="name" type="category" width={100} fontSize={12} />
                         <Tooltip wrapperStyle={{ fontSize: '12px' }} />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="count" fill="hsl(var(--accent))" name="Nº de Pedidos"/>
+                        <Bar dataKey="count" fill="hsl(var(--accent))" name="Nº de Levantamentos"/>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -294,7 +294,7 @@ export default function TechnicianAnalyticsPage() {
               </Card>
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Pedidos por Município</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Levantamentos por Município</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
@@ -305,11 +305,11 @@ export default function TechnicianAnalyticsPage() {
                         <YAxis allowDecimals={false} fontSize={12} />
                         <Tooltip wrapperStyle={{ fontSize: '12px' }} />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Pedidos"/>
+                        <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Levantamentos"/>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground text-center py-10">Não há dados de pedidos por município para exibir o gráfico.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de Levantamentos por município para exibir o gráfico.</p>
                   )}
                 </CardContent>
               </Card>
@@ -318,12 +318,12 @@ export default function TechnicianAnalyticsPage() {
            <Card className="shadow-md mt-6">
             <CardContent className="pt-6 text-center">
               <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-semibold text-foreground">Nenhum Pedido Encontrado</p>
+              <p className="text-lg font-semibold text-foreground">Nenhum Levantamento Encontrado</p>
               <p className="text-muted-foreground">
                 {isLoading ? "Carregando dados..." : 
                   selectedMunicipality 
-                  ? `Não há pedidos registrados para ${selectedMunicipality}.` 
-                  : requests.length === 0 ? "Não há pedidos registrados no sistema para exibir análises." : "Ajuste os filtros ou aguarde novos pedidos."}
+                  ? `Não há Levantamentos registrados para ${selectedMunicipality}.` 
+                  : requests.length === 0 ? "Não há Levantamentos registrados no sistema para exibir análises." : "Ajuste os filtros ou aguarde novos Levantamentos."}
               </p>
             </CardContent>
           </Card>

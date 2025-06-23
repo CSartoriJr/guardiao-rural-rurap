@@ -46,10 +46,10 @@ export default function AdminDashboard() {
           setRequests(data);
         })
         .catch(error => {
-          console.error("Falha ao buscar todos os pedidos para admin via Firestore:", error);
+          console.error("Falha ao buscar todos os Levantamentos para admin via Firestore:", error);
           toast({
-            title: "Erro ao Carregar Pedidos",
-            description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Levantamentos",
+            description: "Não foi possível buscar os Levantamentos do sistema. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>Pedidos Exibidos: {isLoading ? 'Carregando...' : filteredRequests.length}</span>
+            <span>Levantamentos Exibidos: {isLoading ? 'Carregando...' : filteredRequests.length}</span>
           </div>
           <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN} passHref>
             <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
 
       <div className="mb-6 flex flex-col sm:flex-row justify-start items-center gap-4">
         <div className="w-full sm:w-auto sm:min-w-[300px]">
-          <Label htmlFor="farmer-search" className="text-sm font-medium text-foreground">Buscar Pedidos por Agricultor</Label>
+          <Label htmlFor="farmer-search" className="text-sm font-medium text-foreground">Buscar Levantamentos por Agricultor</Label>
           <div className="relative mt-1">
             <Input
               id="farmer-search"
@@ -154,11 +154,11 @@ export default function AdminDashboard() {
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Pedido Encontrado</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Levantamento Encontrado</h2>
           <p className="text-muted-foreground">
             { (farmerSearchTerm.trim() || statusFilter !== 'all') && requests.length > 0
-              ? `Nenhum pedido encontrado para os filtros aplicados.`
-              : 'Ainda não há pedidos registrados no sistema.'}
+              ? `Nenhum Levantamento encontrado para os filtros aplicados.`
+              : 'Ainda não há Levantamentos registrados no sistema.'}
           </p>
         </div>
       )}

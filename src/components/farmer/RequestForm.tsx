@@ -119,7 +119,7 @@ export default function RequestForm() {
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user || !user.id || !user.name) {
-      toast({ title: "Erro", description: "Você deve estar logado para enviar um pedido.", variant: "destructive" });
+      toast({ title: "Erro", description: "Você deve estar logado para enviar um Levantamento.", variant: "destructive" });
       return;
     }
     if (!data.photoUrl1 || !data.photoUrl2 || !data.photoUrl3) {
@@ -152,13 +152,13 @@ export default function RequestForm() {
       const plantTypeDisplay = plantTypes.join(' e ');
 
       toast({
-        title: 'Pedido Enviado!',
-        description: `Seu pedido para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso. ID: ${newRequest.id}.`,
+        title: 'Levantamento Enviado!',
+        description: `Seu Levantamento para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
     } catch (error: any) {
-      console.error("Falha ao enviar pedido:", error);
-      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar seu pedido. Por favor, tente novamente.", variant: "destructive" });
+      console.error("Falha ao enviar Levantamento:", error);
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar seu Levantamento. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -223,7 +223,7 @@ export default function RequestForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Enviar Novo Pedido</CardTitle>
+        <CardTitle className="font-headline text-2xl">Enviar Novo Levantamento</CardTitle>
         <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas. Sua localização GPS será capturada automaticamente, se permitida.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -357,7 +357,7 @@ export default function RequestForm() {
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Enviar Pedido
+            Enviar Levantamento
           </Button>
         </CardFooter>
       </form>

@@ -40,10 +40,10 @@ export default function TechnicianDashboard() {
           setAllRequests(data);
         })
         .catch(error => {
-          console.error("Falha ao buscar todos os pedidos para técnico via Firestore:", error);
+          console.error("Falha ao buscar todos os Levantamentos para técnico via Firestore:", error);
           toast({
-            title: "Erro ao Carregar Pedidos",
-            description: "Não foi possível buscar os pedidos do sistema. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Levantamentos",
+            description: "Não foi possível buscar os Levantamentos do sistema. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -76,7 +76,7 @@ export default function TechnicianDashboard() {
   const getHeaderText = () => {
     if (isLoading) return 'Carregando...';
     const count = filteredRequests.length;
-    const noun = count === 1 ? 'Pedido' : 'Pedidos';
+    const noun = count === 1 ? 'Levantamento' : 'Levantamentos';
     if (statusFilter === 'all') {
       return `${count} ${noun} Exibido${count === 1 ? '' : 's'}`;
     }
@@ -128,12 +128,12 @@ export default function TechnicianDashboard() {
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Nenhum Pedido Encontrado
+            Nenhum Levantamento Encontrado
           </h2>
           <p className="text-muted-foreground">
             {statusFilter !== 'all' && allRequests.length > 0
-              ? `Nenhum pedido encontrado com o status "${getStatusDisplayName(statusFilter)}".`
-              : `Não há pedidos com o status "${getStatusDisplayName(statusFilter)}" no momento.`}
+              ? `Nenhum Levantamento encontrado com o status "${getStatusDisplayName(statusFilter)}".`
+              : `Não há Levantamentos com o status "${getStatusDisplayName(statusFilter)}" no momento.`}
           </p>
         </div>
       )}

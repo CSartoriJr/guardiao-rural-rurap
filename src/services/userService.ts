@@ -75,6 +75,12 @@ export const updateUserDocument = async (userId: string, data: Partial<AppUser>)
 // This function will only delete the Firestore document.
 export const deleteUserFirestoreDocument = async (userId: string): Promise<void> => {
   ensureFirebaseInitialized();
+
+  // Rule: Prevent deletion of the master admin
+  if (userId === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') {
+    throw new Error("O Administrador Master não pode ser removido.");
+  }
+  
   // First, check if the user is an admin and if they are the last admin
   const currentUserDoc = await getUserDocument(userId);
   if (currentUserDoc?.role === 'admin') {
@@ -90,13 +96,13 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
     const requestQuery = query(collection(db!, 'requests'), where('farmerId', '==', userId));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
-      throw new Error('Este agricultor possui pedidos e não pode ser removido. Remova os pedidos primeiro.');
+      throw new Error('Este agricultor possui Levantamentos e não pode ser removido. Remova os Levantamentos primeiro.');
     }
   } else if (currentUserDoc?.role === 'technician') {
     const requestQuery = query(collection(db!, 'requests'), where('technicianId', '==', userId), where('status', '!=', 'Pending'));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
-      throw new Error('Este técnico possui respostas associadas a pedidos e não pode ser removido.');
+      throw new Error('Este técnico possui respostas associadas a Levantamentos e não pode ser removido.');
     }
   }
 

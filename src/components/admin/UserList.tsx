@@ -211,6 +211,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   };
 
   const getDeleteButtonTitle = (user: UserWithActivityCount): string => {
+    if (user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') {
+      return "O Administrador Master não pode ser removido.";
+    }
     if (user.id === currentAdminId) {
       return "Você não pode remover seu próprio usuário.";
     }
@@ -218,7 +221,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       return "Não é possível remover o único administrador.";
     }
     if (user.role === 'farmer' && (user.requestCount ?? 0) > 0) {
-      return "Este agricultor possui pedidos e não pode ser removido.";
+      return "Este agricultor possui Levantamentos e não pode ser removido.";
     }
     if (user.role === 'technician' && (user.responseCount ?? 0) > 0) {
       return "Este técnico possui respostas e não pode ser removido.";
@@ -238,7 +241,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead>Função</TableHead>
               <TableHead className="text-center">
                 <div className="flex items-center justify-center">
-                  <ListChecks className="inline-block mr-1 h-4 w-4" /> Pedidos / <MessageSquareText className="inline-block ml-1 mr-1 h-4 w-4" /> Respostas
+                  <ListChecks className="inline-block mr-1 h-4 w-4" /> Levantamentos / <MessageSquareText className="inline-block ml-1 mr-1 h-4 w-4" /> Respostas
                 </div>
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -266,6 +269,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     size="sm"
                     onClick={() => handleDeleteClick(user)}
                     disabled={
+                      user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' ||
                       user.id === currentAdminId ||
                       (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
                       (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||

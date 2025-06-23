@@ -51,7 +51,7 @@ export default function AppHeader() {
               <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST}>
                 <Button variant="ghost" size="sm">
                   <PlusCircle className="h-5 w-5 md:mr-2" />
-                  <span className="hidden md:inline">Novo Pedido</span>
+                  <span className="hidden md:inline">Novo Levantamento</span>
                 </Button>
               </Link>
             </>

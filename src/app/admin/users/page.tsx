@@ -39,7 +39,7 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
       const requests = await getRequestsForFarmer(user.id); // Uses Firestore
       activityCount = { requestCount: requests.length };
     } catch (e) {
-      console.error(`Erro ao buscar pedidos para agricultor ${user.id}:`, e);
+      console.error(`Erro ao buscar Levantamentos para agricultor ${user.id}:`, e);
       activityCount = { requestCount: 0 };
     }
   } else if (user.role === 'technician') {

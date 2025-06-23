@@ -30,8 +30,8 @@ export default function FarmerDashboard() {
         .catch(error => {
           console.error("Failed to fetch requests from Firestore:", error);
           toast({
-            title: "Erro ao Carregar Pedidos",
-            description: "Não foi possível buscar seus pedidos. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Levantamentos",
+            description: "Não foi possível buscar seus Levantamentos. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -46,10 +46,10 @@ export default function FarmerDashboard() {
   return (
     <PageWrapper allowedRoles={['farmer']}>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-headline text-gray-800">Meus Pedidos</h1>
+        <h1 className="text-3xl font-headline text-gray-800">Meus Levantamentos</h1>
         <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
           <Button className="bg-primary hover:bg-primary/90">
-            <PlusCircle className="mr-2 h-5 w-5" /> Criar Novo Pedido
+            <PlusCircle className="mr-2 h-5 w-5" /> Criar Novo Levantamento
           </Button>
         </Link>
       </div>
@@ -69,11 +69,11 @@ export default function FarmerDashboard() {
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Pedido Ainda</h2>
-          <p className="text-muted-foreground mb-6">Você ainda não enviou nenhum pedido. Comece criando um!</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Levantamento Ainda</h2>
+          <p className="text-muted-foreground mb-6">Você ainda não enviou nenhum Levantamento. Comece criando um!</p>
           <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
             <Button className="bg-primary hover:bg-primary/90">
-              <PlusCircle className="mr-2 h-5 w-5" /> Criar Primeiro Pedido
+              <PlusCircle className="mr-2 h-5 w-5" /> Criar Primeiro Levantamento
             </Button>
           </Link>
         </div>
