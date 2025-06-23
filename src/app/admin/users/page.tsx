@@ -185,7 +185,7 @@ export default function ManageUsersPage() {
                 </SelectContent>
               </Select>
             </div>
-            {adminUser?.name === 'Adm Master' && (
+            {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
               <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:self-end">
                 <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                   <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>

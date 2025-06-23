@@ -52,12 +52,12 @@ export default function CreateAdminForm() {
     },
   });
   
-  if (adminUser?.name !== 'Adm Master') {
+  if (adminUser?.id !== 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') {
     return (
         <div className="max-w-2xl mx-auto text-center py-10">
             <ShieldAlert className="mx-auto h-12 w-12 text-destructive mb-4" />
             <h2 className="text-xl font-semibold text-destructive">Acesso Negado</h2>
-            <p className="text-muted-foreground mt-2">Apenas o "Adm Master" pode criar novos administradores.</p>
+            <p className="text-muted-foreground mt-2">Você não tem permissão para criar novos administradores.</p>
             <Button onClick={() => router.back()} className="mt-6">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
             </Button>
