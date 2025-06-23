@@ -68,17 +68,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
     try {
-      // numericCpf is expected to be only digits here
       const firebaseCompatibleEmail = `${numericCpf}@cacabruxa.app`;
       const userCredential = await signInWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, password);
       const fbUser = userCredential.user;
       const appUserDoc = await getUserDocument(fbUser.uid);
+      
       if (appUserDoc) {
         setUser(appUserDoc);
         setFirebaseUser(fbUser);
         return appUserDoc;
+      } else {
+        // This handles the case where Auth user exists but Firestore doc is missing.
+        // It cleans up the auth state and fails the login gracefully.
+        console.warn(`[AuthContext] User ${fbUser.uid} authenticated but has no Firestore document. Logging out.`);
+        await signOut(firebaseAuth);
+        // We don't throw an error here, just return null, which the UI interprets as a failed login.
+        // The catch block will now only handle actual auth errors (like wrong password).
+        return null; 
       }
-      throw new Error("Documento de usuário não encontrado no Firestore após login.");
     } catch (error: any) {
       console.error("[AuthContext] Login failed:", error.message);
       return null;
