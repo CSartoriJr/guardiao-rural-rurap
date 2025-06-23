@@ -3,14 +3,16 @@
 import type { User as AppUser } from '@/types';
 import type { User as FirebaseUserType } from 'firebase/auth';
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { auth as firebaseAuth, firebaseInitializedCorrectly } from '@/lib/firebase';
+import { auth as firebaseAuth, firebaseInitializedCorrectly, firebaseConfig } from '@/lib/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   updateProfile,
+  getAuth,
 } from 'firebase/auth';
+import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
 import { createUserDocument, getUserDocument } from '@/services/userService';
 
 interface AuthContextType {
@@ -129,10 +131,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
+    let tempApp: FirebaseApp | undefined = undefined;
     try {
+      // Create a temporary, secondary Firebase app for this operation so it doesn't use the admin's auth state
+      tempApp = initializeApp(firebaseConfig, `auth-worker-technician-${Date.now()}`);
+      const tempAuth = getAuth(tempApp);
+
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
       
-      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
       await updateProfile(fbUser, { displayName: userData.name });
@@ -142,6 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: 'technician',
         email: firebaseCompatibleEmail,
       });
+
       return appUser;
     } catch (error: any) {
       console.error("[AuthContext] Technician creation with auth failed:", error.code, error.message);
@@ -150,6 +158,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       throw new Error(error.message || 'Falha ao criar técnico.');
     } finally {
+      if (tempApp) {
+        await deleteApp(tempApp); // Clean up the temporary app
+      }
       setLoading(false);
     }
   };
@@ -157,10 +168,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createAdminWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
+    let tempApp: FirebaseApp | undefined = undefined;
     try {
+      // Create a temporary, secondary Firebase app for this operation so it doesn't use the admin's auth state
+      tempApp = initializeApp(firebaseConfig, `auth-worker-admin-${Date.now()}`);
+      const tempAuth = getAuth(tempApp);
+
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
       
-      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
       await updateProfile(fbUser, { displayName: userData.name });
@@ -178,6 +194,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       throw new Error(error.message || 'Falha ao criar administrador.');
     } finally {
+      if (tempApp) {
+        await deleteApp(tempApp); // Clean up the temporary app
+      }
       setLoading(false);
     }
   };
