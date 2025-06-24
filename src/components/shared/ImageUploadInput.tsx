@@ -19,7 +19,9 @@ interface ImageUploadInputProps {
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
-  const [preview, setPreview] = useState<string | null>(null);
+  // `uploadPreview` is for the temporary blob URL during upload.
+  // `currentImageUrl` (prop) is the source of truth from the parent form.
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -29,13 +31,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (currentImageUrl !== preview && !isProcessing) {
-      setPreview(currentImageUrl || null);
-    }
-  }, [currentImageUrl, preview, isProcessing]);
+  // The URL to render. Prioritize the temporary upload preview, then the final URL from the parent.
+  const displayUrl = uploadPreview || currentImageUrl;
 
   useEffect(() => {
+    // This effect handles the cancellation of the upload task if the component is unmounted.
     return () => {
       if (currentUploadTask) {
         console.log(`[ImageUploadInput ${id}] Unmounting, cancelling in-progress upload.`);
@@ -48,7 +48,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setError(null);
     setUploadProgress(0);
     setIsProcessing(true);
-    setPreview(URL.createObjectURL(file));
+    setUploadPreview(URL.createObjectURL(file)); // Set temporary preview
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
@@ -56,7 +56,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Tipo de Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setPreview(currentImageUrl || null);
+      setUploadPreview(null); // Clear temporary preview
       return;
     }
 
@@ -65,7 +65,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setPreview(currentImageUrl || null);
+      setUploadPreview(null); // Clear temporary preview
       return;
     }
 
@@ -74,7 +74,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setPreview(currentImageUrl || null);
+      setUploadPreview(null); // Clear temporary preview
       return;
     }
 
@@ -88,8 +88,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       const downloadURL = await uploadPromise;
       
-      onUploadComplete(downloadURL);
-      setPreview(downloadURL);
+      onUploadComplete(downloadURL); // This triggers parent re-render with new URL
       toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
       
     } catch (uploadError: any) {
@@ -105,35 +104,31 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       });
       
       setError(errorMsg);
-      setPreview(currentImageUrl || null);
-      onUploadComplete(currentImageUrl || null);
+      onUploadComplete(null); // Clear URL in parent form on failure
     } finally {
       setIsProcessing(false);
+      setUploadPreview(null); // Always clear temporary preview when done
       setCurrentUploadTask(null);
     }
   };
   
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
-    if (event.target) {
-      event.target.value = '';
-    }
-
     if (file) {
       processAndUploadFile(file);
+    }
+    // Clear the input value to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (currentUploadTask) {
-      currentUploadTask.cancel();
+      currentUploadTask.cancel(); // The catch block in processAndUploadFile will handle state cleanup
     } else {
-      if (preview && preview.startsWith('blob:')) {
-        URL.revokeObjectURL(preview);
-      }
-      setPreview(null);
+      setUploadPreview(null);
       setError(null);
       setUploadProgress(0);
       setIsProcessing(false);
@@ -148,7 +143,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleSourceSelect = (source: 'camera' | 'gallery') => {
     if (!fileInputRef.current) return;
     
-    // Always clear the capture attribute first
     fileInputRef.current.removeAttribute('capture');
     
     if (source === 'camera') {
@@ -159,7 +153,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setIsSelectorOpen(false);
   };
   
-  const isDisabled = isProcessing || (!!preview && !error);
+  const isDisabled = isProcessing;
 
   return (
     <>
@@ -188,10 +182,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               <AlertCircle className="mx-auto h-10 w-10" />
               <p className="mt-1 text-xs font-medium">Erro</p>
               <p className="text-xs break-words">{error}</p>
-              <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setIsSelectorOpen(true); }}>Tentar novamente</Button>
+              <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); setIsSelectorOpen(true); }}>Tentar novamente</Button>
             </div>
-          ) : preview ? (
-            <Image src={preview} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={preview.startsWith('https://placehold.co')} />
+          ) : displayUrl ? (
+            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
           ) : (
             <div className="text-center text-muted-foreground p-2">
               <UploadCloud className="mx-auto h-10 w-10" />
@@ -210,7 +204,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           disabled={isProcessing}
           aria-hidden="true"
         />
-        {(preview && !isProcessing) && (
+        {(displayUrl && !isProcessing) && (
           <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="w-full text-destructive hover:border-destructive/80 hover:bg-destructive/10">
             <X className="mr-2 h-4 w-4" /> Remover Imagem
           </Button>
