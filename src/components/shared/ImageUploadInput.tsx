@@ -21,11 +21,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [currentUploadTask, setCurrentUploadTask] = useState<UploadTask | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadTaskRef = useRef<UploadTask | null>(null); // Use ref instead of state for the upload task
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Effect to sync preview with external URL changes (e.g., from form state)
   useEffect(() => {
     if (currentImageUrl !== preview && !isProcessing) {
       setPreview(currentImageUrl || null);
@@ -33,69 +34,74 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
 
-  const handleContainerClick = () => {
-    if (isProcessing || (preview && !error)) {
-      return;
-    }
-    fileInputRef.current?.click();
-  };
+  // Effect to handle cleanup: cancel upload on component unmount
+  useEffect(() => {
+    return () => {
+      if (currentUploadTask) {
+        console.log(`[ImageUploadInput ${id}] Unmounting, cancelling in-progress upload.`);
+        currentUploadTask.cancel();
+      }
+    };
+  }, [currentUploadTask, id]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     
+    // IMPORTANT: Reset the input value to allow selecting the same file again.
     if (event.target) {
       event.target.value = '';
     }
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
+    // Reset component state for new upload
     setError(null);
     setUploadProgress(0);
     setIsProcessing(true);
-    setPreview(URL.createObjectURL(file));
+    setPreview(URL.createObjectURL(file)); // Show local preview immediately
 
+    // --- File Validation ---
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
-        const errorMsg = 'Tipo de arquivo inválido. Use JPEG, PNG, WEBP ou HEIC/HEIF.';
-        toast({ title: 'Tipo de Arquivo Inválido', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsProcessing(false);
-        setPreview(currentImageUrl || null);
-        return;
+      const errorMsg = 'Tipo de arquivo inválido. Use JPEG, PNG, WEBP ou HEIC/HEIF.';
+      toast({ title: 'Tipo de Arquivo Inválido', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      setIsProcessing(false);
+      setPreview(currentImageUrl || null); // Revert to original image if any
+      return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        const errorMsg = 'Arquivo muito grande (máximo 10MB).';
-        toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsProcessing(false);
-        setPreview(currentImageUrl || null);
-        return;
+      const errorMsg = 'Arquivo muito grande (máximo 10MB).';
+      toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      setIsProcessing(false);
+      setPreview(currentImageUrl || null);
+      return;
     }
 
     if (!user || !user.id) {
-        const errorMsg = 'Você precisa estar logado para fazer o upload.';
-        toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsProcessing(false);
-        setPreview(currentImageUrl || null);
-        return;
+      const errorMsg = 'Você precisa estar logado para fazer o upload.';
+      toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      setIsProcessing(false);
+      setPreview(currentImageUrl || null);
+      return;
     }
-    
+
+    // --- Upload Process ---
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
         file,
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
-      uploadTaskRef.current = uploadTask; // Store task in ref
+      setCurrentUploadTask(uploadTask); // Store task in state to allow cancellation
 
       const downloadURL = await uploadPromise;
       
       onUploadComplete(downloadURL);
-      setPreview(downloadURL);
+      setPreview(downloadURL); // Update preview to final URL
       toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
       
     } catch (uploadError: any) {
@@ -111,19 +117,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       });
       
       setError(errorMsg);
-      setPreview(currentImageUrl || null);
-      onUploadComplete(currentImageUrl || null);
-
+      setPreview(currentImageUrl || null); // Revert preview
+      onUploadComplete(currentImageUrl || null); // Inform form of failure
     } finally {
       setIsProcessing(false);
-      uploadTaskRef.current = null; // Clear the ref
+      setCurrentUploadTask(null); // Clear the task from state
     }
   };
 
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (uploadTaskRef.current) {
-      uploadTaskRef.current.cancel(); // This will trigger the catch block in handleFileChange
+    if (currentUploadTask) {
+      currentUploadTask.cancel(); // This will trigger the catch block in handleFileChange
     } else {
       if (preview && preview.startsWith('blob:')) {
         URL.revokeObjectURL(preview);
@@ -140,18 +145,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
   };
 
+  const isDisabled = isProcessing || (!!preview && !error);
+
   return (
     <div className="space-y-2">
-      <div
+      <label
+        htmlFor={id}
         className={`w-full h-48 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 relative overflow-hidden transition-colors ${
           error ? 'border-destructive' : 'border-border hover:border-primary'
-        } ${isProcessing || (preview && !error) ? 'cursor-default' : 'cursor-pointer'}`}
-        onClick={handleContainerClick}
-        role="button"
-        tabIndex={isProcessing || (preview && !error) ? -1 : 0}
-        onKeyDown={(e) => !isProcessing && !(preview && !error) && (e.key === 'Enter' || e.key === ' ') && fileInputRef.current?.click()}
+        } ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
         aria-label={`Enviar imagem ${id}`}
-        aria-disabled={isProcessing || (!!preview && !error)}
+        aria-disabled={isDisabled}
       >
         {isProcessing ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
@@ -166,7 +170,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium">Erro</p>
             <p className="text-xs break-words">{error}</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); setError(null); fileInputRef.current?.click(); }}>Tentar novamente</Button>
+            <Button variant="link" size="sm" className="text-xs mt-1" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Tentar novamente</Button>
           </div>
         ) : preview ? (
           <Image src={preview} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={preview.startsWith('https://placehold.co')} />
@@ -187,7 +191,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           disabled={isProcessing}
           aria-hidden="true"
         />
-      </div>
+      </label>
       {(preview && !isProcessing) && (
         <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="w-full text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Remover Imagem
