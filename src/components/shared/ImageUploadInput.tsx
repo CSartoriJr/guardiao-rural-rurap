@@ -59,7 +59,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const triggerFileInput = (useCamera: boolean) => {
     console.log(`[ImageUploadInput ${id}] triggerFileInput: Attempting to open file chooser. useCamera: ${useCamera}`);
     if (fileInputRef.current) {
-      console.log(`[ImageUploadInput ${id}] triggerFileInput: Resetting input value.`);
+      console.log(`[ImageUploadInput ${id}] triggerFileInput: Resetting input value *before* click.`);
+      // Resetar o valor ANTES de clicar é mais robusto em navegadores móveis.
+      // Isso garante que o evento 'onChange' dispare mesmo se o mesmo arquivo for selecionado novamente.
       fileInputRef.current.value = ''; 
 
       if (useCamera) {
@@ -69,6 +71,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         console.log(`[ImageUploadInput ${id}] triggerFileInput: Ensuring capture attribute is removed.`);
         fileInputRef.current.removeAttribute('capture');
       }
+      
       fileInputRef.current.click();
       console.log(`[ImageUploadInput ${id}] triggerFileInput: Click triggered on input element.`);
     } else {
@@ -79,7 +82,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    console.log(`[ImageUploadInput ${id}] handleFileChange: File selected - Name: ${file?.name}, Type: ${file?.type}, Size: ${file?.size} bytes. Input value: '${event.target.value}'`);
+    console.log(`[ImageUploadInput ${id}] handleFileChange: File selected - Name: ${file?.name}, Type: ${file?.type}, Size: ${file?.size} bytes.`);
 
     if (!file) {
       console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog cancelled by user.`);
@@ -94,48 +97,46 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setFileNameForDisplay(file.name);
     setIsProcessing(true);
     
-    console.log(`[ImageUploadInput ${id}] File object details: `, {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified,
-    });
+    console.log(`[ImageUploadInput ${id}] File object to be uploaded: `, file);
 
     if (!user || !user.id) {
-      console.error(`[ImageUploadInput ${id}] User not identified for upload of ${file.name}.`);
-      toast({ title: 'Erro de Autenticação', description: 'Usuário não identificado para upload.', variant: 'destructive' });
-      setError('Usuário não identificado.');
+      const errorMsg = 'Usuário não identificado para upload.';
+      console.error(`[ImageUploadInput ${id}] ${errorMsg} File: ${file.name}.`);
+      toast({ title: 'Erro de Autenticação', description: 'Você precisa estar logado para fazer o upload.', variant: 'destructive' });
+      setError(errorMsg);
       setIsProcessing(false);
       setPreview(currentImageUrl || null);
       onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de usuário
+      setFileNameForDisplay(null);
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast({ title: 'Arquivo muito grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
-      setError('Arquivo muito grande (máx 10MB).');
-      setIsProcessing(false);
-      setPreview(currentImageUrl || null);
-      onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de tamanho
-      return;
+        const errorMsg = 'Arquivo muito grande (máx 10MB).';
+        toast({ title: 'Arquivo Muito Grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
+        setError(errorMsg);
+        setIsProcessing(false);
+        setPreview(currentImageUrl || null);
+        onUploadComplete(currentImageUrl || null);
+        setFileNameForDisplay(null);
+        return;
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type.toLowerCase())) {
-      toast({ title: 'Tipo de arquivo inválido', description: 'Envie JPEG, PNG, WEBP, HEIC ou HEIF.', variant: 'destructive' });
-      setError('Tipo de arquivo inválido.');
-      setIsProcessing(false);
-      setPreview(currentImageUrl || null);
-      onUploadComplete(currentImageUrl || null);
-      setFileNameForDisplay(null); // Limpar nome do arquivo em erro de tipo
-      return;
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!acceptedTypes.includes(file.type.toLowerCase())) {
+        const errorMsg = 'Tipo de arquivo inválido.';
+        toast({ title: 'Tipo de Arquivo Inválido', description: 'Envie JPEG, PNG, WEBP, HEIC ou HEIF.', variant: 'destructive' });
+        setError(errorMsg);
+        setIsProcessing(false);
+        setPreview(currentImageUrl || null);
+        onUploadComplete(currentImageUrl || null);
+        setFileNameForDisplay(null);
+        return;
     }
     
     const localPreviewUrl = URL.createObjectURL(file);
     setPreview(localPreviewUrl); 
     setUploadProgress(0); 
     
-    // Limpar qualquer tarefa de upload anterior antes de iniciar uma nova.
     if (currentUploadTask) {
         console.warn(`[ImageUploadInput ${id}] handleFileChange: Cancelling potentially lingering upload task before new upload.`);
         currentUploadTask.cancel();
@@ -143,39 +144,27 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
 
 
-    console.log(`[ImageUploadInput ${id}] handleFileChange: Starting upload process for ${file.name}. Local preview URL created: ${localPreviewUrl}`);
+    console.log(`[ImageUploadInput ${id}] handleFileChange: Starting upload process for ${file.name}.`);
 
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
         file,
         user.id,
         (percentage) => {
-          console.log(`[ImageUploadInput ${id}] Progress Update Callback from service: ${percentage}% for ${file.name}`);
           setUploadProgress(percentage);
         }
       );
-      setCurrentUploadTask(uploadTask); // Armazenar a nova tarefa
+      setCurrentUploadTask(uploadTask);
 
       const downloadURL = await uploadPromise;
       console.log(`[ImageUploadInput ${id}] Upload successful for ${file.name}. URL: ${downloadURL}`);
       
-      if (preview === localPreviewUrl) { // Revogar somente se o preview atual for o local (evita revogar URL final)
-        console.log(`[ImageUploadInput ${id}] Revoking local preview URL (on success): ${localPreviewUrl}`);
-        URL.revokeObjectURL(localPreviewUrl);
-      }
-      setPreview(downloadURL);
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: `Imagem ${fileNameForDisplay || file.name} enviada!` });
-      // fileNameForDisplay já foi setado
 
     } catch (uploadError: any) {
       console.error(`[ImageUploadInput ${id}] Error during image upload for ${file.name}. Message: ${uploadError.message}`, uploadError);
-      
-      if (preview === localPreviewUrl) {
-         console.log(`[ImageUploadInput ${id}] Revoking local preview URL (on error/cancel): ${localPreviewUrl}`);
-         URL.revokeObjectURL(localPreviewUrl);
-      }
-      
+            
       let toastTitle = 'Falha no Upload';
       let toastDescription = uploadError.message || 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
       
@@ -186,21 +175,26 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       
       toast({ title: toastTitle, description: toastDescription, variant: toastTitle === 'Upload Cancelado' ? 'default' : 'destructive' });
       setError(toastDescription);
-      setPreview(currentImageUrl || null); 
       onUploadComplete(currentImageUrl || null);
-      // Manter o nome do arquivo se foi cancelado, limpar se foi outro erro.
       if (toastTitle !== 'Upload Cancelado') {
         setFileNameForDisplay(null);
       }
 
     } finally {
       console.log(`[ImageUploadInput ${id}] handleFileChange: Upload attempt finished for ${fileNameForDisplay}. Cleaning up.`);
+      // Limpar o URL do objeto local após o processo (sucesso ou falha) para evitar vazamentos de memória.
+      if (preview === localPreviewUrl) {
+         console.log(`[ImageUploadInput ${id}] Revoking local preview URL in finally block: ${localPreviewUrl}`);
+         URL.revokeObjectURL(localPreviewUrl);
+         // Após revogar, redefina o preview para a URL final (se sucesso) ou a URL original (se falha).
+         setPreview(currentImageUrl || null);
+      }
+      
       setIsProcessing(false);
-      setCurrentUploadTask(null); // Limpar a tarefa atual
+      setCurrentUploadTask(null);
       if (fileInputRef.current) {
-        fileInputRef.current.removeAttribute('capture'); // Ensure capture is always removed
-        fileInputRef.current.value = ''; // Also clear the input value post-operation
-        console.log(`[ImageUploadInput ${id}] handleFileChange: Capture attribute removed and input value cleared in finally block.`);
+        fileInputRef.current.removeAttribute('capture');
+        // O valor já foi limpo em triggerFileInput, então não precisa limpar aqui.
       }
     }
   };
@@ -272,14 +266,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               De onde você gostaria de adicionar a imagem?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-2 pt-2">
+          <AlertDialogFooter className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-center">
             <Button onClick={() => triggerFileInput(true)} className="w-full">
-              <Camera className="mr-2 h-4 w-4" /> Tirar Foto com a Câmera
+              <Camera className="mr-2 h-4 w-4" /> Câmera
             </Button>
             <Button onClick={() => triggerFileInput(false)} variant="outline" className="w-full">
-              <ImageIconLucide className="mr-2 h-4 w-4" /> Selecionar da Galeria
+              <ImageIconLucide className="mr-2 h-4 w-4" /> Galeria
             </Button>
-            <AlertDialogCancel className="w-full mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="w-full mt-2 sm:mt-0">Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,4 +1,3 @@
-
 // src/services/imageUploadService.ts
 import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTask, FirebaseStorageError } from 'firebase/storage';
@@ -23,8 +22,11 @@ export function uploadImage(
   onProgressUpdate?: (percentage: number) => void
 ): UploadImageResult {
   ensureFirebaseInitialized();
+  console.log(`[ImageUploadService] Initiating upload for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+
   if (!userId) {
     const err = new Error('User ID é obrigatório para o upload da imagem.');
+    console.error(`[ImageUploadService] ${err.message}`);
     // Criar uma "dummy task" para a interface não quebrar se precisar de um UploadTask
     const dummyTask = {
       cancel: () => { console.warn("[ImageUploadService] Dummy task cancel called."); },
@@ -37,25 +39,21 @@ export function uploadImage(
     return { uploadTask: dummyTask, promise: Promise.reject(err) };
   }
 
-  const fileExtension = file.name.split('.').pop();
+  const fileExtension = file.name.split('.').pop() || 'dat';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
   const storagePath = `requests_images/${userId}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
-  console.log(`[ImageUploadService] Attempting to upload ${file.name} (size: ${file.size} bytes) to ${storagePath}`);
+  console.log(`[ImageUploadService] Attempting to upload to path: ${storagePath}`);
   const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        console.log(
-            `[ImageUploadService] RAW FIREBASE PROGRESS for ${file.name}: ` +
-            `State: ${snapshot.state}, ` +
-            `Progress: ${progress.toFixed(2)}%, ` +
-            `Transferred: ${snapshot.bytesTransferred} / ${snapshot.totalBytes} bytes`
-        );
-        
+        if (progress > 0 && progress < 100) {
+            console.log(`[ImageUploadService] Upload progress for ${file.name}: ${progress.toFixed(2)}%`);
+        }
         if (onProgressUpdate) {
           onProgressUpdate(Math.round(progress));
         }
@@ -63,10 +61,21 @@ export function uploadImage(
       (error: FirebaseStorageError) => { 
         console.error(`[ImageUploadService] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
         
-        // Create a new error to propagate a cleaner message.
-        // The original error object is logged above for full debugging.
-        const finalError = new Error(error.message || `Erro do Firebase Storage: ${error.code}`);
-        (finalError as any).code = error.code; // Preserve the original code for handling cancellations etc.
+        let userFriendlyMessage = 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
+        switch(error.code) {
+            case 'storage/unauthorized':
+                userFriendlyMessage = 'Você não tem permissão para enviar arquivos.';
+                break;
+            case 'storage/canceled':
+                userFriendlyMessage = 'O upload foi cancelado.';
+                break;
+            case 'storage/unknown':
+                userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
+                break;
+        }
+
+        const finalError = new Error(userFriendlyMessage);
+        (finalError as any).code = error.code;
         
         reject(finalError);
       },
