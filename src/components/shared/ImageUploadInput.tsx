@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -40,65 +41,74 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   useEffect(() => {
     if (currentImageUrl !== preview && !isProcessing) {
       setPreview(currentImageUrl || null);
-      if (!currentImageUrl) { // Se currentImageUrl for null/undefined, limpa o nome do arquivo também
+      if (!currentImageUrl) {
         setFileNameForDisplay(null);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
 
-
   const resetStateBeforeNewUploadAttempt = () => {
     console.log(`[ImageUploadInput ${id}] resetStateBeforeNewUploadAttempt called.`);
     setError(null);
     setUploadProgress(0); 
     setFileNameForDisplay(null);
-    // currentUploadTask será setado como null no finally do handleFileChange anterior ou antes de um novo upload.
   };
 
   const triggerFileInput = (useCamera: boolean) => {
-    console.log(`[ImageUploadInput ${id}] triggerFileInput: Attempting to open file chooser. useCamera: ${useCamera}`);
     if (fileInputRef.current) {
-      console.log(`[ImageUploadInput ${id}] triggerFileInput: Resetting input value *before* click.`);
-      // Resetar o valor ANTES de clicar é mais robusto em navegadores móveis.
-      // Isso garante que o evento 'onChange' dispare mesmo se o mesmo arquivo for selecionado novamente.
       fileInputRef.current.value = ''; 
-
       if (useCamera) {
-        console.log(`[ImageUploadInput ${id}] triggerFileInput: Setting capture='environment'.`);
         fileInputRef.current.setAttribute('capture', 'environment');
       } else {
-        console.log(`[ImageUploadInput ${id}] triggerFileInput: Ensuring capture attribute is removed.`);
         fileInputRef.current.removeAttribute('capture');
       }
-      
       fileInputRef.current.click();
-      console.log(`[ImageUploadInput ${id}] triggerFileInput: Click triggered on input element.`);
-    } else {
-      console.error(`[ImageUploadInput ${id}] triggerFileInput: fileInputRef is null.`);
     }
     setIsChoiceDialogOpen(false);
   };
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    console.log(`[ImageUploadInput ${id}] handleFileChange: File selected - Name: ${file?.name}, Type: ${file?.type}, Size: ${file?.size} bytes.`);
 
     if (!file) {
-      console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog cancelled by user.`);
+      console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog cancelled.`);
       if (fileInputRef.current) {
         fileInputRef.current.removeAttribute('capture');
-        console.log(`[ImageUploadInput ${id}] handleFileChange: Capture attribute removed as no file was selected.`);
       }
       return;
     }
 
+    // Explicitly log file object for debugging as requested
+    console.log(`[ImageUploadInput ${id}] File selected. Details:`, file);
+
     resetStateBeforeNewUploadAttempt();
     setFileNameForDisplay(file.name);
+
+    // --- Immediate Validation Checks ---
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!acceptedTypes.includes(file.type.toLowerCase())) {
+        const errorMsg = 'Tipo de arquivo inválido. Use JPEG, PNG, WEBP ou HEIC/HEIF.';
+        console.error(`[ImageUploadInput ${id}] Validation failed: ${errorMsg}`);
+        toast({ title: 'Tipo de Arquivo Inválido', description: 'Por favor, selecione um arquivo de imagem válido.', variant: 'destructive' });
+        setError(errorMsg);
+        setFileNameForDisplay(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return; // Stop the process
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        const errorMsg = 'Arquivo muito grande (máximo 10MB).';
+        console.error(`[ImageUploadInput ${id}] Validation failed: ${errorMsg}`);
+        toast({ title: 'Arquivo Muito Grande', description: 'Por favor, selecione uma imagem com menos de 10MB.', variant: 'destructive' });
+        setError(errorMsg);
+        setFileNameForDisplay(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return; // Stop the process
+    }
+
     setIsProcessing(true);
     
-    console.log(`[ImageUploadInput ${id}] File object to be uploaded: `, file);
-
     if (!user || !user.id) {
       const errorMsg = 'Usuário não identificado para upload.';
       console.error(`[ImageUploadInput ${id}] ${errorMsg} File: ${file.name}.`);
@@ -110,41 +120,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setFileNameForDisplay(null);
       return;
     }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        const errorMsg = 'Arquivo muito grande (máx 10MB).';
-        toast({ title: 'Arquivo Muito Grande', description: 'Selecione uma imagem menor que 10MB.', variant: 'destructive' });
-        setError(errorMsg);
-        setIsProcessing(false);
-        setPreview(currentImageUrl || null);
-        onUploadComplete(currentImageUrl || null);
-        setFileNameForDisplay(null);
-        return;
-    }
-    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!acceptedTypes.includes(file.type.toLowerCase())) {
-        const errorMsg = 'Tipo de arquivo inválido.';
-        toast({ title: 'Tipo de Arquivo Inválido', description: 'Envie JPEG, PNG, WEBP, HEIC ou HEIF.', variant: 'destructive' });
-        setError(errorMsg);
-        setIsProcessing(false);
-        setPreview(currentImageUrl || null);
-        onUploadComplete(currentImageUrl || null);
-        setFileNameForDisplay(null);
-        return;
-    }
     
     const localPreviewUrl = URL.createObjectURL(file);
     setPreview(localPreviewUrl); 
     setUploadProgress(0); 
     
     if (currentUploadTask) {
-        console.warn(`[ImageUploadInput ${id}] handleFileChange: Cancelling potentially lingering upload task before new upload.`);
         currentUploadTask.cancel();
         setCurrentUploadTask(null);
     }
-
-
-    console.log(`[ImageUploadInput ${id}] handleFileChange: Starting upload process for ${file.name}.`);
 
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
@@ -157,8 +141,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setCurrentUploadTask(uploadTask);
 
       const downloadURL = await uploadPromise;
-      console.log(`[ImageUploadInput ${id}] Upload successful for ${file.name}. URL: ${downloadURL}`);
-      
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: `Imagem ${fileNameForDisplay || file.name} enviada!` });
 
@@ -181,12 +163,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
 
     } finally {
-      console.log(`[ImageUploadInput ${id}] handleFileChange: Upload attempt finished for ${fileNameForDisplay}. Cleaning up.`);
-      // Limpar o URL do objeto local após o processo (sucesso ou falha) para evitar vazamentos de memória.
       if (preview === localPreviewUrl) {
-         console.log(`[ImageUploadInput ${id}] Revoking local preview URL in finally block: ${localPreviewUrl}`);
          URL.revokeObjectURL(localPreviewUrl);
-         // Após revogar, redefina o preview para a URL final (se sucesso) ou a URL original (se falha).
          setPreview(currentImageUrl || null);
       }
       
@@ -194,20 +172,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setCurrentUploadTask(null);
       if (fileInputRef.current) {
         fileInputRef.current.removeAttribute('capture');
-        // O valor já foi limpo em triggerFileInput, então não precisa limpar aqui.
       }
     }
   };
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation(); 
-    console.log(`[ImageUploadInput ${id}] handleRemoveImage called.`);
     if (currentUploadTask) {
-      console.log(`[ImageUploadInput ${id}] handleRemoveImage: Cancelling active upload task for ${fileNameForDisplay}.`);
       currentUploadTask.cancel(); 
     } else {
       if (preview && preview.startsWith('blob:')) {
-        console.log(`[ImageUploadInput ${id}] handleRemoveImage: Revoking local blob preview: ${preview}`);
         URL.revokeObjectURL(preview);
       }
       setPreview(null);
@@ -227,10 +201,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleCancelUpload = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation(); 
     if (currentUploadTask) {
-      console.log(`[ImageUploadInput ${id}] handleCancelUpload: User explicitly cancelling upload task for ${fileNameForDisplay}`);
       currentUploadTask.cancel(); 
     } else {
-      console.warn(`[ImageUploadInput ${id}] handleCancelUpload: No currentUploadTask to cancel. Resetting state.`);
       setIsProcessing(false);
       setUploadProgress(0);
       setError("Upload cancelado pelo usuário."); 
@@ -252,7 +224,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     if (isProcessing || (preview && !error) ) {
       return;
     }
-    console.log(`[ImageUploadInput ${id}] handleContainerClick: Opening choice dialog.`);
     setIsChoiceDialogOpen(true);
   };
 
