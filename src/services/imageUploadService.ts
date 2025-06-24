@@ -60,33 +60,14 @@ export function uploadImage(
           onProgressUpdate(Math.round(progress));
         }
       },
-      (error: FirebaseStorageError | Error | ProgressEvent) => { 
-        console.log(`[ImageUploadService] Error callback triggered for ${file.name}. Original error object:`, error);
+      (error: FirebaseStorageError) => { 
+        console.error(`[ImageUploadService] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
         
-        let finalError: Error;
-
-        if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
-            const firebaseError = error as FirebaseStorageError;
-            if (firebaseError.code === 'storage/canceled') {
-              console.warn(`[ImageUploadService] User canceled upload for ${file.name}. Code: ${firebaseError.code}, Message: ${firebaseError.message || 'Sem mensagem adicional.'}`);
-            } else {
-              console.error(`[ImageUploadService] Firebase Storage Error - Code: ${firebaseError.code}, Message: ${firebaseError.message || 'Sem mensagem adicional.'}`);
-            }
-            finalError = new Error(firebaseError.message || `Erro do Firebase Storage: ${firebaseError.code}`);
-            (finalError as any).code = firebaseError.code; 
-        } else if (error instanceof ProgressEvent) {
-            console.error(`[ImageUploadService] ProgressEvent caught as error. Treating as network/communication issue. Type: ${error.type}, Loaded: ${error.loaded}, Total: ${error.total}`);
-            finalError = new Error('Falha na comunicação durante o upload. Verifique sua conexão e tente novamente.');
-            (finalError as any).code = 'storage/network-error'; 
-        } else if (error instanceof Error) {
-            console.error(`[ImageUploadService] Generic JavaScript Error: ${error.message}`);
-            finalError = new Error(error.message || 'Ocorreu um erro durante o upload.');
-            (finalError as any).code = 'storage/unknown';
-        } else {
-            console.error(`[ImageUploadService] Unknown error type during upload:`, error);
-            finalError = new Error('Ocorreu um erro desconhecido durante o upload.');
-            (finalError as any).code = 'storage/unknown';
-        }
+        // Create a new error to propagate a cleaner message.
+        // The original error object is logged above for full debugging.
+        const finalError = new Error(error.message || `Erro do Firebase Storage: ${error.code}`);
+        (finalError as any).code = error.code; // Preserve the original code for handling cancellations etc.
+        
         reject(finalError);
       },
       async () => {

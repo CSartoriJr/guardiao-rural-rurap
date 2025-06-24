@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -331,7 +330,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           id={id} 
           ref={fileInputRef}
           className="hidden"
-          accept="image/*" 
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
           onChange={handleFileChange}
           disabled={isProcessing} 
           aria-hidden="true"
