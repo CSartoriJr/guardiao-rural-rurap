@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -45,10 +44,10 @@ export default function FarmerDashboard() {
 
   return (
     <PageWrapper allowedRoles={['farmer']}>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-headline text-gray-800">Meus Levantamentos</h1>
-        <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
-          <Button className="bg-primary hover:bg-primary/90">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <h1 className="text-3xl font-headline text-gray-800 shrink-0">Meus Levantamentos</h1>
+        <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
+          <Button className="bg-primary hover:bg-primary/90 w-full">
             <PlusCircle className="mr-2 h-5 w-5" /> Criar Novo Levantamento
           </Button>
         </Link>
@@ -98,4 +97,3 @@ const CardSkeleton = () => (
      <Skeleton className="h-10 w-full" />
   </div>
 );
-
