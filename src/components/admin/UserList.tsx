@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import type { User as AppUserType } from '@/types'; // Use AppUserType
@@ -57,7 +56,7 @@ const editUserFormSchema = z.object({
 //   return true;
 // }, {
 //   message: "As senhas não coincidem ou a nova senha é muito curta (mínimo 6 caracteres).",
-//   path: ["confirmPassword"], 
+//   path: ["confirmPassword"],
 // })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
@@ -124,7 +123,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       familyMembers: 0,
     }
   });
-  
+
   const watchedRole = watch('role', editingUser?.role);
 
   const handleEditClick = (user: UserWithActivityCount) => {
@@ -156,7 +155,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       setUserToDelete(null);
     }
   };
-  
+
   const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 11) value = value.substring(0, 11);
@@ -170,7 +169,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2)}`;
     } else if (value.length <= 10) {
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 6)}-${value.substring(6)}`;
-    } else { 
+    } else {
         formattedValue = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7, 11)}`;
     }
     fieldOnChange(formattedValue);
@@ -179,6 +178,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
   const onSubmitEdit = async (data: EditUserFormValues) => {
     if (!editingUser) return;
+    
+    if (editingUser.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && data.role !== 'admin') {
+      toast({
+        title: "Operação Não Permitida",
+        description: "A função do Administrador Master não pode ser alterada.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // CPF check removed as it's not editable in this form.
     // Password change logic removed.
@@ -315,7 +323,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Input
                         id="edit-cpf"
                         {...field}
-                        readOnly 
+                        readOnly
                         className="bg-muted/50"
                       />
                     )}
@@ -327,7 +335,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     name="role"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={editingUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1'}
+                      >
                         <SelectTrigger id="edit-role">
                           <SelectValue placeholder="Selecione uma função" />
                         </SelectTrigger>
@@ -341,7 +353,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   />
                   {errors.role && <p className="text-xs text-destructive pt-1">{errors.role.message}</p>}
                 </div>
-                
+
                 {/* Password fields removed for client-side simplicity */}
 
                 {watchedRole === 'farmer' && (
@@ -352,12 +364,12 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         name="phone"
                         control={control}
                         render={({ field }) => (
-                          <Input 
-                            id="edit-phone" 
-                            placeholder="(xx) xxxxx-xxxx" 
+                          <Input
+                            id="edit-phone"
+                            placeholder="(xx) xxxxx-xxxx"
                             {...field}
                             onChange={(e) => handlePhoneInputChange(e, field.onChange)}
-                            maxLength={15} 
+                            maxLength={15}
                           />
                         )}
                       />
