@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import Image from 'next/image';
@@ -57,7 +56,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const triggerFileInput = (useCamera: boolean) => {
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; 
+      // We no longer reset the value here. It's now reset inside the onChange handler
+      // which is a more robust pattern for mobile browsers.
       if (useCamera) {
         fileInputRef.current.setAttribute('capture', 'environment');
       } else {
@@ -68,20 +68,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setIsChoiceDialogOpen(false);
   };
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog cancelled.`);
-      if (fileInputRef.current) {
-        fileInputRef.current.removeAttribute('capture');
-      }
-      return;
-    }
-
-    // Explicitly log file object for debugging as requested
-    console.log(`[ImageUploadInput ${id}] File selected. Details:`, file);
-
+  const processAndUploadFile = async (file: File) => {
+    console.log(`[ImageUploadInput ${id}] processAndUploadFile: Starting process for file:`, file);
     resetStateBeforeNewUploadAttempt();
     setFileNameForDisplay(file.name);
 
@@ -93,8 +81,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         toast({ title: 'Tipo de Arquivo Inválido', description: 'Por favor, selecione um arquivo de imagem válido.', variant: 'destructive' });
         setError(errorMsg);
         setFileNameForDisplay(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return; // Stop the process
+        return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
@@ -103,15 +90,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         toast({ title: 'Arquivo Muito Grande', description: 'Por favor, selecione uma imagem com menos de 10MB.', variant: 'destructive' });
         setError(errorMsg);
         setFileNameForDisplay(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return; // Stop the process
+        return;
     }
 
     setIsProcessing(true);
     
     if (!user || !user.id) {
       const errorMsg = 'Usuário não identificado para upload.';
-      console.error(`[ImageUploadInput ${id}] ${errorMsg} File: ${file.name}.`);
+      console.error(`[ImageUploadInput ${id}] ${errorMsg}`);
       toast({ title: 'Erro de Autenticação', description: 'Você precisa estar logado para fazer o upload.', variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
@@ -163,8 +149,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
 
     } finally {
+      // The local object URL should be revoked, but only if it's still the one being previewed.
+      // This is to avoid revoking a new image URL if another upload starts quickly.
       if (preview === localPreviewUrl) {
          URL.revokeObjectURL(localPreviewUrl);
+         // After processing, reset the preview to the officially stored URL
          setPreview(currentImageUrl || null);
       }
       
@@ -174,6 +163,26 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         fileInputRef.current.removeAttribute('capture');
       }
     }
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    // Immediately reset the input value to allow re-selection of the same file.
+    // This is a crucial fix for mobile browser compatibility.
+    if (event.target) {
+      event.target.value = '';
+    }
+
+    if (!file) {
+      console.warn(`[ImageUploadInput ${id}] handleFileChange: No file selected or dialog was cancelled.`);
+      if (fileInputRef.current) {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      return;
+    }
+
+    processAndUploadFile(file);
   };
 
   const handleRemoveImage = (e: React.MouseEvent<HTMLButtonElement>) => {
