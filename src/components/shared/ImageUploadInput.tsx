@@ -16,30 +16,25 @@ interface ImageUploadInputProps {
   currentImageUrl?: string | null;
 }
 
-// This version reverts to a simpler, more direct upload flow,
-// which is often more reliable on mobile browsers.
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [currentUploadTask, setCurrentUploadTask] = useState<UploadTask | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null); // Use ref instead of state for the upload task
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
-    // Sync preview with external URL if it changes and we are not processing anything.
     if (currentImageUrl !== preview && !isProcessing) {
       setPreview(currentImageUrl || null);
     }
-  // This dependency array is intentionally simple to avoid re-running on every preview change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentImageUrl]);
 
   const handleContainerClick = () => {
     if (isProcessing || (preview && !error)) {
-      // Don't allow new uploads if one is in progress or an image is already successfully displayed.
       return;
     }
     fileInputRef.current?.click();
@@ -48,7 +43,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     
-    // Crucial for mobile: reset the input value to allow re-selecting the same file.
     if (event.target) {
       event.target.value = '';
     }
@@ -57,20 +51,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    // --- Reset state for new upload ---
     setError(null);
     setUploadProgress(0);
     setIsProcessing(true);
-    setPreview(URL.createObjectURL(file)); // Show local preview immediately
+    setPreview(URL.createObjectURL(file));
 
-    // --- Validation ---
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
         const errorMsg = 'Tipo de arquivo inválido. Use JPEG, PNG, WEBP ou HEIC/HEIF.';
         toast({ title: 'Tipo de Arquivo Inválido', description: errorMsg, variant: 'destructive' });
         setError(errorMsg);
         setIsProcessing(false);
-        setPreview(currentImageUrl || null); // Revert to original image if available
+        setPreview(currentImageUrl || null);
         return;
     }
 
@@ -92,19 +84,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         return;
     }
     
-    // --- Upload Logic ---
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
         file,
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
-      setCurrentUploadTask(uploadTask);
+      uploadTaskRef.current = uploadTask; // Store task in ref
 
       const downloadURL = await uploadPromise;
       
       onUploadComplete(downloadURL);
-      setPreview(downloadURL); // Update preview to final URL
+      setPreview(downloadURL);
       toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
       
     } catch (uploadError: any) {
@@ -120,23 +111,20 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       });
       
       setError(errorMsg);
-      // Revert preview to the last known good URL
       setPreview(currentImageUrl || null);
-      // Ensure parent component knows the upload failed by sending null
       onUploadComplete(currentImageUrl || null);
 
     } finally {
       setIsProcessing(false);
-      setCurrentUploadTask(null);
+      uploadTaskRef.current = null; // Clear the ref
     }
   };
 
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (currentUploadTask) {
-      currentUploadTask.cancel(); // This will trigger the catch block in handleFileChange
+    if (uploadTaskRef.current) {
+      uploadTaskRef.current.cancel(); // This will trigger the catch block in handleFileChange
     } else {
-      // If no task is running, it's just a local remove
       if (preview && preview.startsWith('blob:')) {
         URL.revokeObjectURL(preview);
       }
