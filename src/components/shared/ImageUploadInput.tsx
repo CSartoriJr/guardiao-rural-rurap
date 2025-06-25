@@ -20,9 +20,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  
+
+  // Use separate refs for each input to avoid conflicts
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  
+  // Use a ref to store the upload task to prevent re-renders from cancelling it
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
@@ -30,8 +33,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   const displayUrl = currentImageUrl;
 
+  // Effect to cancel ongoing uploads if the component unmounts
   useEffect(() => {
-    // Cleanup effect to cancel ongoing uploads if the component unmounts
     return () => {
       if (uploadTaskRef.current) {
         console.log(`[ImageUploadInput] Component unmounting, cancelling upload for ${id}`);
@@ -100,16 +103,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
   };
 
+  // This is the "robust and aggressive" handler.
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    // This is the most robust way to handle file inputs in React on mobile.
-    // 1. Get the file.
+    // Step 1: Capture the file reference
     const file = event.target.files?.[0];
     
-    // 2. IMPORTANT: Reset the input's value immediately. This allows selecting the same file again
-    // and fixes critical bugs on some mobile browsers (like Chrome on Android).
+    // Step 2: **CRITICAL STEP** - Reset the input's value immediately.
+    // This forces the browser (especially Chrome on Android) to recognize
+    // subsequent selections as new events, preventing freezes.
     event.target.value = '';
 
-    // 3. If a file was actually selected, proceed with the upload.
+    // Step 3: Only if a file was actually selected, proceed with the upload.
     if (file) {
       startUploadProcess(file);
     }
@@ -129,6 +133,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   return (
     <div className="flex w-full flex-col items-center justify-center">
+      {/* Dedicated, hidden input for camera */}
       <Input
         ref={cameraInputRef}
         type="file"
@@ -141,6 +146,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         disabled={isUploading}
         aria-hidden="true"
       />
+      {/* Dedicated, hidden input for gallery */}
       <Input
         ref={galleryInputRef}
         type="file"
