@@ -127,7 +127,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    // CRITICAL: Reset input immediately to allow re-selection of the same file in Chrome
+    // CRITICAL: Reset input immediately to allow re-selection of the same file.
+    // This is the key to fixing the "have to click multiple times" issue on some browsers.
     event.target.value = ''; 
     if (file) {
       startUploadProcess(file);
