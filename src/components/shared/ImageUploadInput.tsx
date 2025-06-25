@@ -101,15 +101,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    
-    // Most important part: reset the input value so the same file can be selected again.
-    event.target.value = '';
 
     if (!file) {
-      return;
+      return; // No file selected, do nothing.
     }
     
+    // Process the file first.
     processAndUploadFile(file);
+
+    // After processing, reset the input value. This is crucial.
+    event.target.value = '';
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
