@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock } from 'lucide-react';
+import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock, Sprout } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -35,27 +35,32 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
     : ['https://placehold.co/48x48.png', 'https://placehold.co/48x48.png', 'https://placehold.co/48x48.png']
   ).map(url => url || 'https://placehold.co/48x48.png'); // Ensure no null/undefined URLs
 
+  const plantType = [request.isMandioca && 'Mandioca', request.isMacaxeira && 'Macaxeira'].filter(Boolean).join(' / ') || 'Não especificado';
 
   return (
-    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start mb-1">
-          <CardTitle className="font-headline text-lg">Levantamento: {request.cassavaType}</CardTitle>
+          <CardTitle className="font-headline text-lg">Levantamento #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <div className="flex justify-between items-center">
-            <CardDescription className="text-xs">ID: {request.id}</CardDescription>
-            <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto">
+            <CardDescription className="text-xs truncate pr-2">ID: {request.id}</CardDescription>
+            <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto flex-shrink-0">
                 <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs">
                     <Eye className="mr-1 h-3 w-3" /> Ver
                 </Button>
             </Link>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 py-3">
+      <CardContent className="space-y-2 py-3 flex-grow">
         <div className="flex items-center text-sm text-muted-foreground">
           <User className="h-4 w-4 mr-2 text-primary" />
           <span>Agricultor: {request.farmerName || request.farmerId}</span>
+        </div>
+         <div className="flex items-center text-sm text-muted-foreground">
+            <Sprout className="h-4 w-4 mr-2 text-primary" />
+            <span>{plantType}: {request.cassavaType}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <CalendarDays className="h-4 w-4 mr-2 text-primary" />

@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, CheckCircle2, XCircle, HelpCircle, Clock } from 'lucide-react';
+import { Eye, CheckCircle2, XCircle, HelpCircle, Clock, Sprout } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -35,18 +35,24 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
     : ['https://placehold.co/64x64.png', 'https://placehold.co/64x64.png', 'https://placehold.co/64x64.png']
   ).map(url => url || 'https://placehold.co/64x64.png'); // Ensure no null/undefined URLs
 
+  const plantType = [request.isMandioca && 'Mandioca', request.isMacaxeira && 'Macaxeira'].filter(Boolean).join(' / ') || 'Não especificado';
+
   return (
-    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="font-headline text-lg leading-tight">Mandioca: {request.cassavaType}</CardTitle>
+          <CardTitle className="font-headline text-lg leading-tight">Levantamento #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <CardDescription className="text-xs">
-          Enviado: {request.submissionDate ? format(new Date(request.submissionDate), "d 'de' MMM, yyyy 'às' HH:mm", { locale: ptBR }) : 'Data indisponível'}
+          Enviado: {request.submissionDate ? format(new Date(request.submissionDate), "d 'de' MMM, yyyy", { locale: ptBR }) : 'Data indisponível'}
         </CardDescription>
       </CardHeader>
-      <CardContent className="py-2">
+      <CardContent className="py-2 flex-grow">
+        <div className="flex items-center text-sm text-muted-foreground mb-3">
+            <Sprout className="h-4 w-4 mr-2 text-primary" />
+            <span>{plantType}: {request.cassavaType}</span>
+        </div>
         <div className="flex -space-x-2 overflow-hidden mb-2 justify-center sm:justify-start">
           {photoDisplayUrls.map((url, index) => (
             <div key={index} className="inline-block h-16 w-16 rounded-full ring-2 ring-card bg-muted overflow-hidden" data-ai-hint="cassava plant">
@@ -73,7 +79,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
         )}
       </CardContent>
       <CardFooter>
-        <Link href={APP_ROUTES.FARMER_VIEW_REQUEST(request.id)}>
+        <Link href={APP_ROUTES.FARMER_VIEW_REQUEST(request.id)} className="w-full">
           <Button variant="outline" className="w-full">
             <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
           </Button>
