@@ -31,6 +31,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const displayUrl = currentImageUrl;
 
   useEffect(() => {
+    // Cleanup effect to cancel ongoing uploads if the component unmounts
     return () => {
       if (uploadTaskRef.current) {
         console.log(`[ImageUploadInput] Component unmounting, cancelling upload for ${id}`);
@@ -39,17 +40,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     };
   }, [id]);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    // CRITICAL: Reset the input's value immediately. This allows re-selecting the same file
-    // and is a key fix for many mobile browser bugs.
-    event.target.value = '';
-
-    if (!file) {
-      return; // No file was selected, or the user cancelled.
-    }
-    
+  const startUploadProcess = (file: File) => {
     setError(null);
     setUploadProgress(0);
 
@@ -83,7 +74,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         (percentage) => setUploadProgress(percentage)
       );
       
-      // Store the task in the ref to shield it from re-renders.
       uploadTaskRef.current = uploadTask;
 
       uploadPromise.then(downloadURL => {
@@ -101,13 +91,27 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         onUploadComplete(null);
       }).finally(() => {
         setIsUploading(false);
-        // Clear the ref once the task is complete.
         uploadTaskRef.current = null;
       });
     } catch (uploadError: any) {
       setError(uploadError.message);
       toast({ title: 'Erro ao Iniciar Upload', description: uploadError.message, variant: 'destructive' });
       setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    // This is the most robust way to handle file inputs in React on mobile.
+    // 1. Get the file.
+    const file = event.target.files?.[0];
+    
+    // 2. IMPORTANT: Reset the input's value immediately. This allows selecting the same file again
+    // and fixes critical bugs on some mobile browsers (like Chrome on Android).
+    event.target.value = '';
+
+    // 3. If a file was actually selected, proceed with the upload.
+    if (file) {
+      startUploadProcess(file);
     }
   };
   
