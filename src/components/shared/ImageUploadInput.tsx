@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, Loader2, AlertCircle, Camera, Image as ImageIcon } from 'lucide-react';
+import { X, Camera, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
@@ -37,79 +37,78 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     };
   }, []);
 
-  const processAndUploadFile = async (file: File) => {
-    // Reset component state for new upload
-    setError(null);
-    setUploadProgress(0);
-    setIsUploading(true);
-
-    // --- Validation ---
-    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!acceptedTypes.includes(file.type.toLowerCase())) {
-      const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
-      toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
-      setError(errorMsg);
-      setIsUploading(false);
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) { // 15MB limit
-      const errorMsg = 'Arquivo muito grande (máximo 15MB).';
-      toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
-      setError(errorMsg);
-      setIsUploading(false);
-      return;
-    }
-
-    if (!user || !user.id) {
-      const errorMsg = 'Você precisa estar logado para fazer o upload.';
-      toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
-      setError(errorMsg);
-      setIsUploading(false);
-      return;
-    }
-
-    // --- Upload ---
-    try {
-      const { uploadTask, promise: uploadPromise } = uploadImage(
-        file,
-        user.id,
-        (percentage) => setUploadProgress(percentage)
-      );
-      uploadTaskRef.current = uploadTask;
-
-      const downloadURL = await uploadPromise;
-      onUploadComplete(downloadURL);
-      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
-    } catch (uploadError: any) {
-      const isCancelled = uploadError.code === 'storage/canceled';
-      if (isCancelled) {
-        console.log(`[ImageUploadInput ${id}] Upload foi cancelado.`);
-        setError('Upload cancelado.');
-      } else {
-        console.error(`[ImageUploadInput ${id}] Falha no upload:`, uploadError);
-        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-        setError(errorMsg);
-        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
-      }
-      onUploadComplete(null);
-    } finally {
-      setIsUploading(false);
-      uploadTaskRef.current = null;
-    }
-  };
-
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    
+    // Critical fix: The file must be processed *before* the input is reset.
+    if (file) {
+      // --- Start of integrated upload logic ---
+      setError(null);
+      setUploadProgress(0);
 
-    if (!file) {
-      return; // No file selected, do nothing.
+      // --- Validation ---
+      const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      if (!acceptedTypes.includes(file.type.toLowerCase())) {
+        const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
+        toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
+        setError(errorMsg);
+        setIsUploading(false); // Make sure to reset state on error
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) { // 15MB limit
+        const errorMsg = 'Arquivo muito grande (máximo 15MB).';
+        toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
+        setError(errorMsg);
+        setIsUploading(false);
+        return;
+      }
+
+      if (!user || !user.id) {
+        const errorMsg = 'Você precisa estar logado para fazer o upload.';
+        toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
+        setError(errorMsg);
+        setIsUploading(false);
+        return;
+      }
+      
+      // --- Set state and start upload ---
+      setIsUploading(true);
+      try {
+        const { uploadTask, promise: uploadPromise } = uploadImage(
+          file,
+          user.id,
+          (percentage) => setUploadProgress(percentage)
+        );
+        uploadTaskRef.current = uploadTask;
+
+        uploadPromise.then(downloadURL => {
+          onUploadComplete(downloadURL);
+          toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+        }).catch(uploadError => {
+          const isCancelled = uploadError.code === 'storage/canceled';
+          if (isCancelled) {
+            setError('Upload cancelado.');
+          } else {
+            const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+            setError(errorMsg);
+            toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+          }
+          onUploadComplete(null);
+        }).finally(() => {
+          setIsUploading(false);
+          uploadTaskRef.current = null;
+        });
+      } catch (uploadError: any) {
+        setError(uploadError.message);
+        toast({ title: 'Erro ao Iniciar Upload', description: uploadError.message, variant: 'destructive' });
+        setIsUploading(false);
+      }
+      // --- End of integrated upload logic ---
     }
     
-    // Process the file first.
-    processAndUploadFile(file);
-
-    // After processing, reset the input value. This is crucial.
+    // Critical fix: Reset the input's value. This allows selecting the same file again.
+    // This MUST happen after we've already grabbed the file from the event.
     event.target.value = '';
   };
   
@@ -179,7 +178,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-            <UploadCloud className="h-10 w-10 text-muted-foreground" />
              <p className="text-sm text-muted-foreground text-center">Anexar Imagem</p>
              <div className="flex w-full items-center justify-center gap-2">
                 <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => cameraInputRef.current?.click()} disabled={isUploading}>
