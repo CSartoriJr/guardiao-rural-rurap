@@ -21,17 +21,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   
-  // Use useRef to hold the upload task. This prevents re-renders from interfering with the upload.
-  const uploadTaskRef = useRef<UploadTask | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
   const { user } = useAuth();
   
   const displayUrl = currentImageUrl;
 
-  // Cleanup effect: if the component unmounts, cancel any active upload.
   useEffect(() => {
     return () => {
       if (uploadTaskRef.current) {
@@ -44,19 +42,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
-    // Immediately reset the input's value. This is critical for Chrome on Android
-    // and allows selecting the same file again if needed.
+    // CRITICAL: Reset the input's value immediately. This allows re-selecting the same file
+    // and is a key fix for many mobile browser bugs.
     event.target.value = '';
 
     if (!file) {
-      return; // No file selected.
+      return; // No file was selected, or the user cancelled.
     }
     
-    // --- Start of integrated upload logic ---
     setError(null);
     setUploadProgress(0);
 
-    // --- Validation ---
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
@@ -79,7 +75,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
     
-    // --- Set state and start upload ---
     setIsUploading(true);
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
@@ -87,7 +82,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
-      // Store the task in the ref, NOT in state.
+      
+      // Store the task in the ref to shield it from re-renders.
       uploadTaskRef.current = uploadTask;
 
       uploadPromise.then(downloadURL => {
@@ -105,6 +101,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         onUploadComplete(null);
       }).finally(() => {
         setIsUploading(false);
+        // Clear the ref once the task is complete.
         uploadTaskRef.current = null;
       });
     } catch (uploadError: any) {
@@ -128,7 +125,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   return (
     <div className="flex w-full flex-col items-center justify-center">
-      {/* Hidden inputs for camera and gallery */}
       <Input
         ref={cameraInputRef}
         type="file"
