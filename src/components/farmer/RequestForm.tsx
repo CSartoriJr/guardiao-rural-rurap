@@ -107,7 +107,7 @@ export default function RequestForm() {
           setLocationStatus(status);
           toast({ title: "Erro de Localização", description: message, variant: "destructive" });
         },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 } 
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } 
       );
     } else {
       setLocationStatus('unsupported');
