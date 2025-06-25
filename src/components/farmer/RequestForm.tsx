@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -61,7 +60,7 @@ export default function RequestForm() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<DeviceLocationStatus>('idle');
 
-  const { control, handleSubmit, setValue, formState: { errors } } = useForm<RequestFormValues>({
+  const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
       cassavaVariety: '',
@@ -74,6 +73,10 @@ export default function RequestForm() {
       infectedArea: '',
     },
   });
+
+  const photoUrl1 = watch('photoUrl1');
+  const photoUrl2 = watch('photoUrl2');
+  const photoUrl3 = watch('photoUrl3');
 
   const fetchDeviceLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -285,17 +288,29 @@ export default function RequestForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="photoUrl1">Panorâmica</Label>
-              <ImageUploadInput id="photoUrl1" onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })} />
+              <ImageUploadInput
+                id="photoUrl1"
+                onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
+                currentImageUrl={photoUrl1}
+              />
               {errors.photoUrl1 && <p className="text-sm text-destructive mt-1">{errors.photoUrl1.message}</p>}
             </div>
             <div>
               <Label htmlFor="photoUrl2">Envassoramento</Label>
-              <ImageUploadInput id="photoUrl2" onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })} />
+              <ImageUploadInput
+                id="photoUrl2"
+                onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
+                currentImageUrl={photoUrl2}
+              />
               {errors.photoUrl2 && <p className="text-sm text-destructive mt-1">{errors.photoUrl2.message}</p>}
             </div>
             <div>
               <Label htmlFor="photoUrl3">Corte do Ápice da Planta</Label>
-              <ImageUploadInput id="photoUrl3" onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })} />
+              <ImageUploadInput
+                id="photoUrl3"
+                onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
+                currentImageUrl={photoUrl3}
+              />
               {errors.photoUrl3 && <p className="text-sm text-destructive mt-1">{errors.photoUrl3.message}</p>}
             </div>
           </div>
