@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { useAuth } from '@/hooks/useAuth';
 import type { UploadTask } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -21,11 +22,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  // Use separate refs for each input to avoid conflicts
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
-  // Use a ref to store the upload task to prevent re-renders from cancelling it
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
@@ -33,7 +32,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   const displayUrl = currentImageUrl;
 
-  // Effect to cancel ongoing uploads if the component unmounts
   useEffect(() => {
     return () => {
       if (uploadTaskRef.current) {
@@ -43,7 +41,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     };
   }, [id]);
 
-  const startUploadProcess = (file: File) => {
+  const startUploadProcess = async (file: File) => {
     setError(null);
     setUploadProgress(0);
 
@@ -55,7 +53,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) { // 15MB limit
+    if (file.size > 15 * 1024 * 1024) { // 15MB limit before compression
       const errorMsg = 'Arquivo muito grande (máximo 15MB).';
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
@@ -70,9 +68,21 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
     
     setIsUploading(true);
+
     try {
+      console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        file,
+        compressedFile, // Use the compressed file
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
@@ -96,24 +106,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         setIsUploading(false);
         uploadTaskRef.current = null;
       });
-    } catch (uploadError: any) {
-      setError(uploadError.message);
-      toast({ title: 'Erro ao Iniciar Upload', description: uploadError.message, variant: 'destructive' });
+
+    } catch (error: any) {
+      const errorMessage = error.message || 'Falha ao processar a imagem.';
+      console.error(`[ImageUpload] Error during compression or upload initiation:`, error);
+      setError(errorMessage);
+      toast({ title: 'Erro de Processamento', description: errorMessage, variant: 'destructive' });
       setIsUploading(false);
     }
   };
 
-  // This is the "robust and aggressive" handler.
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    // Step 1: Capture the file reference
     const file = event.target.files?.[0];
-    
-    // Step 2: **CRITICAL STEP** - Reset the input's value immediately.
-    // This forces the browser (especially Chrome on Android) to recognize
-    // subsequent selections as new events, preventing freezes.
-    event.target.value = '';
-
-    // Step 3: Only if a file was actually selected, proceed with the upload.
+    event.target.value = ''; // CRITICAL: Reset input immediately to allow re-selection
     if (file) {
       startUploadProcess(file);
     }
@@ -133,7 +138,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   return (
     <div className="flex w-full flex-col items-center justify-center">
-      {/* Dedicated, hidden input for camera */}
       <Input
         ref={cameraInputRef}
         type="file"
@@ -146,7 +150,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         disabled={isUploading}
         aria-hidden="true"
       />
-      {/* Dedicated, hidden input for gallery */}
       <Input
         ref={galleryInputRef}
         type="file"
