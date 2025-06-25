@@ -95,7 +95,7 @@ export default function RequestForm() {
           let message = "Não foi possível obter sua localização GPS.";
           let status: DeviceLocationStatus = 'error';
           if (error.code === error.PERMISSION_DENIED) {
-            message = "Permissão para acessar a localização foi negada. Verifique as configurações do seu navegador/celular.";
+            message = "Permissão de GPS negada. Verifique as configurações do seu navegador/celular. A localização da sua cidade será anexada automaticamente.";
             status = 'denied';
           } else if (error.code === error.POSITION_UNAVAILABLE) {
             message = "Informação de localização indisponível. Tente em um local aberto ou verifique as configurações de GPS.";
@@ -179,7 +179,7 @@ export default function RequestForm() {
         message = <p className="text-sm text-green-600 flex items-center"><LocateFixed className="h-4 w-4 mr-2" /> Localização GPS obtida: Lat {latitude?.toFixed(4)}, Long {longitude?.toFixed(4)}</p>;
         break;
       case 'denied':
-        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. Verifique as configurações do seu navegador/celular. A localização não será anexada.</p>;
+        message = <p className="text-sm text-destructive flex items-center"><WifiOff className="h-4 w-4 mr-2" /> Permissão de GPS negada. Verifique as configurações do seu navegador/celular. A localização da sua cidade será anexada automaticamente.</p>;
         showRetryButton = true;
         break;
       case 'unavailable':
