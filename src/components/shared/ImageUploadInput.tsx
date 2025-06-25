@@ -69,20 +69,30 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     
     setIsUploading(true);
 
+    // Step 1: Compress the image in a separate try/catch for better error handling
+    let compressedFile: File;
     try {
       console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-      
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true,
+        useWebWorker: false, // Set to false for maximum compatibility on mobile devices
       };
-
-      const compressedFile = await imageCompression(file, options);
+      compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-      
+    } catch (compressionError: any) {
+      const errorMessage = 'Falha ao comprimir a imagem. Tente uma imagem diferente.';
+      console.error('[ImageUpload] Image compression failed:', compressionError);
+      setError(errorMessage);
+      toast({ title: 'Erro de Processamento', description: errorMessage, variant: 'destructive' });
+      setIsUploading(false);
+      return; // Stop execution if compression fails
+    }
+
+    // Step 2: Upload the compressed image
+    try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        compressedFile, // Use the compressed file
+        compressedFile,
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
@@ -106,19 +116,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         setIsUploading(false);
         uploadTaskRef.current = null;
       });
-
-    } catch (error: any) {
-      const errorMessage = error.message || 'Falha ao processar a imagem.';
-      console.error(`[ImageUpload] Error during compression or upload initiation:`, error);
+    } catch (uploadError: any) {
+      const errorMessage = uploadError.message || 'Falha ao iniciar o upload da imagem.';
+      console.error(`[ImageUpload] Upload initiation failed:`, uploadError);
       setError(errorMessage);
-      toast({ title: 'Erro de Processamento', description: errorMessage, variant: 'destructive' });
+      toast({ title: 'Erro de Upload', description: errorMessage, variant: 'destructive' });
       setIsUploading(false);
     }
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = ''; // CRITICAL: Reset input immediately to allow re-selection
+    // CRITICAL: Reset input immediately to allow re-selection of the same file in Chrome
+    event.target.value = ''; 
     if (file) {
       startUploadProcess(file);
     }
