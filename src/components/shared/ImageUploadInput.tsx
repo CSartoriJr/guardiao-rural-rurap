@@ -19,36 +19,39 @@ interface ImageUploadInputProps {
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
-  // `uploadPreview` is for the temporary blob URL during upload.
-  // `currentImageUrl` (prop) is the source of truth from the parent form.
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [currentUploadTask, setCurrentUploadTask] = useState<UploadTask | null>(null);
+  const currentUploadTask = useRef<UploadTask | null>(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // The URL to render. Prioritize the temporary upload preview, then the final URL from the parent.
   const displayUrl = uploadPreview || currentImageUrl;
 
   useEffect(() => {
-    // This effect handles the cancellation of the upload task if the component is unmounted.
+    // Cleanup effect to cancel upload on unmount
     return () => {
-      if (currentUploadTask) {
-        console.log(`[ImageUploadInput ${id}] Unmounting, cancelling in-progress upload.`);
-        currentUploadTask.cancel();
+      if (currentUploadTask.current) {
+        currentUploadTask.current.cancel();
       }
     };
-  }, [currentUploadTask, id]);
+  }, []);
 
-  const processAndUploadFile = async (file: File) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''; // Immediately clear input to allow re-selecting the same file
+    }
+    if (!file) return;
+
     setError(null);
     setUploadProgress(0);
     setIsProcessing(true);
-    setUploadPreview(URL.createObjectURL(file)); // Set temporary preview
+    let tempPreviewUrl = URL.createObjectURL(file);
+    setUploadPreview(tempPreviewUrl);
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
@@ -56,7 +59,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Tipo de Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setUploadPreview(null); // Clear temporary preview
+      setUploadPreview(null);
+      URL.revokeObjectURL(tempPreviewUrl);
       return;
     }
 
@@ -65,7 +69,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setUploadPreview(null); // Clear temporary preview
+      setUploadPreview(null);
+      URL.revokeObjectURL(tempPreviewUrl);
       return;
     }
 
@@ -74,7 +79,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsProcessing(false);
-      setUploadPreview(null); // Clear temporary preview
+      setUploadPreview(null);
+      URL.revokeObjectURL(tempPreviewUrl);
       return;
     }
 
@@ -84,49 +90,34 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
-      setCurrentUploadTask(uploadTask);
+      currentUploadTask.current = uploadTask;
 
       const downloadURL = await uploadPromise;
-      
-      onUploadComplete(downloadURL); // This triggers parent re-render with new URL
+      onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: 'Imagem enviada com sucesso!' });
-      
     } catch (uploadError: any) {
       console.error(`[ImageUploadInput ${id}] Upload failed:`, uploadError);
-      
       const isCancelled = uploadError.code === 'storage/canceled';
       const errorMsg = isCancelled ? 'O upload foi cancelado.' : (uploadError.message || 'Ocorreu um erro ao enviar a imagem.');
-
       toast({
         title: isCancelled ? 'Upload Cancelado' : 'Falha no Upload',
         description: errorMsg,
         variant: isCancelled ? 'default' : 'destructive'
       });
-      
       setError(errorMsg);
-      onUploadComplete(null); // Clear URL in parent form on failure
+      onUploadComplete(null);
     } finally {
+      URL.revokeObjectURL(tempPreviewUrl);
+      setUploadPreview(null);
       setIsProcessing(false);
-      setUploadPreview(null); // Always clear temporary preview when done
-      setCurrentUploadTask(null);
+      currentUploadTask.current = null;
     }
   };
   
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      processAndUploadFile(file);
-    }
-    // Clear the input value to allow selecting the same file again
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (currentUploadTask) {
-      currentUploadTask.cancel(); // The catch block in processAndUploadFile will handle state cleanup
+    if (currentUploadTask.current) {
+      currentUploadTask.current.cancel();
     } else {
       setUploadPreview(null);
       setError(null);
@@ -141,15 +132,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   };
 
   const handleSourceSelect = (source: 'camera' | 'gallery') => {
-    if (!fileInputRef.current) return;
-    
-    fileInputRef.current.removeAttribute('capture');
-    
+    const input = fileInputRef.current;
+    if (!input) return;
+
     if (source === 'camera') {
-      fileInputRef.current.setAttribute('capture', 'user');
+      input.setAttribute('capture', 'user');
+    } else {
+      input.removeAttribute('capture');
     }
     
-    fileInputRef.current.click();
+    input.click();
     setIsSelectorOpen(false);
   };
   
