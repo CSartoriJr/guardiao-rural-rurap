@@ -20,96 +20,98 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  
+  // Use useRef to hold the upload task. This prevents re-renders from interfering with the upload.
   const uploadTaskRef = useRef<UploadTask | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  
   const { toast } = useToast();
   const { user } = useAuth();
   
   const displayUrl = currentImageUrl;
 
+  // Cleanup effect: if the component unmounts, cancel any active upload.
   useEffect(() => {
-    // Cleanup effect: if the component unmounts, cancel any active upload.
     return () => {
       if (uploadTaskRef.current) {
+        console.log(`[ImageUploadInput] Component unmounting, cancelling upload for ${id}`);
         uploadTaskRef.current.cancel();
       }
     };
-  }, []);
+  }, [id]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    
-    // Critical fix: The file must be processed *before* the input is reset.
-    if (file) {
-      // --- Start of integrated upload logic ---
-      setError(null);
-      setUploadProgress(0);
 
-      // --- Validation ---
-      const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-      if (!acceptedTypes.includes(file.type.toLowerCase())) {
-        const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
-        toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsUploading(false); // Make sure to reset state on error
-        return;
-      }
+    // Immediately reset the input's value. This is critical for Chrome on Android
+    // and allows selecting the same file again if needed.
+    event.target.value = '';
 
-      if (file.size > 15 * 1024 * 1024) { // 15MB limit
-        const errorMsg = 'Arquivo muito grande (máximo 15MB).';
-        toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsUploading(false);
-        return;
-      }
-
-      if (!user || !user.id) {
-        const errorMsg = 'Você precisa estar logado para fazer o upload.';
-        toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
-        setError(errorMsg);
-        setIsUploading(false);
-        return;
-      }
-      
-      // --- Set state and start upload ---
-      setIsUploading(true);
-      try {
-        const { uploadTask, promise: uploadPromise } = uploadImage(
-          file,
-          user.id,
-          (percentage) => setUploadProgress(percentage)
-        );
-        uploadTaskRef.current = uploadTask;
-
-        uploadPromise.then(downloadURL => {
-          onUploadComplete(downloadURL);
-          toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
-        }).catch(uploadError => {
-          const isCancelled = uploadError.code === 'storage/canceled';
-          if (isCancelled) {
-            setError('Upload cancelado.');
-          } else {
-            const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-            setError(errorMsg);
-            toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
-          }
-          onUploadComplete(null);
-        }).finally(() => {
-          setIsUploading(false);
-          uploadTaskRef.current = null;
-        });
-      } catch (uploadError: any) {
-        setError(uploadError.message);
-        toast({ title: 'Erro ao Iniciar Upload', description: uploadError.message, variant: 'destructive' });
-        setIsUploading(false);
-      }
-      // --- End of integrated upload logic ---
+    if (!file) {
+      return; // No file selected.
     }
     
-    // Critical fix: Reset the input's value. This allows selecting the same file again.
-    // This MUST happen after we've already grabbed the file from the event.
-    event.target.value = '';
+    // --- Start of integrated upload logic ---
+    setError(null);
+    setUploadProgress(0);
+
+    // --- Validation ---
+    const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (!acceptedTypes.includes(file.type.toLowerCase())) {
+      const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
+      toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) { // 15MB limit
+      const errorMsg = 'Arquivo muito grande (máximo 15MB).';
+      toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      return;
+    }
+
+    if (!user || !user.id) {
+      const errorMsg = 'Você precisa estar logado para fazer o upload.';
+      toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
+      setError(errorMsg);
+      return;
+    }
+    
+    // --- Set state and start upload ---
+    setIsUploading(true);
+    try {
+      const { uploadTask, promise: uploadPromise } = uploadImage(
+        file,
+        user.id,
+        (percentage) => setUploadProgress(percentage)
+      );
+      // Store the task in the ref, NOT in state.
+      uploadTaskRef.current = uploadTask;
+
+      uploadPromise.then(downloadURL => {
+        onUploadComplete(downloadURL);
+        toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+      }).catch(uploadError => {
+        const isCancelled = uploadError.code === 'storage/canceled';
+        if (isCancelled) {
+          setError('Upload cancelado.');
+        } else {
+          const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+          setError(errorMsg);
+          toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+        }
+        onUploadComplete(null);
+      }).finally(() => {
+        setIsUploading(false);
+        uploadTaskRef.current = null;
+      });
+    } catch (uploadError: any) {
+      setError(uploadError.message);
+      toast({ title: 'Erro ao Iniciar Upload', description: uploadError.message, variant: 'destructive' });
+      setIsUploading(false);
+    }
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
