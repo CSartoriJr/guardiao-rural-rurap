@@ -69,7 +69,7 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="cpf">CPF (usado como e-mail de login)</Label>
+        <Label htmlFor="cpf">CPF (Informe apenas os números)</Label>
         <Input
           id="cpf"
           type="text"
