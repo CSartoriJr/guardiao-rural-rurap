@@ -11,6 +11,7 @@ import {
   onAuthStateChanged,
   updateProfile,
   getAuth,
+  updatePassword,
 } from 'firebase/auth';
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
 import { createUserDocument, getUserDocument } from '@/services/userService';
@@ -20,11 +21,12 @@ interface AuthContextType {
   firebaseUser: FirebaseUserType | null; 
   loading: boolean;
   initializing: boolean;
-  login: (numericCpf: string, password: string) => Promise<AppUser | null>; // Changed parameter name
+  login: (numericCpf: string, password: string) => Promise<AppUser | null>;
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
+  updateCurrentUserPassword: (newPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -208,9 +210,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateCurrentUserPassword = async (newPassword: string) => {
+    if (!firebaseAuth.currentUser) {
+      throw new Error("Nenhum usuário logado para atualizar a senha.");
+    }
+    try {
+      await updatePassword(firebaseAuth.currentUser, newPassword);
+      console.log('[AuthContext] Password updated successfully for current user.');
+    } catch (error: any) {
+      console.error('[AuthContext] Failed to update password:', error);
+      // Re-authentication might be required.
+      throw new Error('Falha ao atualizar a senha. Por segurança, pode ser necessário fazer login novamente.');
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
       {children}
     </AuthContext.Provider>
   );

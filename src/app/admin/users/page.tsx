@@ -65,7 +65,7 @@ export type UserWithActivityCount = AppUserType & {
 };
 
 export default function ManageUsersPage() {
-  const { user: adminUser, initializing: authInitializing } = useAuth();
+  const { user: adminUser, initializing: authInitializing, updateCurrentUserPassword } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,17 +98,24 @@ export default function ManageUsersPage() {
 
   const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
-      // Password changes require Admin SDK. Inform user if they tried to change it.
       const { password, ...firestoreData } = updatedData; 
-      
-      if (password) {
-        toast({
-          title: "Aviso: Senha Não Alterada",
-          description: "A alteração de senhas de outros usuários não é suportada neste formulário por motivos de segurança.",
-          variant: "default",
-        });
-      }
 
+      if (password) {
+        if (userId === adminUser?.id) {
+            await updateCurrentUserPassword(password);
+            toast({
+                title: "Senha Atualizada",
+                description: "Sua senha foi alterada com sucesso.",
+            });
+        } else {
+            toast({
+              title: "Operação não Permitida",
+              description: "Você não pode alterar a senha de outros usuários.",
+              variant: "destructive",
+            });
+        }
+      }
+      
       await updateUserDocument(userId, firestoreData);
       
       // Re-fetch and update the specific user with new counts

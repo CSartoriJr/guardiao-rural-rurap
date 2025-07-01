@@ -308,7 +308,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário abaixo. A alteração de senha não é suportada neste formulário.
+                Modifique os dados do usuário. Você só pode alterar a senha do seu próprio perfil.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -473,9 +473,22 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     <Controller
                       name="password"
                       control={control}
-                      render={({ field }) => <Input id="password" type={showPassword ? "text" : "password"} placeholder="Deixe em branco para não alterar" {...field} />}
+                      render={({ field }) => <Input 
+                          id="password" 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder={editingUser.id === currentAdminId ? "Deixe em branco para não alterar" : "Não é possível alterar a senha de outros"}
+                          {...field}
+                          disabled={editingUser.id !== currentAdminId} 
+                      />}
                     />
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={editingUser.id !== currentAdminId}
+                    >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -487,9 +500,22 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     <Controller
                       name="confirmPassword"
                       control={control}
-                      render={({ field }) => <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Repita a nova senha" {...field} />}
+                      render={({ field }) => <Input 
+                          id="confirmPassword" 
+                          type={showConfirmPassword ? "text" : "password"} 
+                          placeholder="Repita a nova senha" 
+                          {...field}
+                          disabled={editingUser.id !== currentAdminId}
+                      />}
                     />
-                     <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                     <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={editingUser.id !== currentAdminId}
+                      >
                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
