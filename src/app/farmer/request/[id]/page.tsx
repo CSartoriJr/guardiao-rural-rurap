@@ -147,6 +147,38 @@ export default function FarmerViewRequestPage() {
     setExpandedImageUri(null);
   };
 
+  const VarietyDisplay = () => {
+    if (!request) return null;
+    const hasMandioca = request.isMandioca && request.mandiocaVariety;
+    const hasMacaxeira = request.isMacaxeira && request.macaxeiraVariety;
+
+    if (!hasMandioca && !hasMacaxeira) {
+        return (
+             <div>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
+              <p className="text-lg text-foreground">Não especificada</p>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            {hasMandioca && (
+                 <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Mandioca</h3>
+                    <p className="text-lg text-foreground">{request.mandiocaVariety}</p>
+                </div>
+            )}
+             {hasMacaxeira && (
+                 <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Macaxeira</h3>
+                    <p className="text-lg text-foreground">{request.macaxeiraVariety}</p>
+                </div>
+            )}
+        </>
+    )
+  }
+
  const LocationDisplay = () => {
     if (!request) return null;
 
@@ -281,10 +313,9 @@ export default function FarmerViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Sprout className="h-4 w-4 mr-2 text-primary" />Tipo de Planta</h3>
               <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
-              <p className="text-lg text-foreground">{request.cassavaType}</p>
-            </div>
+            
+            <VarietyDisplay />
+
             <div>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{request.submissionDate ? format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) : 'Data indisponível'}</p>

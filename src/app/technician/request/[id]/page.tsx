@@ -100,30 +100,9 @@ export default function TechnicianViewRequestPage() {
       console.log('[TechnicianViewRequestPage Effect2] Needs AI location processing for request:', request.id);
       setIsAiProcessing(true);
 
-      // The AI flow expects Data URIs. For now, we cannot directly use Firebase Storage URLs
-      // with the current AI flow setup if it expects Base64 encoded images directly.
-      // This part needs careful consideration:
-      // Option 1: Modify AI flow to accept URLs and fetch them (adds complexity and delay).
-      // Option 2: Fetch image data from URL, convert to Data URI, then send to AI (client-side or server-side).
-      // Option 3: For now, acknowledge this limitation and skip AI processing or use placeholders if URLs are primary.
-      // Given the AI flow's current structure (expecting photoDataUri1 etc.), and that we now store photoUrls,
-      // a direct call is problematic without fetching and converting images.
-      // For this iteration, I'll simulate the AI input creation but the actual call to AI
-      // might fail or need adjustment if `generateRecommendation` cannot handle URLs directly.
-      // A robust solution would be to have the AI flow itself fetch images from URLs if provided.
-
-      // Let's assume for now the AI flow *cannot* handle direct URLs and needs Data URIs.
-      // This means we cannot directly call it with just URLs without fetching and converting.
-      // We will log this and potentially skip or show a message.
-      console.warn("[TechnicianViewRequestPage Effect2] AI flow expects Data URIs, but we have Storage URLs. AI location processing might be skipped or require image fetching/conversion.");
-      // For now, let's prepare the input as if we had data URIs, to show intent.
-      // The actual `generateRecommendation` call will use the URLs passed as `photoDataUri` fields for the AI.
-      // This is a mismatch; the AI Flow is designed for DataURIs.
-      // The prompt would need to be updated to reflect `{{media url=photoUrl1}}`
-      // or the URLs would need to be converted to DataURIs before calling the flow.
-      // For now, we pass the URLs and the prompt must be updated accordingly.
       const aiInput = {
-        cassavaType: request.cassavaType,
+        mandiocaVariety: request.mandiocaVariety,
+        macaxeiraVariety: request.macaxeiraVariety,
         isMandioca: request.isMandioca,
         isMacaxeira: request.isMacaxeira,
         photoDataUri1: request.photoUrls[0], // Passing URL, AI flow's prompt needs to handle {{media url=...}}
@@ -250,6 +229,38 @@ export default function TechnicianViewRequestPage() {
     setIsDeleteDialogOpen(false);
     setAdminPassword('');
   };
+
+  const VarietyDisplay = () => {
+    if (!request) return null;
+    const hasMandioca = request.isMandioca && request.mandiocaVariety;
+    const hasMacaxeira = request.isMacaxeira && request.macaxeiraVariety;
+
+    if (!hasMandioca && !hasMacaxeira) {
+        return (
+             <div>
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
+              <p className="text-lg text-foreground">Não especificada</p>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            {hasMandioca && (
+                 <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Mandioca</h3>
+                    <p className="text-lg text-foreground">{request.mandiocaVariety}</p>
+                </div>
+            )}
+             {hasMacaxeira && (
+                 <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Macaxeira</h3>
+                    <p className="text-lg text-foreground">{request.macaxeiraVariety}</p>
+                </div>
+            )}
+        </>
+    )
+  }
 
  const LocationDisplay = () => {
     if (!request) return null;
@@ -442,10 +453,9 @@ export default function TechnicianViewRequestPage() {
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Sprout className="h-4 w-4 mr-2 text-primary" />Tipo de Planta</h3>
               <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Microscope className="h-4 w-4 mr-2 text-primary" />Variedade da Planta</h3>
-              <p className="text-lg text-foreground">{request.cassavaType}</p>
-            </div>
+            
+            <VarietyDisplay />
+
             <div>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{request.submissionDate ? format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) : 'Data Indisponível'}</p>

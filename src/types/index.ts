@@ -26,7 +26,8 @@ export interface AgriRequest {
   id: string; // Firestore document ID
   farmerId: string; // Firebase Auth UID of the farmer
   farmerName: string;
-  cassavaType: string;
+  mandiocaVariety?: string;
+  macaxeiraVariety?: string;
   isMandioca?: boolean;
   isMacaxeira?: boolean;
   photoUrls: [string, string, string]; // URLs from Firebase Storage
@@ -36,18 +37,10 @@ export interface AgriRequest {
   technicianId?: string; // Firebase Auth UID of the technician
   technicianName?: string;
   responseDate?: string; // ISO date string (from Firestore Timestamp)
-  // aiSuggestedRecommendation is removed as per previous cleanup
   municipality?: string;
   plantedArea?: number;
   infectedArea?: number;
   latitude?: number;
   longitude?: number;
   deviceLocationStatus?: DeviceLocationStatus;
-
-  // Fields used by generateRecommendation AI flow, kept for consistency
-  // but photoDataUris will be photoUrls from Storage when calling the flow.
-  // These specific fields might not be directly stored in Firestore if photoUrls cover them.
-  photoDataUri1?: string;
-  photoDataUri2?: string;
-  photoDataUri3?: string;
 }

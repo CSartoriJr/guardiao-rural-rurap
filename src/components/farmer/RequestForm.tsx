@@ -18,7 +18,8 @@ import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 
 const requestFormSchema = z.object({
-  cassavaVariety: z.string().min(2, { message: 'A variedade deve ter pelo menos 2 caracteres.' }),
+  mandiocaVariety: z.string().optional(),
+  macaxeiraVariety: z.string().optional(),
   isMandioca: z.boolean().optional(),
   isMacaxeira: z.boolean().optional(),
   photoUrl1: z.string().url({ message: "A URL da foto Panorâmica é inválida."}).nullable(), // Now expects URL
@@ -45,7 +46,24 @@ const requestFormSchema = z.object({
 .refine(data => data.photoUrl1 && data.photoUrl2 && data.photoUrl3, {
     message: "Todas as três fotos são obrigatórias.",
     path: ["photoUrl1"], // Or any other common path
+})
+.superRefine((data, ctx) => {
+    if (data.isMandioca && (!data.mandiocaVariety || data.mandiocaVariety.trim().length < 2)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A variedade da Mandioca deve ter pelo menos 2 caracteres.",
+        path: ['mandiocaVariety'],
+      });
+    }
+    if (data.isMacaxeira && (!data.macaxeiraVariety || data.macaxeiraVariety.trim().length < 2)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.",
+        path: ['macaxeiraVariety'],
+      });
+    }
 });
+
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
 
@@ -63,7 +81,8 @@ export default function RequestForm() {
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
-      cassavaVariety: '',
+      mandiocaVariety: '',
+      macaxeiraVariety: '',
       isMandioca: false,
       isMacaxeira: false,
       photoUrl1: null,
@@ -77,6 +96,8 @@ export default function RequestForm() {
   const photoUrl1 = watch('photoUrl1');
   const photoUrl2 = watch('photoUrl2');
   const photoUrl3 = watch('photoUrl3');
+  const isMandiocaChecked = watch('isMandioca');
+  const isMacaxeiraChecked = watch('isMacaxeira');
 
   const fetchDeviceLocation = useCallback(() => {
     if (navigator.geolocation) {
@@ -135,7 +156,8 @@ export default function RequestForm() {
       const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
         farmerId: user.id,
         farmerName: user.name,
-        cassavaType: data.cassavaVariety,
+        mandiocaVariety: data.mandiocaVariety,
+        macaxeiraVariety: data.macaxeiraVariety,
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
         photoUrls: [data.photoUrl1, data.photoUrl2, data.photoUrl3],
@@ -156,7 +178,7 @@ export default function RequestForm() {
 
       toast({
         title: 'Levantamento Enviado!',
-        description: `Seu Levantamento para ${plantTypeDisplay} (Variedade: ${data.cassavaVariety}) foi enviado com sucesso. ID: ${newRequest.id}.`,
+        description: `Seu Levantamento para ${plantTypeDisplay} foi enviado com sucesso. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
     } catch (error: any) {
@@ -275,15 +297,29 @@ export default function RequestForm() {
             {errors.root?.message && !errors.isMandioca && <p className="text-sm text-destructive">{errors.root.message}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cassavaVariety">Variedade (ex: Castelinha, Mandioca BRS 399, IAC 14-18 Verdinha, ...)</Label>
-            <Controller
-              name="cassavaVariety"
-              control={control}
-              render={({ field }) => <Input id="cassavaVariety" placeholder="ex: Castelinha, BRS 399, IAC 14-18 Verdinha" {...field} />}
-            />
-            {errors.cassavaVariety && <p className="text-sm text-destructive">{errors.cassavaVariety.message}</p>}
-          </div>
+          {isMandiocaChecked && (
+             <div className="space-y-2">
+              <Label htmlFor="mandiocaVariety">Variedade da Mandioca (ex: BRS Formosa, BRS 399...)</Label>
+              <Controller
+                name="mandiocaVariety"
+                control={control}
+                render={({ field }) => <Input id="mandiocaVariety" placeholder="ex: BRS Formosa" {...field} />}
+              />
+              {errors.mandiocaVariety && <p className="text-sm text-destructive">{errors.mandiocaVariety.message}</p>}
+            </div>
+          )}
+
+          {isMacaxeiraChecked && (
+             <div className="space-y-2">
+              <Label htmlFor="macaxeiraVariety">Variedade da Macaxeira (ex: Vassourinha, Pão...)</Label>
+              <Controller
+                name="macaxeiraVariety"
+                control={control}
+                render={({ field }) => <Input id="macaxeiraVariety" placeholder="ex: Vassourinha" {...field} />}
+              />
+              {errors.macaxeiraVariety && <p className="text-sm text-destructive">{errors.macaxeiraVariety.message}</p>}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>

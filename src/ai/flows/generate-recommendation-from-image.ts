@@ -16,7 +16,8 @@ import { amapaMunicipalities } from '@/lib/mockData';
 
 // Input now accepts photo URLs from Firebase Storage instead of Data URIs directly
 const GenerateRecommendationInputSchema = z.object({
-  cassavaType: z.string().describe('The variety of the cassava plant (e.g., BRS Formosa, Vassourinha).'),
+  mandiocaVariety: z.string().optional().describe('The variety of the mandioca plant, if specified (e.g., BRS Formosa).'),
+  macaxeiraVariety: z.string().optional().describe('The variety of the macaxeira plant, if specified (e.g., Vassourinha).'),
   isMandioca: z.boolean().optional().describe('Indicates if the plant is classified as Mandioca.'),
   isMacaxeira: z.boolean().optional().describe('Indicates if the plant is classified as Macaxeira.'),
   photoDataUri1: z // Kept name for compatibility, but this will be a URL
@@ -68,8 +69,9 @@ Your task is to determine the GPS coordinates and identify the Amapá municipali
 Valid Amapá Municipalities: ${amapaMunicipalities.join(', ')}.
 
 Plant Information:
-- Classification: {{#if isMandioca}}Mandioca{{/if}}{{#if isMacaxeira}}{{#if isMandioca}} and {{/if}}Macaxeira{{/if}}{{^if isMandioca}}{{^if isMacaxeira}}Not specified{{/if}}{{/if}}
-- Variety: {{{cassavaType}}}
+- Classification: {{#if isMandioca}}Mandioca{{/if}}{{#if isMacaxeira}}{{#if isMandioca}} & {{/if}}Macaxeira{{/if}}{{^if isMandioca}}{{^if isMacaxeira}}Not specified{{/if}}{{/if}}
+{{#if mandiocaVariety}}- Variety (Mandioca): {{{mandiocaVariety}}}{{/if}}
+{{#if macaxeiraVariety}}- Variety (Macaxeira): {{{macaxeiraVariety}}}{{/if}}
 {{#if plantedArea}}- Planted Area: {{{plantedArea}}} hectares{{/if}}
 {{#if infectedArea}}- Infected Area: {{{infectedArea}}} hectares (out of {{{plantedArea}}} ha planted){{/if}}
 

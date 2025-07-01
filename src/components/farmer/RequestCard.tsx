@@ -27,6 +27,24 @@ const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
   }
 };
 
+const getPlantAndVarietyDisplay = (req: AgriRequest): string => {
+    const plantTypes = [];
+    if (req.isMandioca) plantTypes.push('Mandioca');
+    if (req.isMacaxeira) plantTypes.push('Macaxeira');
+    const plantTypeStr = plantTypes.join(' / ') || 'Não especificado';
+
+    const varieties = [];
+    if (req.mandiocaVariety) varieties.push(req.mandiocaVariety);
+    if (req.macaxeiraVariety) varieties.push(req.macaxeiraVariety);
+    const varietyStr = varieties.join(' / ');
+
+    if (varietyStr) {
+        return `${plantTypeStr}: ${varietyStr}`;
+    }
+    return plantTypeStr;
+}
+
+
 export default function FarmerRequestCard({ request }: RequestCardProps) {
   // Ensure photoUrls is an array and has at least 3 elements, providing placeholders if not.
   const photoDisplayUrls = (
@@ -34,8 +52,6 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
     ? request.photoUrls.slice(0, 3)
     : ['https://placehold.co/64x64.png', 'https://placehold.co/64x64.png', 'https://placehold.co/64x64.png']
   ).map(url => url || 'https://placehold.co/64x64.png'); // Ensure no null/undefined URLs
-
-  const plantType = [request.isMandioca && 'Mandioca', request.isMacaxeira && 'Macaxeira'].filter(Boolean).join(' / ') || 'Não especificado';
 
   return (
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
@@ -51,7 +67,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
       <CardContent className="py-2 flex-grow">
         <div className="flex items-center text-sm text-muted-foreground mb-3">
             <Sprout className="h-4 w-4 mr-2 text-primary" />
-            <span>{plantType}: {request.cassavaType}</span>
+            <span>{getPlantAndVarietyDisplay(request)}</span>
         </div>
         <div className="flex -space-x-2 overflow-hidden mb-2 justify-center sm:justify-start">
           {photoDisplayUrls.map((url, index) => (

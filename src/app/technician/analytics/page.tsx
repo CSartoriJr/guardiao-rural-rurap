@@ -81,11 +81,16 @@ export default function TechnicianAnalyticsPage() {
     const negative = filteredRequests.filter(r => r.status === 'Negative').length;
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
     
-    const cassavaTypes: { [key: string]: number } = {};
+    const cassavaVarieties: { [key: string]: number } = {};
     filteredRequests.forEach(req => {
-      cassavaTypes[req.cassavaType] = (cassavaTypes[req.cassavaType] || 0) + 1;
+      if (req.mandiocaVariety) {
+        cassavaVarieties[req.mandiocaVariety] = (cassavaVarieties[req.mandiocaVariety] || 0) + 1;
+      }
+      if (req.macaxeiraVariety) {
+        cassavaVarieties[req.macaxeiraVariety] = (cassavaVarieties[req.macaxeiraVariety] || 0) + 1;
+      }
     });
-    const cassavaTypesArray = Object.entries(cassavaTypes)
+    const cassavaVarietiesArray = Object.entries(cassavaVarieties)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
@@ -102,7 +107,7 @@ export default function TechnicianAnalyticsPage() {
       .sort((a,b) => b.count - a.count);
 
 
-    return { total, pending, positive, negative, inconclusive, cassavaTypesArray, requestsByMunicipalityArray };
+    return { total, pending, positive, negative, inconclusive, cassavaVarietiesArray, requestsByMunicipalityArray };
   }, [filteredRequests, requests, selectedMunicipality]);
 
   const statusChartData: ChartDataItem[] = [
@@ -112,7 +117,7 @@ export default function TechnicianAnalyticsPage() {
     { name: 'Inconclusivo', count: stats.inconclusive },
   ].filter(item => item.count > 0);
 
-  const cassavaTypeChartData: ChartDataItem[] = stats.cassavaTypesArray.slice(0, 5); // Top 5
+  const cassavaVarietyChartData: ChartDataItem[] = stats.cassavaVarietiesArray.slice(0, 5); // Top 5
   
   const municipalityChartData: ChartDataItem[] = stats.requestsByMunicipalityArray;
 
@@ -273,12 +278,12 @@ export default function TechnicianAnalyticsPage() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><BarChart3IconLucide className="mr-2 h-5 w-5 text-primary"/>Principais Tipos de Mandioca</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><BarChart3IconLucide className="mr-2 h-5 w-5 text-primary"/>Principais Variedades</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {cassavaTypeChartData.length > 0 ? (
+                  {cassavaVarietyChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={cassavaTypeChartData} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                      <BarChart data={cassavaVarietyChartData} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" allowDecimals={false} fontSize={12} />
                         <YAxis dataKey="name" type="category" width={100} fontSize={12} />
@@ -288,7 +293,7 @@ export default function TechnicianAnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground text-center py-10">Não há dados de tipo de mandioca suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de variedades suficientes para exibir o gráfico {selectedMunicipality ? ` para ${selectedMunicipality}` : ''}.</p>
                   )}
                 </CardContent>
               </Card>
@@ -332,4 +337,3 @@ export default function TechnicianAnalyticsPage() {
     </PageWrapper>
   );
 }
-
