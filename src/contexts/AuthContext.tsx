@@ -12,6 +12,7 @@ import {
   updateProfile,
   getAuth,
   updatePassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
 import { createUserDocument, getUserDocument } from '@/services/userService';
@@ -26,7 +27,7 @@ interface AuthContextType {
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
-  updateCurrentUserPassword: (newPassword: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const appUser = await createUserDocument(fbUser, {
         ...userData,
         role: 'farmer',
-        email: firebaseCompatibleEmail, 
+        email: userData.email, // Use the real email for the document
       });
       return appUser;
     } catch (error: any) {
@@ -156,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const appUser = await createUserDocument(fbUser, {
         ...userData,
         role: 'technician',
-        email: firebaseCompatibleEmail,
+        email: userData.email, // Use real email
       });
 
       return appUser;
@@ -193,7 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const appUser = await createUserDocument(fbUser, {
         ...userData,
         role: 'admin',
-        email: firebaseCompatibleEmail,
+        email: userData.email, // Use real email
       });
       return appUser;
     } catch (error: any) {
@@ -209,23 +210,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   };
-
-  const updateCurrentUserPassword = async (newPassword: string) => {
-    if (!firebaseAuth.currentUser) {
-      throw new Error("Nenhum usuário logado para atualizar a senha.");
+  
+  const sendPasswordReset = async (email: string) => {
+    if (!firebaseAuth) {
+      throw new Error('Firebase Auth não está inicializado.');
     }
     try {
-      await updatePassword(firebaseAuth.currentUser, newPassword);
-      console.log('[AuthContext] Password updated successfully for current user.');
+      await sendPasswordResetEmail(firebaseAuth, email);
     } catch (error: any) {
-      console.error('[AuthContext] Failed to update password:', error);
-      // Re-authentication might be required.
-      throw new Error('Falha ao atualizar a senha. Por segurança, pode ser necessário fazer login novamente.');
+      console.error('[AuthContext] Failed to send password reset email:', error);
+      throw new Error(error.message || 'Falha ao enviar e-mail de recuperação de senha.');
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth, sendPasswordReset }}>
       {children}
     </AuthContext.Provider>
   );

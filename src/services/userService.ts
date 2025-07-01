@@ -17,7 +17,7 @@ const ensureFirebaseInitialized = () => {
 
 export const createUserDocument = async (
   userAuth: AuthUser,
-  additionalData: Partial<Omit<AppUser, 'id' | 'email'>> & { email?: string } // email can be passed to override default
+  additionalData: Partial<Omit<AppUser, 'id'>>
 ): Promise<AppUser> => {
   ensureFirebaseInitialized();
   if (!userAuth) throw new Error('User object from Firebase Auth is required.');

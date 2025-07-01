@@ -65,7 +65,7 @@ export type UserWithActivityCount = AppUserType & {
 };
 
 export default function ManageUsersPage() {
-  const { user: adminUser, initializing: authInitializing, updateCurrentUserPassword } = useAuth();
+  const { user: adminUser, initializing: authInitializing, sendPasswordReset } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,22 +99,6 @@ export default function ManageUsersPage() {
   const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
       const { password, ...firestoreData } = updatedData; 
-
-      if (password) {
-        if (userId === adminUser?.id) {
-            await updateCurrentUserPassword(password);
-            toast({
-                title: "Senha Atualizada",
-                description: "Sua senha foi alterada com sucesso.",
-            });
-        } else {
-            toast({
-              title: "Operação não Permitida",
-              description: "Você não pode alterar a senha de outros usuários.",
-              variant: "destructive",
-            });
-        }
-      }
       
       await updateUserDocument(userId, firestoreData);
       
@@ -137,6 +121,23 @@ export default function ManageUsersPage() {
     } catch (error: any) {
       console.error("Falha ao atualizar usuário:", error);
       toast({ title: "Falha na Atualização", description: error.message || "Ocorreu um erro.", variant: "destructive" });
+    }
+  };
+
+  const handlePasswordReset = async (email: string, name: string) => {
+    if (!sendPasswordReset) return;
+    try {
+      await sendPasswordReset(email);
+      toast({
+        title: 'E-mail de Recuperação Enviado',
+        description: `Um e-mail para redefinir a senha foi enviado para ${name} (${email}).`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Falha ao Enviar E-mail',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -262,6 +263,7 @@ export default function ManageUsersPage() {
           currentAdminId={adminUser?.id || ''}
           onUserUpdate={handleUserUpdate} 
           onUserDelete={handleUserDelete}
+          onPasswordReset={handlePasswordReset}
           getRoleDisplayName={getRoleDisplayName} 
         />
       ) : (

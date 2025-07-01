@@ -25,6 +25,7 @@ const cpfValidation = z.string().refine(cpf => {
 const adminFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
+  email: z.string().email({ message: 'E-mail inválido. Será usado para recuperação de senha.' }),
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -47,6 +48,7 @@ export default function CreateAdminForm() {
     defaultValues: {
       name: '',
       cpf: '',
+      email: '',
       password: '',
       confirmPassword: '',
     },
@@ -92,6 +94,7 @@ export default function CreateAdminForm() {
       const adminData = {
         name: data.name,
         cpf: data.cpf,
+        email: data.email,
         passwordInput: data.password,
       };
       
@@ -167,6 +170,16 @@ export default function CreateAdminForm() {
                 )}
                 />
                 {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="email">E-mail (para recuperação de senha)</Label>
+                <Controller
+                name="email"
+                control={control}
+                render={({ field }) => <Input id="email" type="email" placeholder="admin@example.com" {...field} />}
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">

@@ -27,6 +27,7 @@ interface UserListProps {
   currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<AppUserType>) => Promise<void>;
   onUserDelete: (userId: string, userName: string) => Promise<void>;
+  onPasswordReset: (email: string, name: string) => Promise<void>;
   getRoleDisplayName: (role: AppUserType['role']) => string;
 }
 
@@ -42,24 +43,11 @@ const editUserFormSchema = z.object({
   cpf: cpfValidation,
   role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
   phone: z.string().optional(),
-  email: z.string().optional(),
+  email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
   address: z.string().optional(),
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
   assignedMunicipalities: z.array(z.string()).optional(),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
-})
-.refine(data => {
-  if (data.password && data.password.length < 6) return false;
-  return true;
-}, {
-  message: "A nova senha deve ter pelo menos 6 caracteres.",
-  path: ["password"],
-})
-.refine(data => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem.",
-  path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
@@ -68,13 +56,6 @@ const editUserFormSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: 'Telefone inválido. Use (xx)xxxxx-xxxx ou (xx)xxxx-xxxx. Obrigatório para agricultor.',
         path: ['phone'],
-      });
-    }
-    if (!data.email || !z.string().email().safeParse(data.email).success) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'E-mail de contato inválido ou obrigatório para agricultor.',
-        path: ['email'],
       });
     }
     if (!data.address || data.address.length < 5) {
@@ -103,12 +84,10 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
-export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
+export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, onPasswordReset, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
   const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
@@ -123,8 +102,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       municipality: '',
       familyMembers: 0,
       assignedMunicipalities: [],
-      password: '',
-      confirmPassword: '',
     }
   });
 
@@ -143,8 +120,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       municipality: user.municipality || '',
       familyMembers: user.familyMembers !== undefined ? user.familyMembers : 0,
       assignedMunicipalities: user.assignedMunicipalities || [],
-      password: '', // Always clear password fields on open
-      confirmPassword: '',
     });
     setIsEditDialogOpen(true);
   };
@@ -195,12 +170,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     const userDataToUpdate: Partial<AppUserType> = {
       name: data.name,
       role: data.role,
-      password: data.password || undefined,
+      email: data.email,
     };
 
     if (data.role === 'farmer') {
       userDataToUpdate.phone = data.phone;
-      userDataToUpdate.email = data.email;
       userDataToUpdate.address = data.address;
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
@@ -208,13 +182,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     } else if (data.role === 'technician') {
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
         userDataToUpdate.phone = undefined;
-        userDataToUpdate.email = data.email;
         userDataToUpdate.address = undefined;
         userDataToUpdate.municipality = undefined;
         userDataToUpdate.familyMembers = undefined;
     } else { // Admin
       userDataToUpdate.phone = undefined;
-      userDataToUpdate.email = data.email;
       userDataToUpdate.address = undefined;
       userDataToUpdate.municipality = undefined;
       userDataToUpdate.familyMembers = undefined;
@@ -308,7 +280,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário. Você só pode alterar a senha do seu próprio perfil.
+                Modifique os dados do usuário. Para alterar uma senha, use a opção de redefinição abaixo.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -362,17 +334,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   {errors.role && <p className="text-xs text-destructive pt-1">{errors.role.message}</p>}
                 </div>
 
-                {watchedRole === 'technician' && (
-                   <div className="space-y-1">
-                      <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail de Contato (Opcional)</Label>
-                      <Controller
-                        name="email"
-                        control={control}
-                        render={({ field }) => <Input id="edit-email" type="email" placeholder="email.tecnico@example.com" {...field} />}
-                      />
-                      {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
-                    </div>
-                )}
+                <div className="space-y-1">
+                  <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail de Contato</Label>
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => <Input id="edit-email" type="email" placeholder="email@example.com" {...field} />}
+                  />
+                  {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
+                </div>
                 
                 {watchedRole === 'technician' && (
                   <div className="space-y-1">
@@ -416,15 +386,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       {errors.phone && <p className="text-xs text-destructive pt-1">{errors.phone.message}</p>}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail de Contato</Label>
-                      <Controller
-                        name="email"
-                        control={control}
-                        render={({ field }) => <Input id="edit-email" type="email" placeholder="email@example.com" {...field} />}
-                      />
-                      {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
-                    </div>
-                    <div className="space-y-1">
                       <Label htmlFor="edit-address" className="flex items-center"><Home className="mr-1.5 h-3.5 w-3.5" />Endereço</Label>
                       <Controller
                         name="address"
@@ -465,61 +426,28 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   </>
                 )}
 
-                <Separator className="my-4" />
-
-                <div className="space-y-1">
-                  <Label htmlFor="password">Nova Senha (Opcional)</Label>
-                   <div className="relative">
-                    <Controller
-                      name="password"
-                      control={control}
-                      render={({ field }) => <Input 
-                          id="password" 
-                          type={showPassword ? "text" : "password"} 
-                          placeholder={editingUser.id === currentAdminId ? "Deixe em branco para não alterar" : "Não é possível alterar a senha de outros"}
-                          {...field}
-                          disabled={editingUser.id !== currentAdminId} 
-                      />}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={editingUser.id !== currentAdminId}
-                    >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {errors.password && <p className="text-xs text-destructive pt-1">{errors.password.message}</p>}
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                  <div className="relative">
-                    <Controller
-                      name="confirmPassword"
-                      control={control}
-                      render={({ field }) => <Input 
-                          id="confirmPassword" 
-                          type={showConfirmPassword ? "text" : "password"} 
-                          placeholder="Repita a nova senha" 
-                          {...field}
-                          disabled={editingUser.id !== currentAdminId}
-                      />}
-                    />
-                     <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        disabled={editingUser.id !== currentAdminId}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-xs text-destructive pt-1">{errors.confirmPassword.message}</p>}
+                <Separator className="my-2" />
+                
+                 <div className="space-y-1">
+                  <Label>Gerenciamento de Senha</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Por segurança, administradores não podem definir senhas diretamente. Você pode enviar um link de redefinição para o e-mail do usuário.
+                  </p>
+                  <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full mt-2"
+                      onClick={() => onPasswordReset(editingUser.email!, editingUser.name)}
+                      disabled={!editingUser.email || (editingUser.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1')}
+                      title={
+                          !editingUser.email ? "O usuário não possui um e-mail cadastrado."
+                          : (editingUser.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') ? "A senha do Admin Master não pode ser redefinida por outros administradores."
+                          : `Enviar e-mail para ${editingUser.email}`
+                      }
+                  >
+                      <Mail className="mr-2 h-4 w-4" />
+                      Enviar E-mail de Redefinição de Senha
+                  </Button>
                 </div>
 
 
