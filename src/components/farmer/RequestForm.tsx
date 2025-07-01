@@ -16,6 +16,7 @@ import { addRequest as addRequestToFirestore } from '@/services/requestService';
 import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
+import { Separator } from '../ui/separator';
 
 const requestFormSchema = z.object({
   mandiocaVariety: z.string().optional(),
@@ -25,27 +26,18 @@ const requestFormSchema = z.object({
   photoUrl1: z.string().url({ message: "A URL da foto Panorâmica é inválida."}).nullable(), // Now expects URL
   photoUrl2: z.string().url({ message: "A URL da foto de Envassoramento é inválida."}).nullable(), // Now expects URL
   photoUrl3: z.string().url({ message: "A URL da foto do Corte do Ápice é inválida."}).nullable(), // Now expects URL
-  plantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
-  infectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
+  mandiocaPlantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
+  mandiocaInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
+  macaxeiraPlantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
+  macaxeiraInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
   path: ["isMandioca"], 
 })
-.refine(data => {
-  const planted = typeof data.plantedArea === 'number' ? data.plantedArea : undefined;
-  const infected = typeof data.infectedArea === 'number' ? data.infectedArea : undefined;
-  if (planted !== undefined && infected !== undefined) {
-    return infected <= planted;
-  }
-  return true;
-}, {
-  message: "A área infectada não pode ser maior que a área plantada.",
-  path: ["infectedArea"],
-})
 .refine(data => data.photoUrl1 && data.photoUrl2 && data.photoUrl3, {
     message: "Todas as três fotos são obrigatórias.",
-    path: ["photoUrl1"], // Or any other common path
+    path: ["photoUrl1"],
 })
 .superRefine((data, ctx) => {
     if (data.isMandioca && (!data.mandiocaVariety || data.mandiocaVariety.trim().length < 2)) {
@@ -60,6 +52,26 @@ const requestFormSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.",
         path: ['macaxeiraVariety'],
+      });
+    }
+
+    const mpa = typeof data.mandiocaPlantedArea === 'number' ? data.mandiocaPlantedArea : undefined;
+    const mia = typeof data.mandiocaInfectedArea === 'number' ? data.mandiocaInfectedArea : undefined;
+    if (mpa !== undefined && mia !== undefined && mia > mpa) {
+       ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A área infectada não pode ser maior que a área plantada.",
+        path: ['mandiocaInfectedArea'],
+      });
+    }
+
+    const xpa = typeof data.macaxeiraPlantedArea === 'number' ? data.macaxeiraPlantedArea : undefined;
+    const xia = typeof data.macaxeiraInfectedArea === 'number' ? data.macaxeiraInfectedArea : undefined;
+    if (xpa !== undefined && xia !== undefined && xia > xpa) {
+       ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A área infectada não pode ser maior que a área plantada.",
+        path: ['macaxeiraInfectedArea'],
       });
     }
 });
@@ -81,15 +93,17 @@ export default function RequestForm() {
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
-      mandiocaVariety: '',
-      macaxeiraVariety: '',
       isMandioca: false,
       isMacaxeira: false,
       photoUrl1: null,
       photoUrl2: null,
       photoUrl3: null,
-      plantedArea: '',
-      infectedArea: '',
+      mandiocaVariety: '',
+      macaxeiraVariety: '',
+      mandiocaPlantedArea: '',
+      mandiocaInfectedArea: '',
+      macaxeiraPlantedArea: '',
+      macaxeiraInfectedArea: '',
     },
   });
 
@@ -161,8 +175,12 @@ export default function RequestForm() {
         isMandioca: data.isMandioca,
         isMacaxeira: data.isMacaxeira,
         photoUrls: [data.photoUrl1, data.photoUrl2, data.photoUrl3],
-        plantedArea: typeof data.plantedArea === 'number' ? data.plantedArea : undefined,
-        infectedArea: typeof data.infectedArea === 'number' ? data.infectedArea : undefined,
+        
+        mandiocaPlantedArea: typeof data.mandiocaPlantedArea === 'number' ? data.mandiocaPlantedArea : undefined,
+        mandiocaInfectedArea: typeof data.mandiocaInfectedArea === 'number' ? data.mandiocaInfectedArea : undefined,
+        macaxeiraPlantedArea: typeof data.macaxeiraPlantedArea === 'number' ? data.macaxeiraPlantedArea : undefined,
+        macaxeiraInfectedArea: typeof data.macaxeiraInfectedArea === 'number' ? data.macaxeiraInfectedArea : undefined,
+        
         latitude: latitude ?? undefined, 
         longitude: longitude ?? undefined, 
         deviceLocationStatus: locationStatus,
@@ -296,31 +314,61 @@ export default function RequestForm() {
             {errors.isMandioca && <p className="text-sm text-destructive">{errors.isMandioca.message}</p>}
             {errors.root?.message && !errors.isMandioca && <p className="text-sm text-destructive">{errors.root.message}</p>}
           </div>
+          
+          <div className="space-y-4">
+            {isMandiocaChecked && (
+              <div className="space-y-4 p-4 border rounded-md bg-muted/20">
+                <h3 className="font-semibold text-lg text-primary">Detalhes da Mandioca</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="mandiocaVariety">Variedade da Mandioca (ex: BRS Formosa, BRS 399...)</Label>
+                  <Controller
+                    name="mandiocaVariety"
+                    control={control}
+                    render={({ field }) => <Input id="mandiocaVariety" placeholder="ex: BRS Formosa" {...field} />}
+                  />
+                  {errors.mandiocaVariety && <p className="text-sm text-destructive">{errors.mandiocaVariety.message}</p>}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="mandiocaPlantedArea" className="flex items-center"><LandPlot className="h-4 w-4 mr-2" />Área Plantada (ha)</Label>
+                    <Controller name="mandiocaPlantedArea" control={control} render={({ field }) => <Input id="mandiocaPlantedArea" type="number" step="any" min="0" placeholder="Ex: 5.5" {...field} />} />
+                    {errors.mandiocaPlantedArea && <p className="text-sm text-destructive">{errors.mandiocaPlantedArea.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mandiocaInfectedArea" className="flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada (ha)</Label>
+                    <Controller name="mandiocaInfectedArea" control={control} render={({ field }) => <Input id="mandiocaInfectedArea" type="number" step="any" min="0" placeholder="Ex: 1.2" {...field} />} />
+                    {errors.mandiocaInfectedArea && <p className="text-sm text-destructive">{errors.mandiocaInfectedArea.message}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {isMandiocaChecked && (
-             <div className="space-y-2">
-              <Label htmlFor="mandiocaVariety">Variedade da Mandioca (ex: BRS Formosa, BRS 399...)</Label>
-              <Controller
-                name="mandiocaVariety"
-                control={control}
-                render={({ field }) => <Input id="mandiocaVariety" placeholder="ex: BRS Formosa" {...field} />}
-              />
-              {errors.mandiocaVariety && <p className="text-sm text-destructive">{errors.mandiocaVariety.message}</p>}
-            </div>
-          )}
+            {isMacaxeiraChecked && (
+              <div className="space-y-4 p-4 border rounded-md bg-muted/20">
+                <h3 className="font-semibold text-lg text-primary">Detalhes da Macaxeira</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="macaxeiraVariety">Variedade da Macaxeira (ex: Vassourinha, Pão...)</Label>
+                  <Controller name="macaxeiraVariety" control={control} render={({ field }) => <Input id="macaxeiraVariety" placeholder="ex: Vassourinha" {...field} />} />
+                  {errors.macaxeiraVariety && <p className="text-sm text-destructive">{errors.macaxeiraVariety.message}</p>}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="macaxeiraPlantedArea" className="flex items-center"><LandPlot className="h-4 w-4 mr-2" />Área Plantada (ha)</Label>
+                    <Controller name="macaxeiraPlantedArea" control={control} render={({ field }) => <Input id="macaxeiraPlantedArea" type="number" step="any" min="0" placeholder="Ex: 2.0" {...field} />} />
+                    {errors.macaxeiraPlantedArea && <p className="text-sm text-destructive">{errors.macaxeiraPlantedArea.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="macaxeiraInfectedArea" className="flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada (ha)</Label>
+                    <Controller name="macaxeiraInfectedArea" control={control} render={({ field }) => <Input id="macaxeiraInfectedArea" type="number" step="any" min="0" placeholder="Ex: 0.5" {...field} />} />
+                    {errors.macaxeiraInfectedArea && <p className="text-sm text-destructive">{errors.macaxeiraInfectedArea.message}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-          {isMacaxeiraChecked && (
-             <div className="space-y-2">
-              <Label htmlFor="macaxeiraVariety">Variedade da Macaxeira (ex: Vassourinha, Pão...)</Label>
-              <Controller
-                name="macaxeiraVariety"
-                control={control}
-                render={({ field }) => <Input id="macaxeiraVariety" placeholder="ex: Vassourinha" {...field} />}
-              />
-              {errors.macaxeiraVariety && <p className="text-sm text-destructive">{errors.macaxeiraVariety.message}</p>}
-            </div>
-          )}
-
+          <Separator />
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="photoUrl1">Panorâmica</Label>
@@ -329,7 +377,6 @@ export default function RequestForm() {
                 onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl1}
               />
-              {errors.photoUrl1 && <p className="text-sm text-destructive mt-1">{errors.photoUrl1.message}</p>}
             </div>
             <div>
               <Label htmlFor="photoUrl2">Envassoramento</Label>
@@ -338,7 +385,6 @@ export default function RequestForm() {
                 onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl2}
               />
-              {errors.photoUrl2 && <p className="text-sm text-destructive mt-1">{errors.photoUrl2.message}</p>}
             </div>
             <div>
               <Label htmlFor="photoUrl3">Corte do Ápice da Planta</Label>
@@ -347,51 +393,11 @@ export default function RequestForm() {
                 onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl3}
               />
-              {errors.photoUrl3 && <p className="text-sm text-destructive mt-1">{errors.photoUrl3.message}</p>}
             </div>
           </div>
+           {errors.photoUrl1 && <p className="text-sm text-destructive mt-1 text-center">{errors.photoUrl1.message}</p>}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-            <div className="space-y-2">
-                <Label htmlFor="plantedArea" className="flex items-center">
-                    <LandPlot className="h-4 w-4 mr-2 text-primary" />
-                    Área Plantada (em hectares)
-                </Label>
-                <Controller
-                name="plantedArea"
-                control={control}
-                render={({ field }) => (
-                    <div className="flex items-center">
-                    <Input id="plantedArea" type="number" step="any" min="0" placeholder="Ex: 5.5" {...field} className="rounded-r-none" />
-                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground text-sm h-10">
-                        ha
-                    </span>
-                    </div>
-                )}
-                />
-                {errors.plantedArea && <p className="text-sm text-destructive">{errors.plantedArea.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="infectedArea" className="flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2 text-destructive" />
-                    Área Infectada (em hectares)
-                </Label>
-                <Controller
-                name="infectedArea"
-                control={control}
-                render={({ field }) => (
-                    <div className="flex items-center">
-                    <Input id="infectedArea" type="number" step="any" min="0" placeholder="Ex: 1.2" {...field} className="rounded-r-none" />
-                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-input bg-muted text-muted-foreground text-sm h-10">
-                        ha
-                    </span>
-                    </div>
-                )}
-                />
-                {errors.infectedArea && <p className="text-sm text-destructive">{errors.infectedArea.message}</p>}
-            </div>
-          </div>
+          <Separator />
 
           <div className="space-y-2 pt-2">
             <Label className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" />Localização GPS do Dispositivo</Label>

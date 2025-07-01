@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangleIcon, MapPin, WifiOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -103,8 +103,6 @@ export default function FarmerViewRequestPage() {
     }
     
     if (!user) {
-        // This might be too early if auth is still initializing. Let PageWrapper handle redirect.
-        // setError("Usuário não autenticado.");
         setIsLoading(false);
         return;
     }
@@ -147,7 +145,7 @@ export default function FarmerViewRequestPage() {
     setExpandedImageUri(null);
   };
 
-  const VarietyDisplay = () => {
+  const VarietyDisplay = ({ request }: { request: AgriRequest | null }) => {
     if (!request) return null;
     const hasMandioca = request.isMandioca && request.mandiocaVariety;
     const hasMacaxeira = request.isMacaxeira && request.macaxeiraVariety;
@@ -178,6 +176,51 @@ export default function FarmerViewRequestPage() {
         </>
     )
   }
+
+  const AreaDisplay = ({ request }: { request: AgriRequest | null }) => {
+    if (!request) return null;
+    const showMandiocaArea = request.isMandioca && (typeof request.mandiocaPlantedArea === 'number' || typeof request.mandiocaInfectedArea === 'number');
+    const showMacaxeiraArea = request.isMacaxeira && (typeof request.macaxeiraPlantedArea === 'number' || typeof request.macaxeiraInfectedArea === 'number');
+
+    return (
+      <>
+        {showMandiocaArea && (
+          <div className='mt-4'>
+            <h4 className='font-semibold text-primary'>Áreas de Mandioca</h4>
+            {typeof request.mandiocaPlantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.mandiocaPlantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.mandiocaInfectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
+              </div>
+            )}
+          </div>
+        )}
+        {showMacaxeiraArea && (
+          <div className='mt-4'>
+            <h4 className='font-semibold text-primary'>Áreas de Macaxeira</h4>
+            {typeof request.macaxeiraPlantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.macaxeiraPlantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.macaxeiraInfectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
 
  const LocationDisplay = () => {
     if (!request) return null;
@@ -314,24 +357,14 @@ export default function FarmerViewRequestPage() {
               <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
             </div>
             
-            <VarietyDisplay />
+            <VarietyDisplay request={request} />
 
             <div>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{request.submissionDate ? format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) : 'Data indisponível'}</p>
             </div>
-             {typeof request.plantedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
-                <p className="text-lg text-foreground">{request.plantedArea} ha</p>
-              </div>
-            )}
-            {typeof request.infectedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangleIcon className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
-                <p className="text-lg text-foreground">{request.infectedArea} ha</p>
-              </div>
-            )}
+             
+            <AreaDisplay request={request} />
             <LocationDisplay />
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>

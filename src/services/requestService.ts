@@ -1,4 +1,3 @@
-
 // src/services/requestService.ts
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { collection, addDoc, getDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, serverTimestamp } from 'firebase/firestore';
@@ -47,14 +46,16 @@ export const addRequest = async (
       ...requestData,
       submissionDate: serverTimestamp(), // Use server timestamp for creation
       status: 'Pending' as RequestStatus,
-      photoUrls: requestData.photoUrls, // Should be an array of 3 Firebase Storage URLs
+      photoUrls: requestData.photoUrls,
       // Ensure optional fields not in Omit are explicitly set or handled
       recommendation: null,
       technicianId: null,
       technicianName: null,
       responseDate: null,
-      plantedArea: requestData.plantedArea ?? null,
-      infectedArea: requestData.infectedArea ?? null,
+      mandiocaPlantedArea: requestData.mandiocaPlantedArea ?? null,
+      mandiocaInfectedArea: requestData.mandiocaInfectedArea ?? null,
+      macaxeiraPlantedArea: requestData.macaxeiraPlantedArea ?? null,
+      macaxeiraInfectedArea: requestData.macaxeiraInfectedArea ?? null,
       latitude: requestData.latitude ?? null,
       longitude: requestData.longitude ?? null,
       deviceLocationStatus: requestData.deviceLocationStatus ?? 'idle',

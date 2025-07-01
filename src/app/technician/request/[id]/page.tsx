@@ -11,7 +11,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangleIcon, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -47,8 +47,6 @@ export default function TechnicianViewRequestPage() {
     if (authInitializing) return;
 
     if (!user) {
-      // Let PageWrapper handle redirect if user is not authenticated
-      // router.replace(APP_ROUTES.LOGIN);
       setIsLoading(false);
       return;
     }
@@ -105,11 +103,13 @@ export default function TechnicianViewRequestPage() {
         macaxeiraVariety: request.macaxeiraVariety,
         isMandioca: request.isMandioca,
         isMacaxeira: request.isMacaxeira,
-        photoDataUri1: request.photoUrls[0], // Passing URL, AI flow's prompt needs to handle {{media url=...}}
+        photoDataUri1: request.photoUrls[0],
         photoDataUri2: request.photoUrls[1],
         photoDataUri3: request.photoUrls[2],
-        plantedArea: request.plantedArea,
-        infectedArea: request.infectedArea,
+        mandiocaPlantedArea: request.mandiocaPlantedArea,
+        mandiocaInfectedArea: request.mandiocaInfectedArea,
+        macaxeiraPlantedArea: request.macaxeiraPlantedArea,
+        macaxeiraInfectedArea: request.macaxeiraInfectedArea,
         deviceLatitude: request.latitude,
         deviceLongitude: request.longitude,
       };
@@ -172,7 +172,7 @@ export default function TechnicianViewRequestPage() {
       console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed or photo URLs missing for request:', request?.id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request, toast]); // Removed requestId from deps as it's covered by `request` itself changing
+  }, [request, toast]);
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -201,20 +201,8 @@ export default function TechnicianViewRequestPage() {
     if (!user || user.role !== 'admin' || !request || !requestId) return;
 
     setIsDeleting(true);
-    // This password check is against the admin's password stored in AuthContext, which is not secure.
-    // A proper implementation would re-authenticate the admin or use a backend-verified token.
-    // For this exercise, we'll proceed with the simplified local password check.
-    const localAdminPassword = localStorage.getItem(`admin_pwd_${user.id}`); // Example, not secure.
-                                                                            // This check should be removed or improved.
-    
-    // Directly check against the user object from Auth context if password was fetched (it generally isn't for security)
-    // This check is illustrative and likely won't work unless password is part of AppUser and fetched.
-    // A real admin action would require re-authentication or a secure token.
-    // For now, let's assume the `user.password` is a mock value or skip this check for client-side example.
-    // We will proceed with delete if admin.
-    // if (adminPassword === user.password) { // THIS IS INSECURE AND LIKELY WON'T WORK
-    
-    if (adminPassword === "23jr02cs") { // Placeholder for admin password check during demo
+    // Placeholder for admin password check
+    if (adminPassword === "23jr02cs") {
       try {
         await deleteRequestFromFirestore(requestId); 
         toast({ title: 'Levantamento Removido', description: `O Levantamento ID ${requestId} foi removido.` });
@@ -230,7 +218,7 @@ export default function TechnicianViewRequestPage() {
     setAdminPassword('');
   };
 
-  const VarietyDisplay = () => {
+  const VarietyDisplay = ({ request }: { request: AgriRequest | null }) => {
     if (!request) return null;
     const hasMandioca = request.isMandioca && request.mandiocaVariety;
     const hasMacaxeira = request.isMacaxeira && request.macaxeiraVariety;
@@ -261,6 +249,51 @@ export default function TechnicianViewRequestPage() {
         </>
     )
   }
+
+  const AreaDisplay = ({ request }: { request: AgriRequest | null }) => {
+    if (!request) return null;
+    const showMandiocaArea = request.isMandioca && (typeof request.mandiocaPlantedArea === 'number' || typeof request.mandiocaInfectedArea === 'number');
+    const showMacaxeiraArea = request.isMacaxeira && (typeof request.macaxeiraPlantedArea === 'number' || typeof request.macaxeiraInfectedArea === 'number');
+
+    return (
+      <>
+        {showMandiocaArea && (
+          <div className='mt-4'>
+            <h4 className='font-semibold text-primary'>Áreas de Mandioca</h4>
+            {typeof request.mandiocaPlantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.mandiocaPlantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.mandiocaInfectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
+              </div>
+            )}
+          </div>
+        )}
+        {showMacaxeiraArea && (
+          <div className='mt-4'>
+            <h4 className='font-semibold text-primary'>Áreas de Macaxeira</h4>
+            {typeof request.macaxeiraPlantedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                <p className="text-lg text-foreground">{request.macaxeiraPlantedArea} ha</p>
+              </div>
+            )}
+            {typeof request.macaxeiraInfectedArea === 'number' && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
 
  const LocationDisplay = () => {
     if (!request) return null;
@@ -454,25 +487,16 @@ export default function TechnicianViewRequestPage() {
               <p className="text-lg text-foreground">{getPlantTypeDisplay(request)}</p>
             </div>
             
-            <VarietyDisplay />
+            <VarietyDisplay request={request} />
 
             <div>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" />Enviado Em</h3>
               <p className="text-lg text-foreground">{request.submissionDate ? format(new Date(request.submissionDate), "EEEE, d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) : 'Data Indisponível'}</p>
             </div>
-            {typeof request.plantedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
-                <p className="text-lg text-foreground">{request.plantedArea} ha</p>
-              </div>
-            )}
-            {typeof request.infectedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangleIcon className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
-                <p className="text-lg text-foreground">{request.infectedArea} ha</p>
-              </div>
-            )}
+            
+            <AreaDisplay request={request} />
             <LocationDisplay />
+
              <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

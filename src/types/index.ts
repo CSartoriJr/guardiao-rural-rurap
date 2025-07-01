@@ -38,9 +38,12 @@ export interface AgriRequest {
   technicianName?: string;
   responseDate?: string; // ISO date string (from Firestore Timestamp)
   municipality?: string;
-  plantedArea?: number;
-  infectedArea?: number;
+  mandiocaPlantedArea?: number;
+  mandiocaInfectedArea?: number;
+  macaxeiraPlantedArea?: number;
+  macaxeiraInfectedArea?: number;
   latitude?: number;
   longitude?: number;
   deviceLocationStatus?: DeviceLocationStatus;
 }
+

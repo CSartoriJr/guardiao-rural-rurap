@@ -38,8 +38,10 @@ const GenerateRecommendationInputSchema = z.object({
     .describe(
       "A photo of the plant's tip cut, as a public URL."
     ),
-  plantedArea: z.number().optional().describe('The total planted area in hectares.'),
-  infectedArea: z.number().optional().describe('The infected area in hectares.'),
+  mandiocaPlantedArea: z.number().optional().describe('The total planted area of mandioca in hectares.'),
+  mandiocaInfectedArea: z.number().optional().describe('The infected area of mandioca in hectares.'),
+  macaxeiraPlantedArea: z.number().optional().describe('The total planted area of macaxeira in hectares.'),
+  macaxeiraInfectedArea: z.number().optional().describe('The infected area of macaxeira in hectares.'),
   deviceLatitude: z.number().optional().describe('GPS Latitude provided by the farmer\'s device, if available. Numerical value between -90 and 90.'),
   deviceLongitude: z.number().optional().describe('GPS Longitude provided by the farmer\'s device, if available. Numerical value between -180 and 180.'),
 });
@@ -62,7 +64,6 @@ const prompt = ai.definePrompt({
   name: 'generateRecommendationPrompt',
   input: {schema: GenerateRecommendationInputSchema},
   output: {schema: GenerateRecommendationOutputSchema},
-  // The prompt now uses {{media url=photoDataUri1}} correctly, as photoDataUri1 will contain a URL.
   prompt: `You are an expert agricultural technician specializing in cassava plants (mandioca/macaxeira) in the state of Amapá, Brazil.
 Your task is to determine the GPS coordinates and identify the Amapá municipality based on the provided plant information and images.
 
@@ -70,10 +71,16 @@ Valid Amapá Municipalities: ${amapaMunicipalities.join(', ')}.
 
 Plant Information:
 - Classification: {{#if isMandioca}}Mandioca{{/if}}{{#if isMacaxeira}}{{#if isMandioca}} & {{/if}}Macaxeira{{/if}}{{^if isMandioca}}{{^if isMacaxeira}}Not specified{{/if}}{{/if}}
-{{#if mandiocaVariety}}- Variety (Mandioca): {{{mandiocaVariety}}}{{/if}}
-{{#if macaxeiraVariety}}- Variety (Macaxeira): {{{macaxeiraVariety}}}{{/if}}
-{{#if plantedArea}}- Planted Area: {{{plantedArea}}} hectares{{/if}}
-{{#if infectedArea}}- Infected Area: {{{infectedArea}}} hectares (out of {{{plantedArea}}} ha planted){{/if}}
+{{#if isMandioca}}
+- Variety (Mandioca): {{{mandiocaVariety}}}
+{{#if mandiocaPlantedArea}}- Planted Area (Mandioca): {{{mandiocaPlantedArea}}} hectares{{/if}}
+{{#if mandiocaInfectedArea}}- Infected Area (Mandioca): {{{mandiocaInfectedArea}}} hectares{{/if}}
+{{/if}}
+{{#if isMacaxeira}}
+- Variety (Macaxeira): {{{macaxeiraVariety}}}
+{{#if macaxeiraPlantedArea}}- Planted Area (Macaxeira): {{{macaxeiraPlantedArea}}} hectares{{/if}}
+{{#if macaxeiraInfectedArea}}- Infected Area (Macaxeira): {{{macaxeiraInfectedArea}}} hectares{{/if}}
+{{/if}}
 
 Images Provided (as URLs):
 - Photo 1 (Panoramic): {{media url=photoDataUri1}}
