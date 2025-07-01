@@ -46,4 +46,3 @@ export interface AgriRequest {
   longitude?: number;
   deviceLocationStatus?: DeviceLocationStatus;
 }
-
