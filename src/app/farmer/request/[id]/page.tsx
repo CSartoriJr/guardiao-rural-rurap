@@ -226,23 +226,12 @@ export default function FarmerViewRequestPage() {
     if (!request) return null;
 
     let locationString = "";
-    let sourceHint = "";
-    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado";
+    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Aguardando processamento da IA";
 
     if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
       locationString = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
-      if (request.deviceLocationStatus === 'success') {
-        sourceHint = " (GPS do dispositivo)";
-      } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-         sourceHint = " (GPS do dispositivo: falha, localização da IA)";
-      } else {
-         sourceHint = " (Localização da IA)";
-      }
-    } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-      locationString = "Nenhuma localização GPS disponível.";
-      sourceHint = ` (Status GPS do dispositivo: ${request.deviceLocationStatus})`;
     } else {
-      locationString = "Localização não disponível para este Levantamento.";
+      locationString = "Coordenadas não disponíveis.";
     }
 
     return (
@@ -253,7 +242,10 @@ export default function FarmerViewRequestPage() {
           </h3>
           <p className={`text-lg ${locationString.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
             {locationString.startsWith("Lat:") ? locationString : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationString}</span>}
-            {sourceHint && <span className="text-xs text-muted-foreground ml-1">{sourceHint}</span>}
+          </p>
+           <p className="text-xs text-muted-foreground mt-1">
+              A localização final é confirmada pela IA, priorizando a extração da foto sobre o GPS do dispositivo.
+              (Status do GPS do dispositivo no envio: {request.deviceLocationStatus || 'não registrado'})
           </p>
         </div>
         <div>

@@ -32,7 +32,6 @@ export default function TechnicianViewRequestPage() {
 
   const [request, setRequest] = useState<AgriRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true); 
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
 
@@ -79,100 +78,6 @@ export default function TechnicianViewRequestPage() {
         });
     
   }, [requestId, user, authInitializing, router, toast]);
-
-
-  useEffect(() => { 
-    if (!request || request.status !== 'Pending' || !requestId) {
-      if (request && request.status !== 'Pending') console.log('[TechnicianViewRequestPage Effect2] Request not pending or already processed by AI. Skipping AI step.');
-      else if (!request) console.log('[TechnicianViewRequestPage Effect2] Request data not yet available. Skipping AI step.');
-      return;
-    }
-
-    const needsAiLocationProcessing = request.latitude === undefined ||
-                              request.longitude === undefined ||
-                              !request.municipality ||
-                              (request.municipality && !amapaMunicipalities.includes(request.municipality));
-
-
-    if (needsAiLocationProcessing && request.photoUrls && request.photoUrls.length === 3) {
-      console.log('[TechnicianViewRequestPage Effect2] Needs AI location processing for request:', request.id);
-      setIsAiProcessing(true);
-
-      const aiInput = {
-        mandiocaVariety: request.mandiocaVariety,
-        macaxeiraVariety: request.macaxeiraVariety,
-        isMandioca: request.isMandioca,
-        isMacaxeira: request.isMacaxeira,
-        photoDataUri1: request.photoUrls[0],
-        photoDataUri2: request.photoUrls[1],
-        photoDataUri3: request.photoUrls[2],
-        mandiocaPlantedArea: request.mandiocaPlantedArea,
-        mandiocaInfectedArea: request.mandiocaInfectedArea,
-        macaxeiraPlantedArea: request.macaxeiraPlantedArea,
-        macaxeiraInfectedArea: request.macaxeiraInfectedArea,
-        deviceLatitude: request.latitude,
-        deviceLongitude: request.longitude,
-      };
-      console.log('[TechnicianViewRequestPage Effect2] AI Input for location (using URLs):', JSON.stringify(aiInput, null, 2));
-
-      generateRecommendation(aiInput)
-        .then(async aiOutput => {
-          console.log("[TechnicianViewRequestPage Effect2] Raw AI Output received for location:", JSON.stringify(aiOutput, null, 2));
-          
-          let latFromAI: number | undefined = undefined;
-          let lonFromAI: number | undefined = undefined;
-          let munFromAI: string | undefined = undefined;
-
-          if (aiOutput) {
-            latFromAI = aiOutput.extractedLatitude;
-            lonFromAI = aiOutput.extractedLongitude;
-            munFromAI = aiOutput.determinedMunicipality;
-          } else {
-            console.error("[TechnicianViewRequestPage] AI output from generateRecommendation was unexpectedly undefined.");
-          }
-          
-          const updatedFields: Partial<AgriRequest> = {};
-          let needsDBUpdate = false; 
-
-          if (latFromAI !== undefined && latFromAI !== request.latitude) {
-            updatedFields.latitude = latFromAI;
-            needsDBUpdate = true;
-          }
-          if (lonFromAI !== undefined && lonFromAI !== request.longitude) {
-            updatedFields.longitude = lonFromAI;
-            needsDBUpdate = true;
-          }
-          if (munFromAI && munFromAI !== request.municipality) {
-            updatedFields.municipality = munFromAI;
-            needsDBUpdate = true;
-          }
-          
-          if (needsDBUpdate && requestId) {
-             console.log("[TechnicianViewRequestPage Effect2] AI Output for location requires Firestore update. Updating request fields:", updatedFields);
-            const savedUpdatedRequest = await updateRequestInFirestore(requestId, updatedFields);
-            if (savedUpdatedRequest) {
-              setRequest(savedUpdatedRequest); 
-              toast({ title: "Dados de Localização da IA Atualizados", description: "Localização e município da IA processados e salvos." });
-            } else {
-                 toast({ title: "Erro ao Salvar IA", description: "Não foi possível salvar as atualizações de localização da IA.", variant: "destructive" });
-            }
-          } else {
-            console.log("[TechnicianViewRequestPage Effect2] No AI location data update needed or AI failed.");
-          }
-        })
-        .catch(aiError => {
-          console.error("[TechnicianViewRequestPage Effect2] Error during AI location data generation or update:", aiError);
-          toast({ title: "Falha na IA (Localização)", description: `Não foi possível obter/atualizar dados de localização da IA: ${aiError.message || 'Erro desconhecido'}.`, variant: "destructive" });
-        })
-        .finally(() => {
-          console.log("[TechnicianViewRequestPage Effect2] Finished AI location processing attempt for request:", request.id);
-          setIsAiProcessing(false);
-        });
-    } else {
-      console.log('[TechnicianViewRequestPage Effect2] AI location processing not needed or photo URLs missing for request:', request?.id);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request, toast]);
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -298,25 +203,11 @@ export default function TechnicianViewRequestPage() {
  const LocationDisplay = () => {
     if (!request) return null;
 
-    let locationText = "Coordenadas GPS não disponíveis.";
-    let sourceText = "";
-    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado";
+    let locationString = "Coordenadas GPS não disponíveis.";
+    let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Não determinado pela IA";
 
     if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
-      locationText = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
-      if (request.deviceLocationStatus === 'success') {
-        sourceText = "Fonte GPS: Fornecida pelo Dispositivo do Agricultor.";
-      } else {
-         sourceText = "Fonte GPS: Extraída/Confirmada pela IA.";
-         if (request.deviceLocationStatus && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching' && request.deviceLocationStatus !== 'success') {
-            sourceText += ` Status GPS Disp.: ${request.deviceLocationStatus}.`
-         }
-      }
-    } else if (request.deviceLocationStatus && request.deviceLocationStatus !== 'success' && request.deviceLocationStatus !== 'idle' && request.deviceLocationStatus !== 'fetching') {
-      locationText = "Nenhuma localização GPS finalizada.";
-      sourceText = `Status do GPS do agricultor: ${request.deviceLocationStatus}. A IA não extraiu coordenadas.`;
-    } else if (request.municipality) { 
-        sourceText = "Coordenadas GPS não disponíveis ou não finalizadas.";
+      locationString = `Lat: ${request.latitude.toFixed(6)}, Long: ${request.longitude.toFixed(6)}`;
     }
 
     return (
@@ -325,14 +216,17 @@ export default function TechnicianViewRequestPage() {
           <h3 className="text-sm font-medium text-muted-foreground flex items-center">
             <MapPin className="h-4 w-4 mr-2 text-primary" />Localização
           </h3>
-          <p className={`text-lg ${locationText.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
-            {locationText.startsWith("Lat:") ? locationText : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationText}</span>}
+          <p className={`text-lg ${locationString.startsWith("Lat:") ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {locationString.startsWith("Lat:") ? locationString : <span className="flex items-center"><WifiOff className="h-4 w-4 mr-2 text-destructive" /> {locationString}</span>}
           </p>
-          {sourceText && <p className="text-xs text-muted-foreground">{sourceText}</p>}
+           <p className="text-xs text-muted-foreground mt-1">
+              A localização final é confirmada pela IA, que prioriza a extração da foto sobre o GPS do dispositivo.
+              (Status do GPS do dispositivo no envio: {request.deviceLocationStatus || 'não registrado'})
+          </p>
         </div>
         <div>
           <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-            <MapPin className="h-4 w-4 mr-2 text-primary" />Município
+            <MapPin className="h-4 w-4 mr-2 text-primary" />Município (Determinado pela IA)
           </h3>
           <p className={`text-lg ${request.municipality ? 'text-foreground' : 'text-muted-foreground'}`}>
             {municipalityDisplayString}
@@ -522,18 +416,9 @@ export default function TechnicianViewRequestPage() {
           </CardContent>
         </Card>
 
-        {isAiProcessing && (
-            <Card className="mt-6">
-                <CardContent className="pt-6 text-center">
-                    <Loader2 className="mx-auto h-10 w-10 text-primary animate-spin mb-3" />
-                    <p className="text-muted-foreground">Aguarde, a Inteligência Artificial está processando dados de localização...</p>
-                </CardContent>
-            </Card>
-        )}
-
-        {!isAiProcessing && request.status === 'Pending' && user?.role === 'technician' ? (
+        {request.status === 'Pending' && user?.role === 'technician' ? (
           <ResponseForm request={request} />
-        ) : !isAiProcessing && request.status !== 'Pending' ? (
+        ) : request.status !== 'Pending' ? (
           <Card className="mt-6 bg-card/80">
             <CardHeader>
               <CardTitle className="font-headline text-xl">Resposta Enviada</CardTitle>

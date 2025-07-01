@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
-import { addRequest as addRequestToFirestore } from '@/services/requestService'; // Use Firestore service
+import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService'; // Use Firestore service
 import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
+import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 
 const requestFormSchema = z.object({
   mandiocaVariety: z.string().optional(),
@@ -196,9 +197,58 @@ export default function RequestForm() {
 
       toast({
         title: 'Levantamento Enviado!',
-        description: `Seu Levantamento para ${plantTypeDisplay} foi enviado com sucesso. ID: ${newRequest.id}.`,
+        description: `Seu Levantamento para ${plantTypeDisplay} foi enviado com sucesso. A IA está processando a localização. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
+      
+      // Fire-and-forget AI processing
+      if (newRequest.id) {
+          console.log(`[RequestForm] Starting background AI processing for request ${newRequest.id}`);
+          const aiInput = {
+              mandiocaVariety: newRequest.mandiocaVariety,
+              macaxeiraVariety: newRequest.macaxeiraVariety,
+              isMandioca: newRequest.isMandioca,
+              isMacaxeira: newRequest.isMacaxeira,
+              photoDataUri1: newRequest.photoUrls[0],
+              photoDataUri2: newRequest.photoUrls[1],
+              photoDataUri3: newRequest.photoUrls[2],
+              mandiocaPlantedArea: newRequest.mandiocaPlantedArea,
+              mandiocaInfectedArea: newRequest.mandiocaInfectedArea,
+              macaxeiraPlantedArea: newRequest.macaxeiraPlantedArea,
+              macaxeiraInfectedArea: newRequest.macaxeiraInfectedArea,
+              deviceLatitude: newRequest.latitude,
+              deviceLongitude: newRequest.longitude,
+          };
+
+          generateRecommendation(aiInput).then(async aiOutput => {
+              const updatedFields: Partial<AgriRequest> = {};
+              let needsDBUpdate = false;
+
+              if (aiOutput.extractedLatitude !== undefined && aiOutput.extractedLatitude !== newRequest.latitude) {
+                  updatedFields.latitude = aiOutput.extractedLatitude;
+                  needsDBUpdate = true;
+              }
+              if (aiOutput.extractedLongitude !== undefined && aiOutput.extractedLongitude !== newRequest.longitude) {
+                  updatedFields.longitude = aiOutput.extractedLongitude;
+                  needsDBUpdate = true;
+              }
+              if (aiOutput.determinedMunicipality && aiOutput.determinedMunicipality !== newRequest.municipality) {
+                  updatedFields.municipality = aiOutput.determinedMunicipality;
+                  needsDBUpdate = true;
+              }
+              
+              if (needsDBUpdate) {
+                  await updateRequest(newRequest.id, updatedFields);
+                  console.log(`[RequestForm] AI processing complete, request ${newRequest.id} updated with:`, updatedFields);
+              } else {
+                  console.log(`[RequestForm] AI processing complete for ${newRequest.id}, no updates needed.`);
+              }
+          }).catch(aiError => {
+              console.error(`[RequestForm] Background AI processing failed for request ${newRequest.id}:`, aiError);
+              // Don't show toast, user has already navigated away.
+          });
+      }
+
     } catch (error: any) {
       console.error("Falha ao enviar Levantamento:", error);
       toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar seu Levantamento. Por favor, tente novamente.", variant: "destructive" });
