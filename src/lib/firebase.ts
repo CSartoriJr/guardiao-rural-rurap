@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
@@ -64,6 +64,19 @@ if (essentialKeys.some(key => !key)) {
     }
     try {
       db = getFirestore(app);
+      enableIndexedDbPersistence(db)
+        .then(() => {
+          console.log('[Firebase] Firestore offline persistence enabled successfully.');
+        })
+        .catch((err) => {
+          if (err.code === 'failed-precondition') {
+            console.warn('[Firebase] Firestore offline persistence failed: Another tab has it enabled.');
+          } else if (err.code === 'unimplemented') {
+            console.warn('[Firebase] Firestore offline persistence is not supported in this browser.');
+          } else {
+            console.error('[Firebase] An error occurred while enabling offline persistence:', err);
+          }
+        });
       console.log('[Firebase] Firestore initialized.');
     } catch (e: any) {
       console.error('[Firebase Initialization Error] Failed to initialize Firestore:', e.message);
