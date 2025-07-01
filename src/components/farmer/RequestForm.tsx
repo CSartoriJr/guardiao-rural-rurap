@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -14,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
 import { addRequest as addRequestToFirestore } from '@/services/requestService'; // Use Firestore service
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
@@ -408,7 +407,7 @@ export default function RequestForm() {
           </div>
 
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex justify-start gap-4">
           <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -416,6 +415,16 @@ export default function RequestForm() {
               <Send className="mr-2 h-4 w-4" />
             )}
             Enviar Levantamento
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => router.push(APP_ROUTES.FARMER_DASHBOARD)}
+            disabled={isSubmitting}
+          >
+            <XCircle className="mr-2 h-4 w-4" />
+            Cancelar
           </Button>
         </CardFooter>
       </form>
