@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -169,7 +169,7 @@ export default function ManageUsersPage() {
           <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
         </div>
-        <div className="flex w-full sm:w-auto flex-col sm:flex-row items-center gap-2">
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-2">
             <div className="w-full sm:w-auto sm:min-w-[200px]">
               <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
               <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
@@ -185,15 +185,19 @@ export default function ManageUsersPage() {
                 </SelectContent>
               </Select>
             </div>
+             <Button asChild className="w-full sm:w-auto">
+                <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Criar Técnico
+                </Link>
+            </Button>
             {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
-              <div className="w-full sm:w-auto mt-4 sm:mt-0 sm:self-end">
-                <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                  <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
-                    <ShieldPlus className="mr-2 h-4 w-4" />
-                    Adicionar Admin
-                  </Link>
-                </Button>
-              </div>
+              <Button asChild className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
+                  <ShieldPlus className="mr-2 h-4 w-4" />
+                  Adicionar Admin
+                </Link>
+              </Button>
             )}
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -9,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
-import { UserPlus, ClipboardList, Frown, Search, ListFilter } from 'lucide-react';
+import { ClipboardList, Frown, Search, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
@@ -98,11 +97,6 @@ export default function AdminDashboard() {
             <ClipboardList className="h-5 w-5 mr-2"/>
             <span>Levantamentos Exibidos: {isLoading ? 'Carregando...' : filteredRequests.length}</span>
           </div>
-          <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN} passHref>
-            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto">
-              <UserPlus className="mr-2 h-5 w-5" /> Criar Novo Técnico
-            </Button>
-          </Link>
         </div>
       </div>
 
