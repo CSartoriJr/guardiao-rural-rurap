@@ -15,6 +15,8 @@ import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase'; // For checking CPF existence
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { amapaMunicipalities } from '@/lib/mockData';
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -28,6 +30,7 @@ const technicianFormSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido (para contato, não para login principal).' }), // Added email for technician
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
+  assignedMunicipalities: z.array(z.string()).optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem.",
   path: ["confirmPassword"],
@@ -51,6 +54,7 @@ export default function CreateTechnicianForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      assignedMunicipalities: [],
     },
   });
 
@@ -88,6 +92,7 @@ export default function CreateTechnicianForm() {
         cpf: data.cpf,
         email: data.email, // Pass the actual email for technician document
         passwordInput: data.password,
+        assignedMunicipalities: data.assignedMunicipalities,
       };
       
       const newTechnician = await createTechnicianWithAuth(technicianData);
@@ -125,10 +130,12 @@ export default function CreateTechnicianForm() {
     fieldOnChange(formattedValue);
   };
 
+  const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+
   return (
     <div className="max-w-2xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
-          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel Admin
+          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar para Gerenciar Usuários
         </Button>
         <Card className="w-full shadow-lg">
         <CardHeader>
@@ -173,6 +180,25 @@ export default function CreateTechnicianForm() {
                 render={({ field }) => <Input id="email" type="email" placeholder="email.tecnico@example.com" {...field} />}
                 />
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="assignedMunicipalities">Municípios Atribuídos (Opcional)</Label>
+                <p className="text-xs text-muted-foreground">O técnico só verá os levantamentos dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
+                <Controller
+                name="assignedMunicipalities"
+                control={control}
+                render={({ field }) => (
+                    <MultiSelect
+                    options={municipalityOptions}
+                    selected={field.value || []}
+                    onChange={field.onChange}
+                    className="w-full"
+                    placeholder="Selecione os municípios..."
+                    />
+                )}
+                />
+                {errors.assignedMunicipalities && <p className="text-sm text-destructive">{errors.assignedMunicipalities.message}</p>}
             </div>
 
 

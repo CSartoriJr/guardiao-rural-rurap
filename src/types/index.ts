@@ -13,6 +13,9 @@ export interface User {
   address?: string;
   municipality?: string;
   familyMembers?: number;
+
+  // Fields specific to technician role
+  assignedMunicipalities?: string[];
 }
 
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
@@ -48,4 +51,3 @@ export interface AgriRequest {
   photoDataUri2?: string;
   photoDataUri3?: string;
 }
-

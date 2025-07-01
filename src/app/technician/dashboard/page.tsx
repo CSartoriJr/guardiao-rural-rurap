@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
-import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; // Renamed for clarity
+import { getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,15 +35,28 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     if (user) {
       setIsLoading(true);
-      getAllRequestsSystemWide() // Fetch all requests
+      
+      let requestPromise: Promise<AgriRequest[]>;
+
+      const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
+
+      if (hasAssignedMunicipalities) {
+        console.log(`Fetching requests for technician ${user.id} in municipalities:`, user.assignedMunicipalities);
+        requestPromise = getRequestsForMunicipalities(user.assignedMunicipalities!);
+      } else {
+        console.log(`Fetching all system-wide requests for user ${user.id} (no specific municipalities assigned).`);
+        requestPromise = getAllRequestsSystemWide(); // Admins and technicians without specific municipalities see all
+      }
+      
+      requestPromise
         .then(data => {
           setAllRequests(data);
         })
         .catch(error => {
-          console.error("Falha ao buscar todos os Levantamentos para técnico via Firestore:", error);
+          console.error("Falha ao buscar levantamentos para técnico:", error);
           toast({
             title: "Erro ao Carregar Levantamentos",
-            description: "Não foi possível buscar os Levantamentos do sistema. Verifique sua conexão ou tente mais tarde.",
+            description: "Não foi possível buscar os Levantamentos. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })

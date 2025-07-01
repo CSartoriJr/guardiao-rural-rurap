@@ -1,7 +1,7 @@
 
 // src/services/userService.ts
 import { db, firebaseInitializedCorrectly, auth as firebaseAuth } from '@/lib/firebase';
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch, deleteField } from 'firebase/firestore';
 import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
 import type { User as AppUser } from '@/types'; // Your application's user type
 
@@ -33,6 +33,7 @@ export const createUserDocument = async (
     address: additionalData.address,
     municipality: additionalData.municipality,
     familyMembers: additionalData.familyMembers,
+    assignedMunicipalities: additionalData.assignedMunicipalities,
     // Password is not stored in Firestore document
   };
 
@@ -63,8 +64,17 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
 export const updateUserDocument = async (userId: string, data: Partial<AppUser>): Promise<void> => {
   ensureFirebaseInitialized();
   const userRef = doc(db!, USERS_COLLECTION, userId);
-  // Ensure 'id' is not part of the update data if it was accidentally included
-  const { id, ...updateData } = data;
+  
+  const updateData: {[key: string]: any} = { ...data };
+  delete updateData.id;
+
+  // Convert undefined values to deleteField() to ensure fields are removed from the document
+  for (const key in updateData) {
+    if (updateData[key] === undefined) {
+      updateData[key] = deleteField();
+    }
+  }
+  
   await updateDoc(userRef, updateData);
   console.log(`[UserService] User document updated for ${userId}`);
 };

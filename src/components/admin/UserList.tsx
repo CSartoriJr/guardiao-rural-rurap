@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import type { User as AppUserType } from '@/types'; // Use AppUserType
@@ -17,6 +18,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list
 import { useToast } from '@/hooks/use-toast';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { MultiSelect } from '../ui/multi-select';
 
 
 interface UserListProps {
@@ -38,26 +40,13 @@ const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation, // CPF is generally not editable after creation due to its use as a unique ID for auth
   role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
-  // Password changes are complex client-side and typically require re-authentication or Admin SDK.
-  // We'll omit direct password editing from this client-side form for simplicity and security.
-  // password: z.string().optional(),
-  // confirmPassword: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(), // This is the contact email, not the Firebase Auth email (which is CPF-based)
   address: z.string().optional(),
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
+  assignedMunicipalities: z.array(z.string()).optional(),
 })
-// .refine(data => { // Password confirmation logic removed as password field is removed
-//   if (data.password && data.password.length > 0) {
-//     if (data.password.length < 6) return false;
-//     return data.password === data.confirmPassword;
-//   }
-//   return true;
-// }, {
-//   message: "As senhas não coincidem ou a nova senha é muito curta (mínimo 6 caracteres).",
-//   path: ["confirmPassword"],
-// })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
     if (!data.phone || !phoneRegex.test(data.phone)) {
@@ -104,8 +93,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
-  // const [showPasswordInModal, setShowPasswordInModal] = useState(false); // Password fields removed
-  // const [showConfirmPasswordInModal, setShowConfirmPasswordInModal] = useState(false); // Password fields removed
   const { toast } = useToast();
 
   const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
@@ -114,17 +101,17 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       name: '',
       cpf: '', // Will be read-only in form
       role: 'farmer',
-      // password: '', // Removed
-      // confirmPassword: '', // Removed
       phone: '',
       email: '',
       address: '',
       municipality: '',
       familyMembers: 0,
+      assignedMunicipalities: [],
     }
   });
 
   const watchedRole = watch('role', editingUser?.role);
+  const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
 
   const handleEditClick = (user: UserWithActivityCount) => {
     setEditingUser(user);
@@ -132,16 +119,13 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       name: user.name,
       cpf: user.cpf, // CPF shown but not editable
       role: user.role,
-      // password: '', // Removed
-      // confirmPassword: '', // Removed
       phone: user.phone || '',
       email: user.email || '', // This is the contact email
       address: user.address || '',
       municipality: user.municipality || '',
       familyMembers: user.familyMembers !== undefined ? user.familyMembers : 0,
+      assignedMunicipalities: user.assignedMunicipalities || [],
     });
-    // setShowPasswordInModal(false); // Removed
-    // setShowConfirmPasswordInModal(false); // Removed
     setIsEditDialogOpen(true);
   };
 
@@ -188,14 +172,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       return;
     }
 
-    // CPF check removed as it's not editable in this form.
-    // Password change logic removed.
-
     const userDataToUpdate: Partial<AppUserType> = {
       name: data.name,
-      // cpf: data.cpf, // CPF not updated from here
       role: data.role,
-      // password not updated here
     };
 
     if (data.role === 'farmer') {
@@ -204,13 +183,23 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       userDataToUpdate.address = data.address;
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
-    } else {
-      // Explicitly set farmer fields to undefined if role is not farmer
+      userDataToUpdate.assignedMunicipalities = undefined; // Remove this field for farmers
+    } else if (data.role === 'technician') {
+        userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
+        // Remove farmer-specific fields
+        userDataToUpdate.phone = undefined;
+        userDataToUpdate.email = data.email; // Technicians can have contact email
+        userDataToUpdate.address = undefined;
+        userDataToUpdate.municipality = undefined;
+        userDataToUpdate.familyMembers = undefined;
+    } else { // Admin
+      // Remove all optional fields
       userDataToUpdate.phone = undefined;
-      userDataToUpdate.email = undefined;
+      userDataToUpdate.email = data.email;
       userDataToUpdate.address = undefined;
       userDataToUpdate.municipality = undefined;
       userDataToUpdate.familyMembers = undefined;
+      userDataToUpdate.assignedMunicipalities = undefined;
     }
 
     await onUserUpdate(editingUser.id, userDataToUpdate);
@@ -354,7 +343,39 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   {errors.role && <p className="text-xs text-destructive pt-1">{errors.role.message}</p>}
                 </div>
 
-                {/* Password fields removed for client-side simplicity */}
+                {watchedRole === 'technician' && (
+                   <div className="space-y-1">
+                      <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail de Contato (Opcional)</Label>
+                      <Controller
+                        name="email"
+                        control={control}
+                        render={({ field }) => <Input id="edit-email" type="email" placeholder="email.tecnico@example.com" {...field} />}
+                      />
+                      {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
+                    </div>
+                )}
+                
+                {watchedRole === 'technician' && (
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-assignedMunicipalities">Municípios Atribuídos</Label>
+                     <p className="text-xs text-muted-foreground">O técnico só verá os levantamentos dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
+                    <Controller
+                      name="assignedMunicipalities"
+                      control={control}
+                      render={({ field }) => (
+                        <MultiSelect
+                          options={municipalityOptions}
+                          selected={field.value || []}
+                          onChange={field.onChange}
+                          className="w-full"
+                          placeholder="Selecione os municípios..."
+                        />
+                      )}
+                    />
+                    {errors.assignedMunicipalities && <p className="text-xs text-destructive pt-1">{errors.assignedMunicipalities.message}</p>}
+                  </div>
+                )}
+
 
                 {watchedRole === 'farmer' && (
                   <>

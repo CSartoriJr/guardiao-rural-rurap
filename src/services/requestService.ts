@@ -140,16 +140,21 @@ export const getRequestsForFarmer = async (farmerId: string): Promise<AgriReques
   return querySnapshot.docs.map(requestFromFirestore);
 };
 
-export const getPendingRequestsForTechnician = async (): Promise<AgriRequest[]> => {
+export const getRequestsForMunicipalities = async (municipalities: string[]): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
+  if (!municipalities || municipalities.length === 0) {
+    return []; // Return empty if no municipalities are assigned to prevent errors.
+  }
+  // Firestore 'in' query can take an array of up to 30 elements. Amapá has 16, so this is safe.
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('status', '==', 'Pending'),
-    orderBy('submissionDate', 'asc')
+    where('municipality', 'in', municipalities),
+    orderBy('submissionDate', 'desc')
   );
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(requestFromFirestore);
 };
+
 
 export const getAllRequestsForAdmin = async (): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
