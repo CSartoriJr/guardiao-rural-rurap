@@ -87,17 +87,16 @@ Images Provided (as URLs):
 - Photo 2 (Leaf Roll/Brooming): {{media url=photoDataUri2}}
 - Photo 3 (Tip Cut): {{media url=photoDataUri3}}
 
-Device-Provided GPS (if available):
+Device-Provided GPS (if available, for fallback use):
 {{#if deviceLatitude}}- Device Latitude: {{{deviceLatitude}}}{{else}}- Device Latitude: Not provided{{/if}}
 {{#if deviceLongitude}}- Device Longitude: {{{deviceLongitude}}}{{else}}- Device Longitude: Not provided{{/if}}
 
 Instructions:
 1.  **GPS Coordinate Determination**:
-    *   **Priority**: If 'Device Latitude' and 'Device Longitude' are provided and appear valid (numerical, within range -90 to 90 for lat, -180 to 180 for lon), use these as the primary coordinates.
-    *   **Image Extraction (Fallback)**: If device coordinates are *not* provided or are clearly invalid, then carefully examine 'Photo 1 (Panoramic)'. Look for any text overlay or embedded information that clearly indicates GPS Latitude and Longitude values.
-    *   If you find clearly visible numerical Latitude and Longitude values on 'Photo 1 (Panoramic)', parse them directly as numbers.
+    *   **Priority 1: Image Extraction**: First, carefully examine 'Photo 1 (Panoramic)'. Look for any text overlay or embedded information that clearly indicates GPS Latitude and Longitude values. If you find clearly visible and valid numerical Latitude and Longitude values on the photo, you MUST use these as the primary coordinates.
+    *   **Priority 2: Device-Provided GPS (Fallback)**: If and only if you CANNOT extract valid coordinates from 'Photo 1', then use the 'Device Latitude' and 'Device Longitude' if they are provided and appear valid (numerical, within range -90 to 90 for lat, -180 to 180 for lon).
     *   Populate the 'extractedLatitude' and 'extractedLongitude' fields in your JSON output with the determined numerical coordinates. Latitude must be a number between -90 and 90. Longitude must be a number between -180 and 180.
-    *   If no valid GPS coordinates can be determined, ensure 'extractedLatitude' and 'extractedLongitude' are omitted or set to null. Do not invent or estimate coordinates.
+    *   If no valid GPS coordinates can be determined from either the image or the device, ensure 'extractedLatitude' and 'extractedLongitude' are omitted or set to null. Do not invent or estimate coordinates.
 
 2.  **Municipality Determination (Amapá)**:
     *   Based on the 'extractedLatitude' and 'extractedLongitude' you determined:
