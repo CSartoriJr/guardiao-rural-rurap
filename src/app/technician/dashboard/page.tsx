@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
-import { getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
+import { getAllRequestsForAdmin as getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
