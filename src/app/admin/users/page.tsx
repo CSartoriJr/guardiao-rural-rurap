@@ -98,8 +98,17 @@ export default function ManageUsersPage() {
 
   const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
-      // Password changes require re-authentication or Admin SDK, not handled directly here for simplicity
+      // Password changes require Admin SDK. Inform user if they tried to change it.
       const { password, ...firestoreData } = updatedData; 
+      
+      if (password) {
+        toast({
+          title: "Aviso: Senha Não Alterada",
+          description: "A alteração de senhas de outros usuários não é suportada neste formulário por motivos de segurança.",
+          variant: "default",
+        });
+      }
+
       await updateUserDocument(userId, firestoreData);
       
       // Re-fetch and update the specific user with new counts

@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
+import { Separator } from '../ui/separator';
 
 
 interface UserListProps {
@@ -38,14 +39,27 @@ const phoneRegex = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/;
 
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
-  cpf: cpfValidation, // CPF is generally not editable after creation due to its use as a unique ID for auth
+  cpf: cpfValidation,
   role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
   phone: z.string().optional(),
-  email: z.string().optional(), // This is the contact email, not the Firebase Auth email (which is CPF-based)
+  email: z.string().optional(),
   address: z.string().optional(),
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
   assignedMunicipalities: z.array(z.string()).optional(),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+})
+.refine(data => {
+  if (data.password && data.password.length < 6) return false;
+  return true;
+}, {
+  message: "A nova senha deve ter pelo menos 6 caracteres.",
+  path: ["password"],
+})
+.refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
@@ -93,13 +107,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
   const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
     defaultValues: {
       name: '',
-      cpf: '', // Will be read-only in form
+      cpf: '',
       role: 'farmer',
       phone: '',
       email: '',
@@ -107,6 +123,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       municipality: '',
       familyMembers: 0,
       assignedMunicipalities: [],
+      password: '',
+      confirmPassword: '',
     }
   });
 
@@ -117,14 +135,16 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     setEditingUser(user);
     reset({
       name: user.name,
-      cpf: user.cpf, // CPF shown but not editable
+      cpf: user.cpf,
       role: user.role,
       phone: user.phone || '',
-      email: user.email || '', // This is the contact email
+      email: user.email || '',
       address: user.address || '',
       municipality: user.municipality || '',
       familyMembers: user.familyMembers !== undefined ? user.familyMembers : 0,
       assignedMunicipalities: user.assignedMunicipalities || [],
+      password: '', // Always clear password fields on open
+      confirmPassword: '',
     });
     setIsEditDialogOpen(true);
   };
@@ -135,7 +155,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
   const confirmDelete = async () => {
     if (userToDelete) {
-      await onUserDelete(userToDelete.id, userToDelete.name); // This now calls deleteUserFirestoreDocument
+      await onUserDelete(userToDelete.id, userToDelete.name);
       setUserToDelete(null);
     }
   };
@@ -175,25 +195,24 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     const userDataToUpdate: Partial<AppUserType> = {
       name: data.name,
       role: data.role,
+      password: data.password || undefined,
     };
 
     if (data.role === 'farmer') {
       userDataToUpdate.phone = data.phone;
-      userDataToUpdate.email = data.email; // Contact email
+      userDataToUpdate.email = data.email;
       userDataToUpdate.address = data.address;
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
-      userDataToUpdate.assignedMunicipalities = undefined; // Remove this field for farmers
+      userDataToUpdate.assignedMunicipalities = undefined;
     } else if (data.role === 'technician') {
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
-        // Remove farmer-specific fields
         userDataToUpdate.phone = undefined;
-        userDataToUpdate.email = data.email; // Technicians can have contact email
+        userDataToUpdate.email = data.email;
         userDataToUpdate.address = undefined;
         userDataToUpdate.municipality = undefined;
         userDataToUpdate.familyMembers = undefined;
     } else { // Admin
-      // Remove all optional fields
       userDataToUpdate.phone = undefined;
       userDataToUpdate.email = data.email;
       userDataToUpdate.address = undefined;
@@ -289,7 +308,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário abaixo. Clique em salvar quando terminar. O CPF e a senha não são editáveis aqui.
+                Modifique os dados do usuário abaixo. A alteração de senha não é suportada neste formulário.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -445,6 +464,39 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     </div>
                   </>
                 )}
+
+                <Separator className="my-4" />
+
+                <div className="space-y-1">
+                  <Label htmlFor="password">Nova Senha (Opcional)</Label>
+                   <div className="relative">
+                    <Controller
+                      name="password"
+                      control={control}
+                      render={({ field }) => <Input id="password" type={showPassword ? "text" : "password"} placeholder="Deixe em branco para não alterar" {...field} />}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {errors.password && <p className="text-xs text-destructive pt-1">{errors.password.message}</p>}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                  <div className="relative">
+                    <Controller
+                      name="confirmPassword"
+                      control={control}
+                      render={({ field }) => <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Repita a nova senha" {...field} />}
+                    />
+                     <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {errors.confirmPassword && <p className="text-xs text-destructive pt-1">{errors.confirmPassword.message}</p>}
+                </div>
+
+
               </div>
               <DialogFooter className="pt-4">
                 <DialogClose asChild>
