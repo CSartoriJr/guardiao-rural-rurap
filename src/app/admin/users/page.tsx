@@ -65,7 +65,7 @@ export type UserWithActivityCount = AppUserType & {
 };
 
 export default function ManageUsersPage() {
-  const { user: adminUser, initializing: authInitializing, sendPasswordReset } = useAuth();
+  const { user: adminUser, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,30 +124,16 @@ export default function ManageUsersPage() {
     }
   };
 
-  const handlePasswordReset = async (email: string, name: string) => {
-    if (!sendPasswordReset) return;
-    try {
-      await sendPasswordReset(email);
-      toast({
-        title: 'E-mail de Recuperação Enviado',
-        description: `Um e-mail para redefinir a senha foi enviado para ${name} (${email}).`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Falha ao Enviar E-mail',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleUserDelete = async (userId: string, userName: string) => {
     // Deleting Firebase Auth user client-side is complex and risky.
     // This will only delete the Firestore document.
     try {
       await deleteUserFirestoreDocument(userId);
       setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
-      toast({ title: "Documento de Usuário Removido", description: `O documento do usuário ${userName} foi removido do Firestore.` });
+      toast({ 
+        title: "Documento de Usuário Removido", 
+        description: `O documento do usuário ${userName} foi removido. Para restaurar o acesso, crie um novo usuário para essa pessoa.` 
+      });
     } catch (error: any) {
       console.error("Falha ao remover documento do usuário:", error);
       toast({ title: "Falha na Remoção do Documento", description: error.message || "Ocorreu um erro.", variant: "destructive" });
@@ -263,7 +249,6 @@ export default function ManageUsersPage() {
           currentAdminId={adminUser?.id || ''}
           onUserUpdate={handleUserUpdate} 
           onUserDelete={handleUserDelete}
-          onPasswordReset={handlePasswordReset}
           getRoleDisplayName={getRoleDisplayName} 
         />
       ) : (

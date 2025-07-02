@@ -27,7 +27,6 @@ interface UserListProps {
   currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<AppUserType>) => Promise<void>;
   onUserDelete: (userId: string, userName: string) => Promise<void>;
-  onPasswordReset: (email: string, name: string) => Promise<void>;
   getRoleDisplayName: (role: AppUserType['role']) => string;
 }
 
@@ -84,7 +83,7 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
-export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, onPasswordReset, getRoleDisplayName }: UserListProps) {
+export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
@@ -280,7 +279,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário. Para alterar uma senha, use a opção de redefinição abaixo.
+                Modifique os dados do usuário. Se precisar redefinir o acesso, remova e crie o usuário novamente.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -425,32 +424,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     </div>
                   </>
                 )}
-
-                <Separator className="my-2" />
-                
-                 <div className="space-y-1">
-                  <Label>Gerenciamento de Senha</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Por segurança, administradores não podem definir senhas diretamente. Você pode enviar um link de redefinição para o e-mail do usuário.
-                  </p>
-                  <Button
-                      type="button"
-                      variant="secondary"
-                      className="w-full mt-2"
-                      onClick={() => onPasswordReset(editingUser.email!, editingUser.name)}
-                      disabled={!editingUser.email || (editingUser.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1')}
-                      title={
-                          !editingUser.email ? "O usuário não possui um e-mail cadastrado."
-                          : (editingUser.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') ? "A senha do Admin Master não pode ser redefinida por outros administradores."
-                          : `Enviar e-mail para ${editingUser.email}`
-                      }
-                  >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Enviar E-mail de Redefinição de Senha
-                  </Button>
-                </div>
-
-
               </div>
               <DialogFooter className="pt-4">
                 <DialogClose asChild>
