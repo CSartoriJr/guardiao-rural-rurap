@@ -248,9 +248,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Editar
-                  </Button>
+                  {!(user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== user.id) && (
+                    <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Editar
+                    </Button>
+                  )}
                   <Button
                     variant="destructive"
                     size="sm"
@@ -470,3 +472,5 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   )
 );
 Card.displayName = "Card";
+
+    
