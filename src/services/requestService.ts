@@ -1,3 +1,4 @@
+
 // src/services/requestService.ts
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { collection, addDoc, getDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, serverTimestamp } from 'firebase/firestore';
@@ -130,11 +131,11 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
   }
 };
 
-export const getRequestsForFarmer = async (farmerCpf: string): Promise<AgriRequest[]> => {
+export const getRequestsForFarmer = async (farmerId: string): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('farmerCpf', '==', farmerCpf),
+    where('farmerId', '==', farmerId),
     orderBy('submissionDate', 'desc')
   );
   const querySnapshot = await getDocs(q);

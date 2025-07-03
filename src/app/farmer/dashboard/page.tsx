@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -20,9 +21,9 @@ export default function FarmerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user && user.cpf) {
+    if (user && user.id) {
       setIsLoading(true);
-      getRequestsForFarmer(user.cpf)
+      getRequestsForFarmer(user.id)
         .then(data => {
           setRequests(data);
         })
