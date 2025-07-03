@@ -91,9 +91,13 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
     throw new Error("O Administrador Master não pode ser removido.");
   }
   
-  // First, check if the user is an admin and if they are the last admin
   const currentUserDoc = await getUserDocument(userId);
-  if (currentUserDoc?.role === 'admin') {
+  if (!currentUserDoc) {
+    throw new Error("Usuário não encontrado no Firestore para verificar regras de exclusão.");
+  }
+
+  // First, check if the user is an admin and if they are the last admin
+  if (currentUserDoc.role === 'admin') {
     const adminQuery = query(collection(db!, USERS_COLLECTION), where("role", "==", "admin"));
     const adminSnapshot = await getDocs(adminQuery);
     if (adminSnapshot.docs.length <= 1) {
@@ -102,13 +106,13 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
   }
 
   // Check for related requests for farmers or technicians
-   if (currentUserDoc?.role === 'farmer') {
-    const requestQuery = query(collection(db!, 'requests'), where('farmerId', '==', userId));
+   if (currentUserDoc.role === 'farmer') {
+    const requestQuery = query(collection(db!, 'requests'), where('farmerCpf', '==', currentUserDoc.cpf));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
       throw new Error('Este agricultor possui Levantamentos e não pode ser removido. Remova os Levantamentos primeiro.');
     }
-  } else if (currentUserDoc?.role === 'technician') {
+  } else if (currentUserDoc.role === 'technician') {
     const requestQuery = query(collection(db!, 'requests'), where('technicianId', '==', userId), where('status', '!=', 'Pending'));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {

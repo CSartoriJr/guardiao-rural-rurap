@@ -157,7 +157,7 @@ export default function RequestForm() {
 
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
-    if (!user || !user.id || !user.name) {
+    if (!user || !user.id || !user.name || !user.cpf) {
       toast({ title: "Erro", description: "Você deve estar logado para enviar um Levantamento.", variant: "destructive" });
       return;
     }
@@ -170,6 +170,7 @@ export default function RequestForm() {
     try {
       const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
         farmerId: user.id,
+        farmerCpf: user.cpf,
         farmerName: user.name,
         mandiocaVariety: data.mandiocaVariety,
         macaxeiraVariety: data.macaxeiraVariety,

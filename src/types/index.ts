@@ -1,5 +1,6 @@
 
 
+
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
@@ -25,6 +26,7 @@ export type DeviceLocationStatus = 'idle' | 'fetching' | 'success' | 'error' | '
 export interface AgriRequest {
   id: string; // Firestore document ID
   farmerId: string; // Firebase Auth UID of the farmer
+  farmerCpf: string; // CPF of the farmer, used for stable linking
   farmerName: string;
   mandiocaVariety?: string;
   macaxeiraVariety?: string;

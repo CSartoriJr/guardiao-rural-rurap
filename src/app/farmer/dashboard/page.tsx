@@ -20,9 +20,9 @@ export default function FarmerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user && user.id) {
+    if (user && user.cpf) {
       setIsLoading(true);
-      getRequestsForFarmer(user.id)
+      getRequestsForFarmer(user.cpf)
         .then(data => {
           setRequests(data);
         })

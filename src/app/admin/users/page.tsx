@@ -34,9 +34,9 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
   if (!firebaseInitializedCorrectly || !db) return {};
   let activityCount: { requestCount?: number; responseCount?: number } = {};
 
-  if (user.role === 'farmer') {
+  if (user.role === 'farmer' && user.cpf) {
     try {
-      const requests = await getRequestsForFarmer(user.id); // Uses Firestore
+      const requests = await getRequestsForFarmer(user.cpf); // Uses Firestore by CPF
       activityCount = { requestCount: requests.length };
     } catch (e) {
       console.error(`Erro ao buscar Levantamentos para agricultor ${user.id}:`, e);
