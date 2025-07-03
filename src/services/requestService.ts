@@ -131,11 +131,11 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
   }
 };
 
-export const getRequestsForFarmer = async (farmerId: string): Promise<AgriRequest[]> => {
+export const getRequestsForFarmer = async (farmerCpf: string): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('farmerId', '==', farmerId),
+    where('farmerCpf', '==', farmerCpf),
     orderBy('submissionDate', 'desc')
   );
   const querySnapshot = await getDocs(q);
