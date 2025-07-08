@@ -42,7 +42,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   }, [id]);
 
   const startUploadProcess = useCallback(async (file: File) => {
-    console.log(`[ImageUploadInput] startUploadProcess called for file: ${file.name}`);
     setError(null);
     setUploadProgress(0);
     setIsUploading(true);
@@ -72,49 +71,36 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
     
+    // Default to the original file
     let fileToUpload = file;
 
-    const isChromeMobile = navigator.userAgent.includes('Chrome') && navigator.userAgent.includes('Mobile');
-    const isHeic = file.type.toLowerCase() === 'image/heic' || file.type.toLowerCase() === 'image/heif';
-
-    if (isChromeMobile && isHeic) {
-      console.log('[ImageUpload] Skipping compression for HEIC file on Chrome Mobile.');
-      toast({
-        title: 'Arquivo HEIC Detectado',
-        description: 'Enviando imagem sem compressão para garantir compatibilidade no Chrome.',
-        variant: 'default',
+    // Step 1: Attempt to compress the image
+    try {
+      console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: false, // Set to false for better mobile compatibility
+      };
+      const compressedFile = await imageCompression(file, options);
+      console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      fileToUpload = compressedFile;
+    } catch (compressionError: any) {
+      console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
+      toast({ 
+        title: 'Compressão Falhou', 
+        description: 'Enviando a imagem original. Isso pode levar mais tempo.',
+        variant: 'default'
       });
-    } else {
-      // Step 1: Attempt to compress the image
-      try {
-        console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: false, // More compatible with mobile browsers
-        };
-        const compressedFile = await imageCompression(file, options);
-        console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-        fileToUpload = compressedFile;
-      } catch (compressionError: any) {
-        console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
-        toast({ 
-          title: 'Compressão Falhou', 
-          description: 'Enviando a imagem original. Isso pode levar mais tempo.',
-          variant: 'default'
-        });
-        // fileToUpload is already the original file, so we just continue
-      }
+      // fileToUpload is already the original file, so we just continue
     }
 
     // Step 2: Upload the selected file (either compressed or original)
     try {
-      console.log('[ImageUploadInput] Calling uploadImage service...');
       const { uploadTask, promise: uploadPromise } = uploadImage(
         fileToUpload,
         user.id,
         (percentage) => {
-            console.log(`[ImageUploadInput] Progress callback received: ${percentage}%`);
             setUploadProgress(percentage);
         }
       );
@@ -122,7 +108,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       uploadTaskRef.current = uploadTask;
 
       const downloadURL = await uploadPromise;
-      console.log('[ImageUploadInput] Upload promise resolved with URL:', downloadURL);
       
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
@@ -140,7 +125,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       }
       onUploadComplete(null);
     } finally {
-      console.log('[ImageUploadInput] Upload process finished (finally block).');
       setIsUploading(false);
       uploadTaskRef.current = null;
     }
