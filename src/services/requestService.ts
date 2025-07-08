@@ -135,11 +135,12 @@ export const getRequestsForFarmer = async (farmerCpf: string): Promise<AgriReque
   ensureFirebaseInitialized();
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('farmerCpf', '==', farmerCpf),
-    orderBy('submissionDate', 'desc')
+    where('farmerCpf', '==', farmerCpf)
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(requestFromFirestore);
+  const requests = querySnapshot.docs.map(requestFromFirestore);
+  // Sort client-side to avoid needing a composite index
+  return requests.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
 };
 
 export const getRequestsForMunicipalities = async (municipalities: string[]): Promise<AgriRequest[]> => {
@@ -150,11 +151,12 @@ export const getRequestsForMunicipalities = async (municipalities: string[]): Pr
   // Firestore 'in' query can take an array of up to 30 elements. Amapá has 16, so this is safe.
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('municipality', 'in', municipalities),
-    orderBy('submissionDate', 'desc')
+    where('municipality', 'in', municipalities)
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(requestFromFirestore);
+  const requests = querySnapshot.docs.map(requestFromFirestore);
+  // Sort client-side to avoid needing a composite index
+  return requests.sort((a, b) => new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime());
 };
 
 
