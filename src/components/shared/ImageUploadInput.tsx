@@ -74,25 +74,37 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     
     let fileToUpload = file;
 
-    // Step 1: Attempt to compress the image
-    try {
-      console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: false, // More compatible with mobile browsers
-      };
-      const compressedFile = await imageCompression(file, options);
-      console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-      fileToUpload = compressedFile;
-    } catch (compressionError: any) {
-      console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
-      toast({ 
-        title: 'Compressão Falhou', 
-        description: 'Enviando a imagem original. Isso pode levar mais tempo.',
-        variant: 'default'
+    const isChromeMobile = navigator.userAgent.includes('Chrome') && navigator.userAgent.includes('Mobile');
+    const isHeic = file.type.toLowerCase() === 'image/heic' || file.type.toLowerCase() === 'image/heif';
+
+    if (isChromeMobile && isHeic) {
+      console.log('[ImageUpload] Skipping compression for HEIC file on Chrome Mobile.');
+      toast({
+        title: 'Arquivo HEIC Detectado',
+        description: 'Enviando imagem sem compressão para garantir compatibilidade no Chrome.',
+        variant: 'default',
       });
-      // fileToUpload is already the original file, so we just continue
+    } else {
+      // Step 1: Attempt to compress the image
+      try {
+        console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: false, // More compatible with mobile browsers
+        };
+        const compressedFile = await imageCompression(file, options);
+        console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+        fileToUpload = compressedFile;
+      } catch (compressionError: any) {
+        console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
+        toast({ 
+          title: 'Compressão Falhou', 
+          description: 'Enviando a imagem original. Isso pode levar mais tempo.',
+          variant: 'default'
+        });
+        // fileToUpload is already the original file, so we just continue
+      }
     }
 
     // Step 2: Upload the selected file (either compressed or original)
