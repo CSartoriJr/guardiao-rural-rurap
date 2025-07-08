@@ -110,7 +110,7 @@ export default function FarmerViewRequestPage() {
     setIsLoading(true);
     getRequestById(requestId)
       .then(data => {
-        if (data && (data.farmerId === user.id || user.role === 'admin')) { 
+        if (data && (data.farmerCpf === user.cpf || user.role === 'admin')) { 
           setRequest(data);
         } else if (data) {
           setError("Você não tem autorização para ver este Levantamento.");
