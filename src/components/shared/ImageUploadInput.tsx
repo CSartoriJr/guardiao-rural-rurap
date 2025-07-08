@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect, ChangeEvent, useCallback } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -41,12 +41,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     };
   }, [id]);
 
-  const startUploadProcess = useCallback(async (file: File) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // Reset input to allow re-selecting the same file
+
+    if (!file) {
+      return;
+    }
+    
     setError(null);
     setUploadProgress(0);
     setIsUploading(true);
-    console.log(`[ImageUpload] Starting upload process for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-
+    
     // Basic validation
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
@@ -57,7 +63,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) { // 15MB limit before compression
+    if (file.size > 15 * 1024 * 1024) { // 15MB limit
       const errorMsg = 'Arquivo muito grande (máximo 15MB).';
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
@@ -72,29 +78,28 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setIsUploading(false);
       return;
     }
-    
-    let fileToUpload = file;
 
+    let fileToUpload = file;
     // Attempt to compress the image, with a fallback to the original file.
     try {
       console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true, // Use web worker for performance, fallback will handle errors.
-        fileType: 'image/jpeg', // Forcing to JPEG for maximum compatibility
+        useWebWorker: true,
+        fileType: 'image/jpeg', // Force JPEG for max compatibility
       };
       const compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
       fileToUpload = compressedFile;
-    } catch (compressionError: any) {
+    } catch (compressionError) {
       console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
       toast({ 
         title: 'Compressão Falhou', 
         description: 'Enviando a imagem original. Isso pode levar mais tempo.',
         variant: 'default'
       });
-      // Fallback to the original file is handled by `fileToUpload` already being initialized with `file`.
+      fileToUpload = file; // Fallback to the original file
     }
 
     // Upload the selected file (either compressed or original)
@@ -131,17 +136,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setIsUploading(false);
       uploadTaskRef.current = null;
     }
-  }, [user, toast, onUploadComplete]);
-
-  const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = ''; // Reset input to allow re-selecting the same file
-    if (file) {
-      startUploadProcess(file);
-    }
-  }, [startUploadProcess]);
+  };
   
-  const handleRemoveOrCancel = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (uploadTaskRef.current) {
       console.log('[ImageUploadInput] User cancelled upload.');
@@ -152,7 +149,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       onUploadComplete(null);
       toast({ title: 'Imagem Removida' });
     }
-  }, [onUploadComplete, toast]);
+  };
   
   return (
     <div className="flex w-full flex-col items-center justify-center">
