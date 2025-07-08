@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,10 +50,19 @@ export default function LoginForm() {
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Permite apenas a entrada de números
-    const value = e.target.value.replace(/\D/g, '');
-    // Limita o CPF a 11 dígitos
-    setCpf(value.substring(0, 11));
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.substring(0, 11);
+
+    let formattedValue = value;
+    if (value.length > 9) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
+    } else if (value.length > 6) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
+    } else if (value.length > 3) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3)}`;
+    }
+    
+    setCpf(formattedValue);
   };
 
 
@@ -64,11 +72,11 @@ export default function LoginForm() {
         <Label htmlFor="cpf">CPF</Label>
         <Input
           id="cpf"
-          type="text" // Usar 'text' para ter controle total sobre o valor
+          type="text"
           value={cpf}
           onChange={handleCpfChange}
-          placeholder="Digite os 11 dígitos do CPF"
-          maxLength={11} // Limita o input a 11 caracteres
+          placeholder="000.000.000-00"
+          maxLength={14}
           required
         />
       </div>
