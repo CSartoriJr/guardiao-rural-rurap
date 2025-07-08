@@ -80,12 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setFirebaseUser(fbUser);
         return appUserDoc;
       } else {
-        // This handles the case where Auth user exists but Firestore doc is missing.
-        // It cleans up the auth state and fails the login gracefully.
         console.warn(`[AuthContext] User ${fbUser.uid} authenticated but has no Firestore document. Logging out.`);
         await signOut(firebaseAuth);
-        // We don't throw an error here, just return null, which the UI interprets as a failed login.
-        // The catch block will now only handle actual auth errors (like wrong password).
         return null; 
       }
     } catch (error: any) {
@@ -142,7 +138,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     let tempApp: FirebaseApp | undefined = undefined;
     try {
-      // Create a temporary, secondary Firebase app for this operation so it doesn't use the admin's auth state
       tempApp = initializeApp(firebaseConfig, `auth-worker-technician-${Date.now()}`);
       const tempAuth = getAuth(tempApp);
 
@@ -168,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error(error.message || 'Falha ao criar técnico.');
     } finally {
       if (tempApp) {
-        await deleteApp(tempApp); // Clean up the temporary app
+        await deleteApp(tempApp);
       }
       setLoading(false);
     }
@@ -179,7 +174,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     let tempApp: FirebaseApp | undefined = undefined;
     try {
-      // Create a temporary, secondary Firebase app for this operation so it doesn't use the admin's auth state
       tempApp = initializeApp(firebaseConfig, `auth-worker-admin-${Date.now()}`);
       const tempAuth = getAuth(tempApp);
 
@@ -204,7 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error(error.message || 'Falha ao criar administrador.');
     } finally {
       if (tempApp) {
-        await deleteApp(tempApp); // Clean up the temporary app
+        await deleteApp(tempApp);
       }
       setLoading(false);
     }
@@ -214,11 +208,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseAuth || !firebaseAuth.currentUser) {
       throw new Error('Nenhum usuário logado para alterar a senha.');
     }
+    const currentUser = firebaseAuth.currentUser;
     try {
-      await updatePassword(firebaseAuth.currentUser, newPassword);
+      await updatePassword(currentUser, newPassword);
+      console.log(`[AuthContext] Password updated for user ${currentUser.uid}. Signing out for security.`);
+      await logout();
     } catch (error: any) {
       console.error('[AuthContext] Failed to update password:', error);
-      // 'auth/requires-recent-login' is a common error code here.
+      if (error.code === 'auth/requires-recent-login') {
+          throw new Error('Esta é uma operação sensível. Por favor, faça login novamente antes de alterar sua senha.');
+      }
       throw new Error(error.message || 'Falha ao alterar a senha.');
     }
   };
