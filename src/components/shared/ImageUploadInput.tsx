@@ -81,6 +81,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
         useWebWorker: false, // Set to false for better mobile compatibility
+        fileType: 'image/jpeg', // Force conversion to JPEG for max compatibility
       };
       const compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
