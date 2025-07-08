@@ -354,7 +354,9 @@ export default function TechnicianRequestForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {!isFarmerListLoading && farmers.length === 0 && (
-                      <SelectItem value="none" disabled>Nenhum agricultor encontrado.</SelectItem>
+                      <SelectItem value="none" disabled>
+                        Nenhum agricultor encontrado para seus municípios.
+                      </SelectItem>
                     )}
                     {farmers.map((farmer) => (
                       <SelectItem key={farmer.id} value={farmer.id}>

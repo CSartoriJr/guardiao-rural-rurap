@@ -56,7 +56,21 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
   const userRef = doc(db!, USERS_COLLECTION, userId);
   const docSnap = await getDoc(userRef);
   if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as AppUser;
+    // Apply defensive transformation to handle potential data inconsistencies
+    const data = docSnap.data();
+    const safeUser: AppUser = {
+      id: docSnap.id,
+      cpf: typeof data.cpf === 'string' ? data.cpf : '',
+      role: ['farmer', 'technician', 'admin'].includes(data.role) ? data.role : 'farmer',
+      name: typeof data.name === 'string' ? data.name : 'Nome Inválido',
+      email: typeof data.email === 'string' ? data.email : undefined,
+      phone: typeof data.phone === 'string' ? data.phone : undefined,
+      address: typeof data.address === 'string' ? data.address : undefined,
+      municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
+      familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
+      assignedMunicipalities: Array.isArray(data.assignedMunicipalities) ? data.assignedMunicipalities : undefined,
+    };
+    return safeUser;
   }
   return null;
 };
@@ -82,23 +96,64 @@ export const updateUserDocument = async (userId: string, data: Partial<AppUser>)
 export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> => {
   ensureFirebaseInitialized();
   const usersRef = collection(db!, USERS_COLLECTION);
-  let q;
-
-  if (municipalities && municipalities.length > 0) {
-    q = query(usersRef, where('role', '==', 'farmer'), where('municipality', 'in', municipalities));
-  } else {
-    q = query(usersRef, where('role', '==', 'farmer'));
-  }
+  
+  // This is a simple query that only requires a single-field index (which Firestore creates automatically).
+  // This is much more robust than a composite query which might fail if the index doesn't exist.
+  const q = query(usersRef, where('role', '==', 'farmer'));
 
   try {
     const querySnapshot = await getDocs(q);
-    const farmers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
-    farmers.sort((a, b) => a.name.localeCompare(b.name));
-    return farmers;
+    
+    // Process all fetched farmers.
+    const allFarmers = querySnapshot.docs.reduce((acc, docSnap) => {
+        const data = docSnap.data();
+        // Basic validation for a document to be considered a valid farmer
+        if (data && typeof data.name === 'string' && typeof data.cpf === 'string') {
+            const safeUser: AppUser = {
+              id: docSnap.id,
+              cpf: data.cpf,
+              role: 'farmer',
+              name: data.name,
+              email: typeof data.email === 'string' ? data.email : undefined,
+              phone: typeof data.phone === 'string' ? data.phone : undefined,
+              address: typeof data.address === 'string' ? data.address : undefined,
+              municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
+              familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
+            };
+            acc.push(safeUser);
+        } else {
+            console.warn(`[UserService] Skipping malformed farmer document with ID: ${docSnap.id}`);
+        }
+        return acc;
+    }, [] as AppUser[]);
+
+    // Now, filter them in the code based on the technician's assigned municipalities.
+    const filteredFarmers = (municipalities && municipalities.length > 0)
+      ? allFarmers.filter(farmer => farmer.municipality && municipalities.includes(farmer.municipality))
+      : allFarmers;
+      
+    console.log(`[UserService] Fetched ${allFarmers.length} total valid farmer docs, returning ${filteredFarmers.length} after filtering by municipality.`);
+
+    // Sort the final list alphabetically by name.
+    filteredFarmers.sort((a, b) => a.name.localeCompare(b.name));
+    return filteredFarmers;
+
   } catch (error) {
     console.error("[UserService] Error fetching farmers:", error);
-    throw new Error("Falha ao buscar agricultores.");
+    // On error, return an empty array to prevent the UI from crashing.
+    return [];
   }
+};
+
+export const getUserDocumentSafely = async (userId: string): Promise<AppUser | null> => {
+    ensureFirebaseInitialized();
+    try {
+        const userDoc = await getUserDocument(userId);
+        return userDoc;
+    } catch (error) {
+        console.error(`[UserService] Failed to get document for user ${userId}, returning null. Error:`, error);
+        return null;
+    }
 };
 
 
