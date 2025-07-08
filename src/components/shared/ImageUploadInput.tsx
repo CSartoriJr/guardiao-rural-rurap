@@ -68,34 +68,33 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
     
     setIsUploading(true);
+    let fileToUpload = file;
 
-    // Step 1: Compress the image in a separate try/catch for better error handling
-    let compressedFile: File;
+    // Step 1: Attempt to compress the image
     try {
       console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: false, // Set to false for maximum compatibility on mobile devices
+        useWebWorker: false, // More compatible with mobile browsers
       };
-      compressedFile = await imageCompression(file, options);
+      const compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      fileToUpload = compressedFile;
     } catch (compressionError: any) {
-      const detailedErrorMessage = compressionError?.message || 'Erro desconhecido durante a compressão.';
-      console.error('[ImageUpload] Image compression failed:', detailedErrorMessage, compressionError);
-      
-      const userFriendlyMessage = 'Não foi possível processar a imagem. Verifique se o arquivo não está corrompido e tente novamente.';
-      setError(userFriendlyMessage);
-      toast({ title: 'Erro de Processamento', description: userFriendlyMessage, variant: 'destructive' });
-      
-      setIsUploading(false);
-      return; // Stop execution if compression fails
+      console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
+      toast({ 
+        title: 'Compressão Falhou', 
+        description: 'Enviando a imagem original. Isso pode levar mais tempo.',
+        variant: 'default'
+      });
+      // fileToUpload is already the original file, so we just continue
     }
 
-    // Step 2: Upload the compressed image
+    // Step 2: Upload the selected file (either compressed or original)
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        compressedFile,
+        fileToUpload,
         user.id,
         (percentage) => setUploadProgress(percentage)
       );
@@ -131,7 +130,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     // CRITICAL: Reset input immediately to allow re-selection of the same file.
-    // This is the key to fixing the "have to click multiple times" issue on some browsers.
     event.target.value = ''; 
     if (file) {
       startUploadProcess(file);
