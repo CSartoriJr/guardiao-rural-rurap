@@ -6,11 +6,14 @@ import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, ListFilter } from 'lucide-react';
+import { ClipboardList, Frown, ListFilter, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/config/routes';
+import { Button } from '@/components/ui/button';
 
 const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos os Status' },
@@ -100,9 +103,16 @@ export default function TechnicianDashboard() {
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
-        <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
-          <ClipboardList className="h-5 w-5 mr-2"/>
-          <span>{getHeaderText()}</span>
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
+            <ClipboardList className="h-5 w-5 mr-2"/>
+            <span>{getHeaderText()}</span>
+          </div>
+           <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
+            <Button className="bg-primary hover:bg-primary/90 w-full">
+              <PlusCircle className="mr-2 h-5 w-5" /> Novo Levantamento
+            </Button>
+          </Link>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ export const APP_ROUTES = {
   FARMER_SUBMIT_REQUEST: '/farmer/submit',
   FARMER_VIEW_REQUEST: (id: string) => `/farmer/request/${id}`,
   TECHNICIAN_DASHBOARD: '/technician/dashboard',
+  TECHNICIAN_SUBMIT_REQUEST: '/technician/submit',
   TECHNICIAN_VIEW_REQUEST: (id: string) => `/technician/request/${id}`,
   TECHNICIAN_ANALYTICS_PANEL: '/technician/analytics',
   ADMIN_DASHBOARD: '/admin/dashboard',

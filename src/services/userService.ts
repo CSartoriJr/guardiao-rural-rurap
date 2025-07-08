@@ -79,6 +79,28 @@ export const updateUserDocument = async (userId: string, data: Partial<AppUser>)
   console.log(`[UserService] User document updated for ${userId}`);
 };
 
+export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> => {
+  ensureFirebaseInitialized();
+  const usersRef = collection(db!, USERS_COLLECTION);
+  let q;
+
+  if (municipalities && municipalities.length > 0) {
+    q = query(usersRef, where('role', '==', 'farmer'), where('municipality', 'in', municipalities));
+  } else {
+    q = query(usersRef, where('role', '==', 'farmer'));
+  }
+
+  try {
+    const querySnapshot = await getDocs(q);
+    const farmers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+    farmers.sort((a, b) => a.name.localeCompare(b.name));
+    return farmers;
+  } catch (error) {
+    console.error("[UserService] Error fetching farmers:", error);
+    throw new Error("Falha ao buscar agricultores.");
+  }
+};
+
 
 // Important: Deleting a Firebase Auth user from the client-side is generally not recommended
 // and has limitations. True user deletion should be handled by a backend Admin SDK.
