@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, ChangeEvent, useCallback } from 're
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Camera, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
@@ -22,9 +22,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
@@ -80,8 +78,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true, // Re-enabling for performance testing
-        fileType: 'image/jpeg', // Force conversion to JPEG for max compatibility
+        useWebWorker: true,
+        fileType: 'image/jpeg',
       };
       const compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
@@ -93,7 +91,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         description: 'Enviando a imagem original. Isso pode levar mais tempo.',
         variant: 'default'
       });
-      // fileToUpload is already the original file, so we just continue
     }
 
     // Step 2: Upload the selected file (either compressed or original)
@@ -155,22 +152,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   return (
     <div className="flex w-full flex-col items-center justify-center">
       <Input
-        ref={cameraInputRef}
+        ref={fileInputRef}
         type="file"
-        id={`${id}-camera`}
-        name={`${id}-camera`}
-        className="hidden"
-        accept="image/*"
-        capture="user"
-        onChange={handleFileChange}
-        disabled={isUploading}
-        aria-hidden="true"
-      />
-      <Input
-        ref={galleryInputRef}
-        type="file"
-        id={`${id}-gallery`}
-        name={`${id}-gallery`}
+        id={id}
+        name={id}
         className="hidden"
         accept="image/*"
         onChange={handleFileChange}
@@ -196,26 +181,21 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           <div className="p-2 text-center text-destructive">
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium break-words">{error}</p>
-            <div className="mt-2 flex items-center justify-center gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setError(null); cameraInputRef.current?.click(); }}>Câmera</Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setError(null); galleryInputRef.current?.click(); }}>Galeria</Button>
-            </div>
+            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => { setError(null); fileInputRef.current?.click(); }}>
+              Tentar Novamente
+            </Button>
           </div>
         ) : displayUrl ? (
            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-             <p className="text-sm text-muted-foreground text-center">Anexar Imagem</p>
-             <div className="flex w-full items-center justify-center gap-2">
-                <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => cameraInputRef.current?.click()} disabled={isUploading}>
-                    <Camera className="mr-2 h-4 w-4" />
-                    Câmera
-                </Button>
-                 <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => galleryInputRef.current?.click()} disabled={isUploading}>
-                    <ImageIcon className="mr-2 h-4 w-4" />
-                    Galeria
-                </Button>
-             </div>
+             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Anexar Imagem
+            </Button>
+             <p className="text-xs text-muted-foreground mt-2 text-center">
+              Seu celular permitirá escolher entre a câmera ou a galeria.
+            </p>
           </div>
         )}
       </div>
