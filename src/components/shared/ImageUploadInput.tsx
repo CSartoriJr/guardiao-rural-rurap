@@ -44,12 +44,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const startUploadProcess = async (file: File) => {
     setError(null);
     setUploadProgress(0);
+    setIsUploading(true);
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
+      setIsUploading(false);
       return;
     }
 
@@ -57,6 +59,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'Arquivo muito grande (máximo 15MB).';
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
+      setIsUploading(false);
       return;
     }
 
@@ -64,10 +67,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'Você precisa estar logado para fazer o upload.';
       toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
+      setIsUploading(false);
       return;
     }
     
-    setIsUploading(true);
     let fileToUpload = file;
 
     // Step 1: Attempt to compress the image
@@ -101,29 +104,24 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       
       uploadTaskRef.current = uploadTask;
 
-      uploadPromise.then(downloadURL => {
-        onUploadComplete(downloadURL);
-        toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
-      }).catch(uploadError => {
-        const isCancelled = uploadError.code === 'storage/canceled';
-        if (isCancelled) {
-          setError('Upload cancelado.');
-        } else {
-          const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-          setError(errorMsg);
-          toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
-        }
-        onUploadComplete(null);
-      }).finally(() => {
-        setIsUploading(false);
-        uploadTaskRef.current = null;
-      });
+      const downloadURL = await uploadPromise;
+      
+      onUploadComplete(downloadURL);
+      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+
     } catch (uploadError: any) {
-      const errorMessage = uploadError.message || 'Falha ao iniciar o upload da imagem.';
-      console.error(`[ImageUpload] Upload initiation failed:`, uploadError);
-      setError(errorMessage);
-      toast({ title: 'Erro de Upload', description: errorMessage, variant: 'destructive' });
+      const isCancelled = uploadError.code === 'storage/canceled';
+      if (isCancelled) {
+        setError('Upload cancelado.');
+      } else {
+        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+        setError(errorMsg);
+        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+      }
+      onUploadComplete(null);
+    } finally {
       setIsUploading(false);
+      uploadTaskRef.current = null;
     }
   };
 
