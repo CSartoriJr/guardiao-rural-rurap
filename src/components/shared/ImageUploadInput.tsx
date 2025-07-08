@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, ChangeEvent, useCallback } from 're
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, FileImage, X, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
@@ -23,6 +23,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
@@ -130,7 +131,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = ''; 
+    event.target.value = ''; // Reset input to allow re-selecting the same file
     if (file) {
       startUploadProcess(file);
     }
@@ -162,6 +163,18 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         disabled={isUploading}
         aria-hidden="true"
       />
+      <Input
+        ref={cameraInputRef}
+        type="file"
+        id={`${id}-camera`}
+        name={`${id}-camera`}
+        className="hidden"
+        accept="image/*"
+        capture="user"
+        onChange={handleFileChange}
+        disabled={isUploading}
+        aria-hidden="true"
+      />
 
       <div
         className={`relative flex h-48 w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed bg-muted/50 transition-colors ${
@@ -189,12 +202,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Anexar Imagem
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading}>
+              <Camera className="mr-2 h-4 w-4" />
+              Tirar Foto
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+              <FileImage className="mr-2 h-4 w-4" />
+              Escolher da Galeria
             </Button>
              <p className="text-xs text-muted-foreground mt-2 text-center">
-              Seu celular permitirá escolher entre a câmera ou a galeria.
+              Para melhores resultados, tire a foto com o celular na horizontal.
             </p>
           </div>
         )}
