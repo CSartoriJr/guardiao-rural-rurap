@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent, useCallback } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     };
   }, [id]);
 
-  const startUploadProcess = async (file: File) => {
+  const startUploadProcess = useCallback(async (file: File) => {
+    console.log(`[ImageUploadInput] startUploadProcess called for file: ${file.name}`);
     setError(null);
     setUploadProgress(0);
     setIsUploading(true);
@@ -96,15 +97,20 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     // Step 2: Upload the selected file (either compressed or original)
     try {
+      console.log('[ImageUploadInput] Calling uploadImage service...');
       const { uploadTask, promise: uploadPromise } = uploadImage(
         fileToUpload,
         user.id,
-        (percentage) => setUploadProgress(percentage)
+        (percentage) => {
+            console.log(`[ImageUploadInput] Progress callback received: ${percentage}%`);
+            setUploadProgress(percentage);
+        }
       );
       
       uploadTaskRef.current = uploadTask;
 
       const downloadURL = await uploadPromise;
+      console.log('[ImageUploadInput] Upload promise resolved with URL:', downloadURL);
       
       onUploadComplete(downloadURL);
       toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
@@ -113,30 +119,33 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const isCancelled = uploadError.code === 'storage/canceled';
       if (isCancelled) {
         setError('Upload cancelado.');
+        console.log('[ImageUploadInput] Upload was cancelled.');
       } else {
         const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
         setError(errorMsg);
         toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+        console.error('[ImageUploadInput] Upload failed with error:', uploadError);
       }
       onUploadComplete(null);
     } finally {
+      console.log('[ImageUploadInput] Upload process finished (finally block).');
       setIsUploading(false);
       uploadTaskRef.current = null;
     }
-  };
+  }, [user, toast, onUploadComplete]);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    // CRITICAL: Reset input immediately to allow re-selection of the same file.
     event.target.value = ''; 
     if (file) {
       startUploadProcess(file);
     }
-  };
+  }, [startUploadProcess]);
   
-  const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleRemoveOrCancel = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (uploadTaskRef.current) {
+      console.log('[ImageUploadInput] User cancelled upload.');
       uploadTaskRef.current.cancel();
     } else {
       setError(null);
@@ -144,7 +153,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       onUploadComplete(null);
       toast({ title: 'Imagem Removida' });
     }
-  };
+  }, [onUploadComplete, toast]);
   
   return (
     <div className="flex w-full flex-col items-center justify-center">

@@ -1,4 +1,3 @@
-
 // src/services/imageUploadService.ts
 import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTask, FirebaseStorageError } from 'firebase/storage';
@@ -28,7 +27,7 @@ export function uploadImage(
   if (!userId) {
     const err = new Error('User ID é obrigatório para o upload da imagem.');
     console.error(`[ImageUploadService] ${err.message}`);
-    // Criar uma "dummy task" para a interface não quebrar se precisar de um UploadTask
+    // Create a "dummy task" so the UI doesn't break if it expects an UploadTask
     const dummyTask = {
       cancel: () => { console.warn("[ImageUploadService] Dummy task cancel called."); },
       snapshot: { totalBytes: 0, bytesTransferred: 0, state: 'error', ref: {} } as any,
@@ -49,12 +48,11 @@ export function uploadImage(
   const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {
+    console.log('[ImageUploadService] Attaching event listeners to upload task.');
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        if (progress > 0 && progress < 100) {
-            console.log(`[ImageUploadService] Upload progress for ${file.name}: ${progress.toFixed(2)}%`);
-        }
+        console.log(`[ImageUploadService] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
         if (onProgressUpdate) {
           onProgressUpdate(Math.round(progress));
         }
@@ -65,7 +63,7 @@ export function uploadImage(
         let userFriendlyMessage = 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
         switch(error.code) {
             case 'storage/unauthorized':
-                userFriendlyMessage = 'Você não tem permissão para enviar arquivos.';
+                userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
                 break;
             case 'storage/canceled':
                 userFriendlyMessage = 'O upload foi cancelado.';
@@ -82,6 +80,7 @@ export function uploadImage(
       },
       async () => {
         try {
+          console.log('[ImageUploadService] Upload complete. Getting download URL...');
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           console.log(`[ImageUploadService] File ${file.name} uploaded successfully. URL:`, downloadURL);
           if (onProgressUpdate) {
