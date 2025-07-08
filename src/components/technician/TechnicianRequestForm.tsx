@@ -14,13 +14,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus, User } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService';
-import { getFarmers } from '@/services/userService';
 import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { getFarmersForTechnician } from '@/ai/flows/get-farmers-for-technician';
 
 const requestFormSchema = z.object({
   farmerId: z.string().min(1, { message: "Você deve selecionar um agricultor." }),
@@ -124,7 +124,7 @@ export default function TechnicianRequestForm() {
   useEffect(() => {
     if (user && user.role === 'technician') {
       setIsFarmerListLoading(true);
-      getFarmers(user.assignedMunicipalities)
+      getFarmersForTechnician({ municipalities: user.assignedMunicipalities })
         .then(setFarmers)
         .catch(() => toast({ title: "Erro", description: "Falha ao carregar a lista de agricultores.", variant: "destructive" }))
         .finally(() => setIsFarmerListLoading(false));
