@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -13,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Loader2, Eye, EyeOff, KeyRound } from 'lucide-react';
 
 const passwordFormSchema = z.object({
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  currentPassword: z.string().min(1, { message: "A senha atual é obrigatória." }),
+  password: z.string().min(6, { message: 'A nova senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem.",
@@ -29,6 +29,7 @@ interface ChangePasswordDialogProps {
 
 export default function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { updateCurrentUserPassword } = useAuth();
@@ -37,6 +38,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
   const { control, handleSubmit, reset, formState: { errors } } = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
+      currentPassword: '',
       password: '',
       confirmPassword: '',
     },
@@ -45,7 +47,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
   const onSubmit = async (data: PasswordFormValues) => {
     setIsSubmitting(true);
     try {
-      await updateCurrentUserPassword(data.password);
+      await updateCurrentUserPassword(data.currentPassword, data.password);
       toast({
         title: 'Sucesso!',
         description: 'Sua senha foi alterada. Por favor, faça login novamente.',
@@ -65,6 +67,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
   React.useEffect(() => {
     if (!open) {
       reset();
+      setShowCurrentPassword(false);
       setShowPassword(false);
       setShowConfirmPassword(false);
     }
@@ -76,11 +79,26 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
         <DialogHeader>
           <DialogTitle>Alterar Senha</DialogTitle>
           <DialogDescription>
-            Digite sua nova senha abaixo. Você será desconectado após a alteração por segurança.
+            Para sua segurança, por favor, confirme sua senha atual antes de definir uma nova. Você será desconectado após a alteração.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
+            <div className="space-y-1">
+              <Label htmlFor="currentPassword">Senha Atual</Label>
+              <div className="relative">
+                <Controller
+                  name="currentPassword"
+                  control={control}
+                  render={({ field }) => <Input id="currentPassword" type={showCurrentPassword ? "text" : "password"} placeholder="Digite sua senha atual" {...field} />}
+                />
+                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {errors.currentPassword && <p className="text-xs text-destructive pt-1">{errors.currentPassword.message}</p>}
+            </div>
+
             <div className="space-y-1">
               <Label htmlFor="password">Nova Senha</Label>
               <div className="relative">
