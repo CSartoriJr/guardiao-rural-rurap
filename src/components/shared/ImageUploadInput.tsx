@@ -32,6 +32,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const displayUrl = currentImageUrl;
 
   useEffect(() => {
+    // Cleanup function to cancel ongoing upload if the component unmounts.
     return () => {
       if (uploadTaskRef.current) {
         console.log(`[ImageUploadInput] Component unmounting, cancelling upload for ${id}`);
@@ -44,7 +45,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setError(null);
     setUploadProgress(0);
     setIsUploading(true);
+    console.log(`[ImageUpload] Starting upload process for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
+    // Basic validation
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
@@ -70,20 +73,19 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
     
-    // Default to the original file
     let fileToUpload = file;
 
-    // Step 1: Attempt to compress the image
+    // Attempt to compress the image, with a fallback to the original file.
     try {
-      console.log(`[ImageUpload] Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true,
-        fileType: 'image/jpeg',
+        useWebWorker: true, // Use web worker for performance, fallback will handle errors.
+        fileType: 'image/jpeg', // Forcing to JPEG for maximum compatibility
       };
       const compressedFile = await imageCompression(file, options);
-      console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
       fileToUpload = compressedFile;
     } catch (compressionError: any) {
       console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
@@ -92,10 +94,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         description: 'Enviando a imagem original. Isso pode levar mais tempo.',
         variant: 'default'
       });
+      // Fallback to the original file is handled by `fileToUpload` already being initialized with `file`.
     }
 
-    // Step 2: Upload the selected file (either compressed or original)
+    // Upload the selected file (either compressed or original)
     try {
+      console.log(`[ImageUpload] Passing file to uploadImage service. Size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       const { uploadTask, promise: uploadPromise } = uploadImage(
         fileToUpload,
         user.id,
