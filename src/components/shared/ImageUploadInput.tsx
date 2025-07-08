@@ -219,12 +219,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       </div>
 
       {(displayUrl && !isUploading) && (
-        <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="w-full text-destructive hover:border-destructive/80 hover:bg-destructive/10 mt-2">
+        <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="text-destructive hover:border-destructive/80 hover:bg-destructive/10 mt-2">
           <X className="mr-2 h-4 w-4" /> Remover Imagem
         </Button>
       )}
       {isUploading && (
-        <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="w-full mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
+        <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
           <X className="mr-2 h-4 w-4" /> Cancelar Upload
         </Button>
       )}
