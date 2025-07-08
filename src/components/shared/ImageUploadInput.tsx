@@ -81,10 +81,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
     } catch (compressionError: any) {
-      const errorMessage = 'Problema de conexão, tente novamente';
-      console.error('[ImageUpload] Image compression failed:', compressionError);
-      setError(errorMessage);
-      toast({ title: 'Erro de Processamento', description: errorMessage, variant: 'destructive' });
+      const detailedErrorMessage = compressionError?.message || 'Erro desconhecido durante a compressão.';
+      console.error('[ImageUpload] Image compression failed:', detailedErrorMessage, compressionError);
+      
+      const userFriendlyMessage = 'Não foi possível processar a imagem. Verifique se o arquivo não está corrompido e tente novamente.';
+      setError(userFriendlyMessage);
+      toast({ title: 'Erro de Processamento', description: userFriendlyMessage, variant: 'destructive' });
+      
       setIsUploading(false);
       return; // Stop execution if compression fails
     }
