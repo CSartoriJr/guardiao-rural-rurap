@@ -122,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...userData,
         role: 'farmer',
         email: userData.email, // Use the real email for the document
+        caf: userData.caf
       });
       return appUser;
     } catch (error: any) {

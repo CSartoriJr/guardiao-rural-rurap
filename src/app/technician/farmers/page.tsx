@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon } from 'lucide-react';
+import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, FileText } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -169,6 +169,10 @@ export default function TechnicianFarmersPage() {
                     <p>{selectedFarmer.cpf}</p>
                 </div>
                  <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+                    <Label className="text-right">CAF</Label>
+                    <p>{selectedFarmer.caf || 'Não informado'}</p>
+                </div>
+                 <div className="grid grid-cols-[100px_1fr] items-center gap-4">
                     <Label className="text-right">E-mail</Label>
                     <p>{selectedFarmer.email || 'Não informado'}</p>
                 </div>
@@ -195,4 +199,3 @@ export default function TechnicianFarmersPage() {
     </PageWrapper>
   );
 }
-

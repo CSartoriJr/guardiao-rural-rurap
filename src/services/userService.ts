@@ -34,6 +34,7 @@ export const createUserDocument = async (
     municipality: additionalData.municipality,
     familyMembers: additionalData.familyMembers,
     assignedMunicipalities: additionalData.assignedMunicipalities,
+    caf: additionalData.caf,
     // Password is not stored in Firestore document
   };
 
@@ -69,6 +70,7 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
       municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
       familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
       assignedMunicipalities: Array.isArray(data.assignedMunicipalities) ? data.assignedMunicipalities : undefined,
+      caf: typeof data.caf === 'string' ? data.caf : undefined,
     };
     return safeUser;
   }
@@ -119,6 +121,7 @@ export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> 
               address: typeof data.address === 'string' ? data.address : undefined,
               municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
               familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
+              caf: typeof data.caf === 'string' ? data.caf : undefined,
             };
             acc.push(safeUser);
         } else {

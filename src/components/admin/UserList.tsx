@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide } from 'lucide-react';
+import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -47,6 +47,7 @@ const editUserFormSchema = z.object({
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
   assignedMunicipalities: z.array(z.string()).optional(),
+  caf: z.string().optional(),
 })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
@@ -101,6 +102,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       municipality: '',
       familyMembers: 0,
       assignedMunicipalities: [],
+      caf: '',
     }
   });
 
@@ -119,6 +121,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       municipality: user.municipality || '',
       familyMembers: user.familyMembers !== undefined ? user.familyMembers : 0,
       assignedMunicipalities: user.assignedMunicipalities || [],
+      caf: user.caf || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -153,6 +156,10 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     fieldOnChange(formattedValue);
   };
 
+  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
+    const value = e.target.value.replace(/\D/g, '');
+    fieldOnChange(value);
+  }
 
   const onSubmitEdit = async (data: EditUserFormValues) => {
     if (!editingUser) return;
@@ -177,6 +184,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       userDataToUpdate.address = data.address;
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
+      userDataToUpdate.caf = data.caf;
       userDataToUpdate.assignedMunicipalities = undefined;
     } else if (data.role === 'technician') {
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
@@ -184,12 +192,14 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         userDataToUpdate.address = undefined;
         userDataToUpdate.municipality = undefined;
         userDataToUpdate.familyMembers = undefined;
+        userDataToUpdate.caf = undefined;
     } else { // Admin
       userDataToUpdate.phone = undefined;
       userDataToUpdate.address = undefined;
       userDataToUpdate.municipality = undefined;
       userDataToUpdate.familyMembers = undefined;
       userDataToUpdate.assignedMunicipalities = undefined;
+      userDataToUpdate.caf = undefined;
     }
 
     await onUserUpdate(editingUser.id, userDataToUpdate);
@@ -369,6 +379,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
                 {watchedRole === 'farmer' && (
                   <>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-caf" className="flex items-center"><FileText className="mr-1.5 h-3.5 w-3.5" />CAF (Opcional)</Label>
+                      <Controller
+                        name="caf"
+                        control={control}
+                        render={({ field }) => <Input id="edit-caf" placeholder="Apenas números" {...field} onChange={(e) => handleNumericInputChange(e, field.onChange)} />}
+                      />
+                      {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
+                    </div>
                     <div className="space-y-1">
                       <Label htmlFor="edit-phone" className="flex items-center"><Phone className="mr-1.5 h-3.5 w-3.5" />Telefone</Label>
                       <Controller

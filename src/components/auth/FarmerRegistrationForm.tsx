@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth'; // Import useAuth
 import type { User } from '@/types';
 import { amapaMunicipalities } from '@/lib/mockData'; // Keep for municipality list
-import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIcon } from 'lucide-react';
+import { Loader2, UserPlus, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIcon, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ const farmerRegistrationFormSchema = z.object({
   cpf: cpfValidation,
   phone: z.string().regex(phoneRegex, { message: 'Telefone inválido. Use (xx)xxxxx-xxxx ou (xx)xxxx-xxxx' }),
   email: z.string().email({ message: 'E-mail inválido (será usado para notificações, não para login).' }),
+  caf: z.string().optional(),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
   municipality: z.string().min(1, { message: 'Selecione um município.' }),
   familyMembers: z.coerce.number().int().nonnegative({ message: 'O número de componentes familiares deve ser zero ou mais.' }),
@@ -61,6 +62,7 @@ export default function FarmerRegistrationForm() {
       cpf: '',
       phone: '',
       email: '',
+      caf: '',
       address: '',
       municipality: '',
       familyMembers: 0,
@@ -81,6 +83,7 @@ export default function FarmerRegistrationForm() {
         // Farmer specific details for Firestore document
         phone: data.phone,
         email: data.email, // Actual email for communication
+        caf: data.caf,
         address: data.address,
         municipality: data.municipality,
         familyMembers: data.familyMembers,
@@ -141,6 +144,10 @@ export default function FarmerRegistrationForm() {
     fieldOnChange(formattedValue);
   };
 
+  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
+    const value = e.target.value.replace(/\D/g, '');
+    fieldOnChange(value);
+  }
 
   return (
     <Card className="w-full max-w-lg shadow-xl">
@@ -197,14 +204,25 @@ export default function FarmerRegistrationForm() {
             </div>
           </div>
           
-          <div className="space-y-1">
-            <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (para contato)</Label>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => <Input id="email" type="email" placeholder="seuemail@exemplo.com" {...field} />}
-            />
-            {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (para contato)</Label>
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => <Input id="email" type="email" placeholder="seuemail@exemplo.com" {...field} />}
+              />
+              {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-1">
+                <Label htmlFor="caf" className="flex items-center"><FileText className="mr-1.5 h-3.5 w-3.5" />CAF (Opcional)</Label>
+                <Controller
+                    name="caf"
+                    control={control}
+                    render={({ field }) => <Input id="caf" placeholder="Apenas números" {...field} onChange={(e) => handleNumericInputChange(e, field.onChange)} />}
+                />
+                {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
+            </div>
           </div>
 
           <div className="space-y-1">
