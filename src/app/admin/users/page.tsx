@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
-import { updateUserDocument, deleteUserFirestoreDocument } from '@/services/userService';
+import { updateUserByAdmin, deleteUserFirestoreDocument } from '@/services/userService';
 import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
 
 const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
@@ -100,7 +100,7 @@ export default function ManageUsersPage() {
     try {
       const { password, ...firestoreData } = updatedData; 
       
-      await updateUserDocument(userId, firestoreData);
+      await updateUserByAdmin(userId, firestoreData);
       
       // Re-fetch and update the specific user with new counts
       const userIndex = users.findIndex(u => u.id === userId);
