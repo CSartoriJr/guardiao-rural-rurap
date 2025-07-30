@@ -16,8 +16,10 @@ import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
-import { updateUserByAdmin, deleteUserFirestoreDocument } from '@/services/userService';
+import { deleteUserFirestoreDocument } from '@/services/userService';
 import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
+import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin';
+
 
 const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
   if (!firebaseInitializedCorrectly || !db) {
@@ -98,9 +100,14 @@ export default function ManageUsersPage() {
 
   const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
-      const { password, ...firestoreData } = updatedData; 
-      
-      await updateUserByAdmin(userId, firestoreData);
+      const { password, ...firestoreData } = updatedData;
+
+      // Call the secure Genkit flow to perform the update
+      const result = await updateUserAsAdmin({ userId, updatedData: firestoreData });
+
+      if (!result.success) {
+        throw new Error(result.message || 'Falha ao atualizar usuário no servidor.');
+      }
       
       // Re-fetch and update the specific user with new counts
       const userIndex = users.findIndex(u => u.id === userId);

@@ -95,12 +95,6 @@ export const updateUserDocument = async (userId: string, data: Partial<AppUser>)
   console.log(`[UserService] User document updated for ${userId}`);
 };
 
-export const updateUserByAdmin = async (userId: string, data: Partial<AppUser>): Promise<void> => {
-  ensureFirebaseInitialized();
-  // This function is intended to be called by an admin. Security rules on the backend should enforce this.
-  // The logic is the same as the standard update, but having a separate function allows for distinct security rules.
-  return updateUserDocument(userId, data);
-};
 
 export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> => {
   ensureFirebaseInitialized();
