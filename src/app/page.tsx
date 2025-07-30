@@ -33,7 +33,7 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <CacaBruxaLogo />
       <Loader2 className="animate-spin h-8 w-8 text-primary mt-6" />
-      <p className="text-muted-foreground mt-2">Carregando Caça Bruxa...</p>
+      <p className="text-muted-foreground mt-2">Carregando Guardião Rural...</p>
     </div>
   );
 }

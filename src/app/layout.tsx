@@ -7,7 +7,7 @@ import React from 'react';
 import ServiceWorkerRegistrar from '@/components/shared/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
-  title: 'Caça Bruxa',
+  title: 'Guardião Rural',
   description: 'Um aplicativo misterioso para caçar bruxas.',
   manifest: '/manifest.json', // Adiciona referência ao manifest
 };

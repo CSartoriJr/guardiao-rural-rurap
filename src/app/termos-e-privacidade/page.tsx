@@ -29,7 +29,7 @@ export default function TermsAndPrivacyPage() {
         <CardContent className="space-y-6 text-sm text-foreground">
           <section>
             <h2 className="text-lg font-semibold mb-2 text-primary">1. Aceitação dos Termos</h2>
-            <p>Ao se cadastrar e utilizar o aplicativo RURAP - Caça Bruxa ("Aplicativo"), você concorda em cumprir estes Termos de Uso e nossa Política de Privacidade. Se você não concordar com algum destes termos, não deverá usar o Aplicativo.</p>
+            <p>Ao se cadastrar e utilizar o aplicativo RURAP - Guardião Rural ("Aplicativo"), você concorda em cumprir estes Termos de Uso e nossa Política de Privacidade. Se você não concordar com algum destes termos, não deverá usar o Aplicativo.</p>
           </section>
 
           <section>
@@ -109,7 +109,7 @@ export default function TermsAndPrivacyPage() {
         </CardContent>
       </Card>
        <p className="mt-8 text-center text-sm text-muted-foreground">
-        Caça Bruxa - RURAP
+        Guardião Rural - RURAP
       </p>
     </div>
   );

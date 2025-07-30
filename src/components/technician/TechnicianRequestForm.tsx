@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -20,7 +19,7 @@ import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { getFarmersForTechnician } from '@/ai/flows/get-farmers-for-technician';
+import { getFarmersList } from '@/app/actions/farmerActions';
 
 const requestFormSchema = z.object({
   farmerId: z.string().min(1, { message: "Você deve selecionar um agricultor." }),
@@ -124,7 +123,7 @@ export default function TechnicianRequestForm() {
   useEffect(() => {
     if (user && user.role === 'technician') {
       setIsFarmerListLoading(true);
-      getFarmersForTechnician({ municipalities: user.assignedMunicipalities })
+      getFarmersList(user.assignedMunicipalities)
         .then(setFarmers)
         .catch(() => toast({ title: "Erro", description: "Falha ao carregar a lista de agricultores.", variant: "destructive" }))
         .finally(() => setIsFarmerListLoading(false));
@@ -152,7 +151,7 @@ export default function TechnicianRequestForm() {
             message = "Permissão de GPS negada. Verifique as configurações do seu navegador/celular. A localização da sua cidade será anexada automaticamente.";
             status = 'denied';
           } else if (error.code === error.POSITION_UNAVAILABLE) {
-            message = "Informação de localização indisponível. Tente em um local aberto ou verifique as configurações de GPS.";
+            message = "Informação de localização indisponível. Tente em um local aberto ou verifique se o GPS do seu celular está ativo.";
             status = 'unavailable';
           } else if (error.code === error.TIMEOUT) {
             message = "Tempo esgotado ao tentar obter GPS. Verifique sua conexão e tente em um local com melhor visibilidade do céu.";

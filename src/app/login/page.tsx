@@ -17,7 +17,7 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-headline text-accent">Caça Bruxa</CardTitle>
+          <CardTitle className="text-2xl font-headline text-accent">Guardião Rural</CardTitle>
           <CardDescription>Por favor, faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,6 +1,6 @@
 {
-  "name": "Caça Bruxa",
-  "short_name": "Caça Bruxa",
+  "name": "Guardião Rural",
+  "short_name": "Guardião Rural",
   "description": "Aplicativo de assistência para identificação da doença vassoura-de-bruxa em plantas de mandioca.",
   "start_url": "/",
   "display": "standalone",

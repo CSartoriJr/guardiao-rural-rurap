@@ -31,6 +31,7 @@ const UserSchema = z.object({
     municipality: z.string().optional(),
     familyMembers: z.number().optional(),
     assignedMunicipalities: z.array(z.string()).optional(),
+    caf: z.string().optional(),
 });
 
 const GetFarmersOutputSchema = z.array(UserSchema);
@@ -51,9 +52,15 @@ const getFarmersFlow = ai.defineFlow(
       console.error('[getFarmersFlow] Firebase not initialized. Cannot fetch farmers.');
       return [];
     }
-    console.log(`[getFarmersFlow] Fetching farmers for municipalities: ${input.municipalities?.join(', ')}`);
-    // This function call now happens on the server via the flow, bypassing client permissions.
-    const farmers = await getFarmersFromDb(input.municipalities);
-    return farmers;
+    try {
+      console.log(`[getFarmersFlow] Fetching farmers for municipalities: ${input.municipalities?.join(', ')}`);
+      // This function call now happens on the server via the flow, bypassing client permissions.
+      const farmers = await getFarmersFromDb(input.municipalities);
+      console.log(`[getFarmersFlow] Found ${farmers.length} farmers.`);
+      return farmers;
+    } catch(error) {
+       console.error('[getFarmersFlow] Error fetching farmers from database:', error);
+       return [];
+    }
   }
 );
