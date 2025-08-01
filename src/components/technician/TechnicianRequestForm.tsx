@@ -13,13 +13,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus, User } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService';
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users, CalendarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { getFarmersList } from '@/app/actions/farmerActions';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const requestFormSchema = z.object({
   farmerId: z.string().min(1, { message: "Você deve selecionar um agricultor." }),
@@ -34,6 +39,10 @@ const requestFormSchema = z.object({
   mandiocaInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
   macaxeiraPlantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   macaxeiraInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
+  mandiocaPlantingDate: z.date().optional(),
+  mandiocaSymptomsDate: z.date().optional(),
+  macaxeiraPlantingDate: z.date().optional(),
+  macaxeiraSymptomsDate: z.date().optional(),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -44,19 +53,37 @@ const requestFormSchema = z.object({
     path: ["photoUrl1"],
 })
 .superRefine((data, ctx) => {
-    if (data.isMandioca && (!data.mandiocaVariety || data.mandiocaVariety.trim().length < 2)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "A variedade da Mandioca deve ter pelo menos 2 caracteres.",
-        path: ['mandiocaVariety'],
-      });
+    if (data.isMandioca) {
+        if (!data.mandiocaVariety || data.mandiocaVariety.trim().length < 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "A variedade da Mandioca deve ter pelo menos 2 caracteres.",
+            path: ['mandiocaVariety'],
+          });
+        }
+        if (!data.mandiocaPlantingDate) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A data de início do plantio é obrigatória.",
+                path: ['mandiocaPlantingDate'],
+            });
+        }
     }
-    if (data.isMacaxeira && (!data.macaxeiraVariety || data.macaxeiraVariety.trim().length < 2)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.",
-        path: ['macaxeiraVariety'],
-      });
+    if (data.isMacaxeira) {
+        if (!data.macaxeiraVariety || data.macaxeiraVariety.trim().length < 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.",
+            path: ['macaxeiraVariety'],
+          });
+        }
+        if (!data.macaxeiraPlantingDate) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "A data de início do plantio é obrigatória.",
+                path: ['macaxeiraPlantingDate'],
+            });
+        }
     }
 
     const mpa = typeof data.mandiocaPlantedArea === 'number' ? data.mandiocaPlantedArea : undefined;
@@ -204,6 +231,10 @@ export default function TechnicianRequestForm() {
         mandiocaInfectedArea: typeof data.mandiocaInfectedArea === 'number' ? data.mandiocaInfectedArea : undefined,
         macaxeiraPlantedArea: typeof data.macaxeiraPlantedArea === 'number' ? data.macaxeiraPlantedArea : undefined,
         macaxeiraInfectedArea: typeof data.macaxeiraInfectedArea === 'number' ? data.macaxeiraInfectedArea : undefined,
+        mandiocaPlantingDate: data.mandiocaPlantingDate?.toISOString(),
+        mandiocaSymptomsDate: data.mandiocaSymptomsDate?.toISOString(),
+        macaxeiraPlantingDate: data.macaxeiraPlantingDate?.toISOString(),
+        macaxeiraSymptomsDate: data.macaxeiraSymptomsDate?.toISOString(),
         
         latitude: latitude ?? undefined, 
         longitude: longitude ?? undefined, 
@@ -439,6 +470,51 @@ export default function TechnicianRequestForm() {
                     <Controller name="mandiocaInfectedArea" control={control} render={({ field }) => <Input id="mandiocaInfectedArea" type="number" step="any" min="0" placeholder="Ex: 1.2" {...field} />} />
                     {errors.mandiocaInfectedArea && <p className="text-sm text-destructive">{errors.mandiocaInfectedArea.message}</p>}
                   </div>
+                   <div className="space-y-2">
+                        <Label htmlFor="mandiocaPlantingDate">Início do Plantio (Obrigatório)</Label>
+                        <Controller name="mandiocaPlantingDate" control={control} render={({ field }) => (
+                           <Popover>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+                        )} />
+                        {errors.mandiocaPlantingDate && <p className="text-sm text-destructive">{errors.mandiocaPlantingDate.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="mandiocaSymptomsDate">Início dos Sintomas (Opcional)</Label>
+                        <Controller name="mandiocaSymptomsDate" control={control} render={({ field }) => (
+                           <Popover>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                </PopoverContent>
+                            </Popover>
+                        )} />
+                    </div>
                 </div>
               </div>
             )}
@@ -462,6 +538,51 @@ export default function TechnicianRequestForm() {
                     <Controller name="macaxeiraInfectedArea" control={control} render={({ field }) => <Input id="macaxeiraInfectedArea" type="number" step="any" min="0" placeholder="Ex: 0.5" {...field} />} />
                     {errors.macaxeiraInfectedArea && <p className="text-sm text-destructive">{errors.macaxeiraInfectedArea.message}</p>}
                   </div>
+                   <div className="space-y-2">
+                        <Label htmlFor="macaxeiraPlantingDate">Início do Plantio (Obrigatório)</Label>
+                        <Controller name="macaxeiraPlantingDate" control={control} render={({ field }) => (
+                           <Popover>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+                        )} />
+                        {errors.macaxeiraPlantingDate && <p className="text-sm text-destructive">{errors.macaxeiraPlantingDate.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="macaxeiraSymptomsDate">Início dos Sintomas (Opcional)</Label>
+                        <Controller name="macaxeiraSymptomsDate" control={control} render={({ field }) => (
+                           <Popover>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                </PopoverContent>
+                            </Popover>
+                        )} />
+                    </div>
                 </div>
               </div>
             )}
