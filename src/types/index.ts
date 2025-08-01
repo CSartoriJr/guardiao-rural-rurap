@@ -47,4 +47,8 @@ export interface AgriRequest {
   latitude?: number;
   longitude?: number;
   deviceLocationStatus?: DeviceLocationStatus;
+  mandiocaPlantingDate?: string; // ISO String
+  mandiocaSymptomsDate?: string; // ISO String
+  macaxeiraPlantingDate?: string; // ISO String
+  macaxeiraSymptomsDate?: string; // ISO String
 }

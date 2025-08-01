@@ -11,7 +11,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -157,43 +157,72 @@ export default function TechnicianViewRequestPage() {
 
   const AreaDisplay = ({ request }: { request: AgriRequest | null }) => {
     if (!request) return null;
-    const showMandiocaArea = request.isMandioca && (typeof request.mandiocaPlantedArea === 'number' || typeof request.mandiocaInfectedArea === 'number');
-    const showMacaxeiraArea = request.isMacaxeira && (typeof request.macaxeiraPlantedArea === 'number' || typeof request.macaxeiraInfectedArea === 'number');
+    
+    const showMandiocaArea = request.isMandioca && (typeof request.mandiocaPlantedArea === 'number' || typeof request.mandiocaInfectedArea === 'number' || request.mandiocaPlantingDate || request.mandiocaSymptomsDate);
+    const showMacaxeiraArea = request.isMacaxeira && (typeof request.macaxeiraPlantedArea === 'number' || typeof request.macaxeiraInfectedArea === 'number' || request.macaxeiraPlantingDate || request.macaxeiraSymptomsDate);
 
     return (
       <>
         {showMandiocaArea && (
-          <div className='mt-4'>
-            <h4 className='font-semibold text-primary'>Áreas de Mandioca</h4>
-            {typeof request.mandiocaPlantedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
-                <p className="text-lg text-foreground">{request.mandiocaPlantedArea} ha</p>
-              </div>
-            )}
-            {typeof request.mandiocaInfectedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
-                <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
-              </div>
-            )}
+          <div className='mt-4 space-y-4'>
+            <h4 className='font-semibold text-primary'>Detalhes da Mandioca</h4>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                {typeof request.mandiocaPlantedArea === 'number' && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                    <p className="text-lg text-foreground">{request.mandiocaPlantedArea} ha</p>
+                </div>
+                )}
+                {typeof request.mandiocaInfectedArea === 'number' && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                    <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
+                </div>
+                )}
+                {request.mandiocaPlantingDate && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
+                    <p className="text-lg text-foreground">{format(new Date(request.mandiocaPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                </div>
+                )}
+                 {request.mandiocaSymptomsDate && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
+                    <p className="text-lg text-foreground">{format(new Date(request.mandiocaSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                </div>
+                )}
+            </div>
           </div>
         )}
         {showMacaxeiraArea && (
-          <div className='mt-4'>
-            <h4 className='font-semibold text-primary'>Áreas de Macaxeira</h4>
-            {typeof request.macaxeiraPlantedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
-                <p className="text-lg text-foreground">{request.macaxeiraPlantedArea} ha</p>
-              </div>
-            )}
-            {typeof request.macaxeiraInfectedArea === 'number' && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
-                <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
-              </div>
-            )}
+          <div className='mt-4 space-y-4'>
+            <h4 className='font-semibold text-primary'>Detalhes da Macaxeira</h4>
+             <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                {typeof request.macaxeiraPlantedArea === 'number' && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><LandPlot className="h-4 w-4 mr-2 text-primary" />Área Plantada</h3>
+                    <p className="text-lg text-foreground">{request.macaxeiraPlantedArea} ha</p>
+                </div>
+                )}
+                {typeof request.macaxeiraInfectedArea === 'number' && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><AlertTriangle className="h-4 w-4 mr-2 text-destructive" />Área Infectada</h3>
+                    <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
+                </div>
+                )}
+                {request.macaxeiraPlantingDate && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
+                    <p className="text-lg text-foreground">{format(new Date(request.macaxeiraPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                </div>
+                )}
+                 {request.macaxeiraSymptomsDate && (
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
+                    <p className="text-lg text-foreground">{format(new Date(request.macaxeiraSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                </div>
+                )}
+            </div>
           </div>
         )}
       </>
