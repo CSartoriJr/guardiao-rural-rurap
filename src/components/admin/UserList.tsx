@@ -37,6 +37,12 @@ const cpfValidation = z.string().refine(cpf => {
 
 const phoneRegex = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/;
 
+const cafValidation = z.string().refine(val => {
+    if (val === '') return true; // Optional field
+    const match = val.match(/^AP(\d{6})\.(\d{2})\.(\d{9})CAF$/);
+    return !!match;
+}, { message: 'Formato de CAF inválido.' });
+
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
@@ -47,7 +53,7 @@ const editUserFormSchema = z.object({
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
   assignedMunicipalities: z.array(z.string()).optional(),
-  caf: z.string().optional(),
+  caf: cafValidation.optional(),
 })
 .superRefine((data, ctx) => {
   if (data.role === 'farmer') {
@@ -156,10 +162,28 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     fieldOnChange(formattedValue);
   };
 
-  const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
-    const value = e.target.value.replace(/\D/g, '');
-    fieldOnChange(value);
-  }
+  const handleCafInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
+    let digits = e.target.value.replace(/\D/g, '');
+    if (digits.length > 17) {
+      digits = digits.substring(0, 17);
+    }
+
+    if (digits.length === 0) {
+      fieldOnChange('');
+      return;
+    }
+    
+    let formatted = `AP`;
+    if (digits.length > 0) formatted += digits.substring(0, 6);
+    if (digits.length > 6) formatted += `.${digits.substring(6, 8)}`;
+    if (digits.length > 8) formatted += `.${digits.substring(8, 17)}`;
+    if (digits.length === 17) formatted += `CAF`;
+    
+    // Visually update the input
+    e.target.value = formatted;
+    // Update the form state with the full string for validation
+    fieldOnChange(digits.length === 17 ? formatted : digits); // Store full value only when complete
+  };
 
   const onSubmitEdit = async (data: EditUserFormValues) => {
     if (!editingUser) return;
@@ -384,7 +408,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Controller
                         name="caf"
                         control={control}
-                        render={({ field }) => <Input id="edit-caf" placeholder="Apenas números" {...field} onChange={(e) => handleNumericInputChange(e, field.onChange)} />}
+                        render={({ field }) => <Input id="edit-caf" placeholder="APxxxxxx.xx.xxxxxxxxxCAF" {...field} onChange={(e) => handleCafInputChange(e, field.onChange)} />}
                       />
                       {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
                     </div>
