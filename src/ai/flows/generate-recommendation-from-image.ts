@@ -13,6 +13,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { amapaMunicipalities } from '@/lib/mockData';
+import type { SoilTexture, VegetationType } from '@/types';
 
 // Input now accepts photo URLs from Firebase Storage instead of Data URIs directly
 const GenerateRecommendationInputSchema = z.object({
@@ -45,6 +46,10 @@ const GenerateRecommendationInputSchema = z.object({
   deviceLatitude: z.number().optional().describe('GPS Latitude provided by the farmer\'s device, if available. Numerical value between -90 and 90.'),
   deviceLongitude: z.number().optional().describe('GPS Longitude provided by the farmer\'s device, if available. Numerical value between -180 and 180.'),
   soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"]).optional().describe('The soil texture of the planting area.'),
+  vegetationType: z.enum(["Mata (Floresta)", "Cerrado"]).optional().describe('The type of vegetation in the area.'),
+  hasSecondaryActivity: z.boolean().optional().describe('Whether the farmer has a secondary activity in the area.'),
+  secondaryActivityYes: z.string().optional().describe('Description of the secondary activity if it exists.'),
+  secondaryActivityNo: z.string().optional().describe('Description of the intended future activity if none exists.'),
 });
 export type GenerateRecommendationInput = z.infer<typeof GenerateRecommendationInputSchema>;
 
@@ -83,6 +88,12 @@ Plant Information:
 {{#if macaxeiraInfectedArea}}- Infected Area (Macaxeira): {{{macaxeiraInfectedArea}}} hectares{{/if}}
 {{/if}}
 {{#if soilTexture}}- Soil Texture: {{{soilTexture}}}{{/if}}
+{{#if vegetationType}}- Vegetation Type: {{{vegetationType}}}{{/if}}
+{{#if hasSecondaryActivity}}
+- Secondary Activity: Yes - {{{secondaryActivityYes}}}
+{{else}}
+- Secondary Activity: No - Intends to develop: {{{secondaryActivityNo}}}
+{{/if}}
 
 Images Provided (as URLs):
 - Photo 1 (Panoramic): {{media url=photoDataUri1}}

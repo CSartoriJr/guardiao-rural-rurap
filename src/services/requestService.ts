@@ -61,6 +61,11 @@ export const addRequest = async (
       longitude: requestData.longitude ?? null,
       deviceLocationStatus: requestData.deviceLocationStatus ?? 'idle',
       municipality: requestData.municipality ?? null,
+      soilTexture: requestData.soilTexture ?? null,
+      vegetationType: requestData.vegetationType ?? null,
+      hasSecondaryActivity: requestData.hasSecondaryActivity ?? null,
+      secondaryActivityYes: requestData.secondaryActivityYes ?? null,
+      secondaryActivityNo: requestData.secondaryActivityNo ?? null,
     };
 
     const docRef = await addDoc(collection(db!, REQUESTS_COLLECTION), docData);

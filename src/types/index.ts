@@ -55,5 +55,7 @@ export interface AgriRequest {
   macaxeiraSymptomsDate?: string; // ISO String;
   soilTexture?: SoilTexture;
   vegetationType?: VegetationType;
+  hasSecondaryActivity?: boolean;
+  secondaryActivityYes?: string;
+  secondaryActivityNo?: string;
 }
-
