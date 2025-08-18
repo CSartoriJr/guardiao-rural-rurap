@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -387,6 +387,14 @@ export default function FarmerViewRequestPage() {
              
             <AreaDisplay request={request} />
             <LocationDisplay />
+            
+            {request.soilTexture && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><WholeWord className="h-4 w-4 mr-2 text-primary" />Textura do Solo</h3>
+                <p className="text-lg text-foreground">{request.soilTexture}</p>
+              </div>
+            )}
+
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ImageUploadInput from '@/components/shared/ImageUploadInput';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { AgriRequest, DeviceLocationStatus } from '@/types';
+import type { AgriRequest, DeviceLocationStatus, SoilTexture } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService'; // Use Firestore service
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, CalendarIcon } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, CalendarIcon, WholeWord } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
@@ -41,6 +42,7 @@ const requestFormSchema = z.object({
   mandiocaSymptomsDate: z.date().optional(),
   macaxeiraPlantingDate: z.date().optional(),
   macaxeiraSymptomsDate: z.date().optional(),
+  soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"], { required_error: "A textura do solo é obrigatória." }),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -219,6 +221,7 @@ export default function RequestForm() {
         longitude: longitude ?? undefined, 
         deviceLocationStatus: locationStatus,
         municipality: user.municipality || undefined,
+        soilTexture: data.soilTexture,
       };
       
       const newRequest = await addRequestToFirestore(requestDataForFirestore); 
@@ -251,6 +254,7 @@ export default function RequestForm() {
               macaxeiraInfectedArea: newRequest.macaxeiraInfectedArea,
               deviceLatitude: newRequest.latitude,
               deviceLongitude: newRequest.longitude,
+              soilTexture: newRequest.soilTexture,
           };
 
           generateRecommendation(aiInput).then(async aiOutput => {
@@ -570,6 +574,31 @@ export default function RequestForm() {
           </div>
            {errors.photoUrl1 && <p className="text-sm text-destructive mt-1 text-center">{errors.photoUrl1.message}</p>}
           
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="flex items-center"><WholeWord className="h-4 w-4 mr-2 text-primary" />Textura do Solo</Label>
+            <Controller
+              name="soilTexture"
+              control={control}
+              render={({ field }) => (
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
+                >
+                  {(["Arenoso", "Argiloso", "Textura Média"] as const).map((value) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={value} id={`soil-${value}`} />
+                      <Label htmlFor={`soil-${value}`} className="font-normal">{value}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              )}
+            />
+            {errors.soilTexture && <p className="text-sm text-destructive">{errors.soilTexture.message}</p>}
+          </div>
+
           <Separator />
 
           <div className="space-y-2 pt-2">

@@ -44,6 +44,7 @@ const GenerateRecommendationInputSchema = z.object({
   macaxeiraInfectedArea: z.number().optional().describe('The infected area of macaxeira in hectares.'),
   deviceLatitude: z.number().optional().describe('GPS Latitude provided by the farmer\'s device, if available. Numerical value between -90 and 90.'),
   deviceLongitude: z.number().optional().describe('GPS Longitude provided by the farmer\'s device, if available. Numerical value between -180 and 180.'),
+  soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"]).optional().describe('The soil texture of the planting area.'),
 });
 export type GenerateRecommendationInput = z.infer<typeof GenerateRecommendationInputSchema>;
 
@@ -81,6 +82,7 @@ Plant Information:
 {{#if macaxeiraPlantedArea}}- Planted Area (Macaxeira): {{{macaxeiraPlantedArea}}} hectares{{/if}}
 {{#if macaxeiraInfectedArea}}- Infected Area (Macaxeira): {{{macaxeiraInfectedArea}}} hectares{{/if}}
 {{/if}}
+{{#if soilTexture}}- Soil Texture: {{{soilTexture}}}{{/if}}
 
 Images Provided (as URLs):
 - Photo 1 (Panoramic): {{media url=photoDataUri1}}

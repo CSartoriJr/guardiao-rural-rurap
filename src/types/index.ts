@@ -21,6 +21,7 @@ export interface User {
 
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
 export type DeviceLocationStatus = 'idle' | 'fetching' | 'success' | 'error' | 'denied' | 'unavailable' | 'timeout' | 'unsupported';
+export type SoilTexture = "Arenoso" | "Argiloso" | "Textura Média";
 
 
 export interface AgriRequest {
@@ -50,5 +51,6 @@ export interface AgriRequest {
   mandiocaPlantingDate?: string; // ISO String
   mandiocaSymptomsDate?: string; // ISO String
   macaxeiraPlantingDate?: string; // ISO String
-  macaxeiraSymptomsDate?: string; // ISO String
+  macaxeiraSymptomsDate?: string; // ISO String;
+  soilTexture?: SoilTexture;
 }
