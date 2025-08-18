@@ -74,7 +74,7 @@ const editUserFormSchema = z.object({
     if (!data.municipality) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Município é obrigatório para agricultor.',
+        message: 'Unidade Organizacional é obrigatória para agricultor.',
         path: ['municipality'],
       });
     }
@@ -439,17 +439,17 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       {errors.address && <p className="text-xs text-destructive pt-1">{errors.address.message}</p>}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="edit-municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Município</Label>
+                      <Label htmlFor="edit-municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Unidade Organizacional</Label>
                       <Controller
                         name="municipality"
                         control={control}
                         render={({ field }) => (
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <SelectTrigger id="edit-municipality">
-                              <SelectValue placeholder="Selecione um município" />
+                              <SelectValue placeholder="Selecione uma unidade" />
                             </SelectTrigger>
                             <SelectContent>
-                              {amapaMunicipalities.map(muni => (
+                              {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                                 <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                               ))}
                             </SelectContent>

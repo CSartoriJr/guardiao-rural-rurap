@@ -16,7 +16,8 @@ export const amapaMunicipalities: string[] = [
   "Amapá", "Calçoene", "Cutias", "Ferreira Gomes", "Itaubal",
   "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
   "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
-  "Serra do Navio", "Tartarugalzinho", "Vitória do Jari"
+  "Serra do Navio", "Tartarugalzinho", "Vitória do Jari",
+  "Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"
 ];
 
 // Removido o objeto municipalitySeatCoordinates

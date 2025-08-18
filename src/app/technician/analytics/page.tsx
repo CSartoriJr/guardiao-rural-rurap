@@ -180,11 +180,11 @@ export default function TechnicianAnalyticsPage() {
             >
               <SelectTrigger className="w-full sm:w-[280px] bg-card">
                 <MapPin className="mr-2 h-4 w-4 text-primary" />
-                <SelectValue placeholder="Selecionar Município" />
+                <SelectValue placeholder="Selecionar Unidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Municípios</SelectItem>
-                {amapaMunicipalities.map(muni => (
+                <SelectItem value="all">Todas as Unidades</SelectItem>
+                {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                   <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                 ))}
               </SelectContent>
@@ -203,8 +203,8 @@ export default function TechnicianAnalyticsPage() {
                     />
                   </div>
                     <p className="text-xs text-muted-foreground mt-2 text-center">
-                        Clique em um município para filtrar os dados ou selecione no menu acima.
-                        {selectedMunicipality && ` Município selecionado: ${selectedMunicipality}`}
+                        Clique em uma unidade para filtrar os dados ou selecione no menu acima.
+                        {selectedMunicipality && ` Unidade selecionada: ${selectedMunicipality}`}
                     </p>
                 </CardContent>
             </Card>
@@ -217,7 +217,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="text-center">
                         <div className="text-2xl font-bold">{stats.total}</div>
                         <p className="text-xs text-muted-foreground">
-                            {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todo o estado'}
+                            {selectedMunicipality ? `em ${selectedMunicipality}` : 'em todas as unidades'}
                         </p>
                         </CardContent>
                     </Card>
@@ -299,7 +299,7 @@ export default function TechnicianAnalyticsPage() {
               </Card>
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Levantamentos por Município</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Levantamentos por Unidade</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
@@ -314,7 +314,7 @@ export default function TechnicianAnalyticsPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground text-center py-10">Não há dados de Levantamentos por município para exibir o gráfico.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de Levantamentos por unidade para exibir o gráfico.</p>
                   )}
                 </CardContent>
               </Card>

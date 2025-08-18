@@ -39,7 +39,7 @@ const farmerRegistrationFormSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido (será usado para notificações, não para login).' }),
   caf: cafValidation.optional(),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
-  municipality: z.string().min(1, { message: 'Selecione um município.' }),
+  municipality: z.string().min(1, { message: 'Selecione uma unidade.' }),
   familyMembers: z.coerce.number().int().nonnegative({ message: 'O número de componentes familiares deve ser zero ou mais.' }),
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
@@ -151,26 +151,24 @@ export default function FarmerRegistrationForm() {
   };
 
    const handleCafInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
-    let digits = e.target.value.replace(/\D/g, '');
-    if (digits.length > 17) {
-      digits = digits.substring(0, 17);
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 17) {
+      value = value.substring(0, 17);
     }
-
-    if (digits.length === 0) {
+  
+    if (value.length === 0) {
       fieldOnChange('');
       return;
     }
     
-    let formatted = `AP`;
-    if (digits.length > 0) formatted += digits.substring(0, 6);
-    if (digits.length > 6) formatted += `.${digits.substring(6, 8)}`;
-    if (digits.length > 8) formatted += `.${digits.substring(8, 17)}`;
-    if (digits.length === 17) formatted += `CAF`;
-
-    // Visually update the input
+    let formatted = 'AP';
+    if (value.length > 0) formatted += value.substring(0, 6);
+    if (value.length > 6) formatted += `.${value.substring(6, 8)}`;
+    if (value.length > 8) formatted += `.${value.substring(8, 17)}`;
+    if (value.length === 17) formatted += 'CAF';
+  
     e.target.value = formatted;
-    // Update the form state with the full string for validation
-    fieldOnChange(digits.length === 17 ? formatted : digits); // Store full value only when complete
+    fieldOnChange(formatted);
   };
 
   return (
@@ -239,20 +237,20 @@ export default function FarmerRegistrationForm() {
               {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
             </div>
             <div className="space-y-1">
-                <Label htmlFor="caf" className="flex items-center"><FileText className="mr-1.5 h-3.5 w-3.5" />CAF (Opcional)</Label>
-                 <Controller
-                  name="caf"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      id="caf"
-                      placeholder="Apenas números..."
-                      {...field}
-                      onChange={(e) => handleCafInputChange(e, field.onChange)}
-                    />
-                  )}
-                />
-                {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
+              <Label htmlFor="caf" className="flex items-center"><FileText className="mr-1.5 h-3.5 w-3.5" />CAF (Opcional)</Label>
+              <Controller
+                name="caf"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="caf"
+                    placeholder="Apenas números..."
+                    {...field}
+                    onChange={(e) => handleCafInputChange(e, field.onChange)}
+                  />
+                )}
+              />
+              {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
             </div>
           </div>
 
@@ -268,17 +266,17 @@ export default function FarmerRegistrationForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Município</Label>
+              <Label htmlFor="municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Unidade Organizacional</Label>
               <Controller
                 name="municipality"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <SelectTrigger id="municipality">
-                      <SelectValue placeholder="Selecione seu município" />
+                      <SelectValue placeholder="Selecione sua unidade" />
                     </SelectTrigger>
                     <SelectContent>
-                      {amapaMunicipalities.map(muni => (
+                      {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                         <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                       ))}
                     </SelectContent>
