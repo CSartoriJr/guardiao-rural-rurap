@@ -11,7 +11,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -424,6 +424,13 @@ export default function TechnicianViewRequestPage() {
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground flex items-center"><WholeWord className="h-4 w-4 mr-2 text-primary" />Textura do Solo</h3>
                 <p className="text-lg text-foreground">{request.soilTexture}</p>
+              </div>
+            )}
+
+            {request.vegetationType && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Leaf className="h-4 w-4 mr-2 text-primary" />Tipo de Vegetação</h3>
+                <p className="text-lg text-foreground">{request.vegetationType}</p>
               </div>
             )}
 

@@ -12,9 +12,9 @@ import ImageUploadInput from '@/components/shared/ImageUploadInput';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { AgriRequest, DeviceLocationStatus, SoilTexture } from '@/types';
+import type { AgriRequest, DeviceLocationStatus, SoilTexture, VegetationType } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService'; // Use Firestore service
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, CalendarIcon, WholeWord } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, CalendarIcon, WholeWord, Leaf } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
@@ -43,6 +43,7 @@ const requestFormSchema = z.object({
   macaxeiraPlantingDate: z.date().optional(),
   macaxeiraSymptomsDate: z.date().optional(),
   soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"], { required_error: "A textura do solo é obrigatória." }),
+  vegetationType: z.enum(["Mata (Floresta)", "Cerrado"], { required_error: "O tipo de vegetação é obrigatório."}),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -222,6 +223,7 @@ export default function RequestForm() {
         deviceLocationStatus: locationStatus,
         municipality: user.municipality || undefined,
         soilTexture: data.soilTexture,
+        vegetationType: data.vegetationType,
       };
       
       const newRequest = await addRequestToFirestore(requestDataForFirestore); 
@@ -597,6 +599,29 @@ export default function RequestForm() {
               )}
             />
             {errors.soilTexture && <p className="text-sm text-destructive">{errors.soilTexture.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center"><Leaf className="h-4 w-4 mr-2 text-primary" />Tipo de Vegetação</Label>
+            <Controller
+              name="vegetationType"
+              control={control}
+              render={({ field }) => (
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
+                >
+                  {(["Mata (Floresta)", "Cerrado"] as const).map((value) => (
+                    <div key={value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={value} id={`veg-${value}`} />
+                      <Label htmlFor={`veg-${value}`} className="font-normal">{value}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              )}
+            />
+            {errors.vegetationType && <p className="text-sm text-destructive">{errors.vegetationType.message}</p>}
           </div>
 
           <Separator />

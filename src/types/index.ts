@@ -22,6 +22,7 @@ export interface User {
 export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
 export type DeviceLocationStatus = 'idle' | 'fetching' | 'success' | 'error' | 'denied' | 'unavailable' | 'timeout' | 'unsupported';
 export type SoilTexture = "Arenoso" | "Argiloso" | "Textura Média";
+export type VegetationType = "Mata (Floresta)" | "Cerrado";
 
 
 export interface AgriRequest {
@@ -53,4 +54,6 @@ export interface AgriRequest {
   macaxeiraPlantingDate?: string; // ISO String
   macaxeiraSymptomsDate?: string; // ISO String;
   soilTexture?: SoilTexture;
+  vegetationType?: VegetationType;
 }
+
