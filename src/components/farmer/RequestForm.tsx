@@ -475,7 +475,7 @@ export default function RequestForm() {
                                 </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={ptBR} />
                                 </PopoverContent>
                             </Popover>
                         )} />
@@ -498,7 +498,7 @@ export default function RequestForm() {
                                 </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} locale={ptBR} />
                                 </PopoverContent>
                             </Popover>
                         )} />
@@ -543,7 +543,7 @@ export default function RequestForm() {
                                 </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={ptBR} />
                                 </PopoverContent>
                             </Popover>
                         )} />
@@ -566,7 +566,7 @@ export default function RequestForm() {
                                 </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} locale={ptBR} />
                                 </PopoverContent>
                             </Popover>
                         )} />
