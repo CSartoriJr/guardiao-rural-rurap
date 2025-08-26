@@ -41,7 +41,7 @@ export function uploadImage(
 
   const fileExtension = file.name.split('.').pop() || 'dat';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-  const storagePath = `requests_images/${userId}/${uniqueFileName}`;
+  const storagePath = `laudos/${userId}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
   console.log(`[ImageUploadService] Attempting to upload to path: ${storagePath}`);

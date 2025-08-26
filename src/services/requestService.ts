@@ -45,10 +45,9 @@ export const addRequest = async (
   try {
     const docData = {
       ...requestData,
-      submissionDate: serverTimestamp(), // Use server timestamp for creation
+      submissionDate: serverTimestamp(),
       status: 'Pending' as RequestStatus,
       photoUrls: requestData.photoUrls,
-      // Ensure optional fields not in Omit are explicitly set or handled
       recommendation: null,
       technicianId: null,
       technicianName: null,
@@ -57,6 +56,10 @@ export const addRequest = async (
       mandiocaInfectedArea: requestData.mandiocaInfectedArea ?? null,
       macaxeiraPlantedArea: requestData.macaxeiraPlantedArea ?? null,
       macaxeiraInfectedArea: requestData.macaxeiraInfectedArea ?? null,
+      mandiocaPlantingDate: requestData.mandiocaPlantingDate ?? null,
+      mandiocaSymptomsDate: requestData.mandiocaSymptomsDate ?? null,
+      macaxeiraPlantingDate: requestData.macaxeiraPlantingDate ?? null,
+      macaxeiraSymptomsDate: requestData.macaxeiraSymptomsDate ?? null,
       latitude: requestData.latitude ?? null,
       longitude: requestData.longitude ?? null,
       deviceLocationStatus: requestData.deviceLocationStatus ?? 'idle',
