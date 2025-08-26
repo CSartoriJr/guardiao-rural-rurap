@@ -222,7 +222,7 @@ export default function RequestForm() {
 
     setIsSubmitting(true);
     try {
-      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
+      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'tecnicoId' | 'tecnicoName' | 'recommendation'> = {
         farmerId: user.id,
         farmerCpf: user.cpf,
         farmerName: user.name,

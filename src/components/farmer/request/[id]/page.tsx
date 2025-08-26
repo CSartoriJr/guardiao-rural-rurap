@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast'; // Import useToast
 
-const StatusDisplay = ({ status, recommendation, technicianName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate'>) => {
+const StatusDisplay = ({ status, recommendation, tecnicoName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'tecnicoName' | 'responseDate'>) => {
   let IconComponent;
   let badgeClass = '';
   let title = '';
@@ -63,9 +63,9 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
         <CardContent>
           <h3 className="font-semibold text-lg mb-2 text-foreground">Recomendação do Técnico:</h3>
           <p className="text-foreground whitespace-pre-wrap">{recommendation}</p>
-          {technicianName && responseDate && (
+          {tecnicoName && responseDate && (
             <p className="text-xs text-muted-foreground mt-3">
-              Por {technicianName} em {format(new Date(responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
+              Por {tecnicoName} em {format(new Date(responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
             </p>
           )}
         </CardContent>
@@ -452,7 +452,7 @@ export default function FarmerViewRequestPage() {
         <StatusDisplay
           status={request.status}
           recommendation={request.recommendation}
-          technicianName={request.technicianName}
+          tecnicoName={request.tecnicoName}
           responseDate={request.responseDate}
         />
       </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
-import ResponseForm from '@/components/technician/ResponseForm';
+import ResponseForm from '@/components/tecnico/ResponseForm';
 import type { AgriRequest, DeviceLocationStatus } from '@/types';
 import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; // Use Firestore
 import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, not for request data itself
@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 
 
-export default function TechnicianViewRequestPage() {
+export default function TecnicoViewRequestPage() {
   const params = useParams();
   const router = useRouter();
   const { user, initializing: authInitializing } = useAuth();
@@ -69,7 +69,7 @@ export default function TechnicianViewRequestPage() {
             }
         })
         .catch(err => {
-            console.error("[TechnicianViewRequestPage] Falha ao buscar Levantamento do Firestore:", err);
+            console.error("[TecnicoViewRequestPage] Falha ao buscar Levantamento do Firestore:", err);
             setError("Falha ao carregar detalhes do Levantamento.");
             toast({title: "Erro ao Carregar", description: "Falha ao carregar detalhes do Levantamento do Firestore.", variant: "destructive"});
         })
@@ -268,7 +268,7 @@ export default function TechnicianViewRequestPage() {
 
   if (isLoading || authInitializing) { 
     return (
-       <PageWrapper allowedRoles={['technician', 'admin']}>
+       <PageWrapper allowedRoles={['tecnico', 'admin']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
@@ -309,11 +309,11 @@ export default function TechnicianViewRequestPage() {
 
   if (error) {
      return (
-      <PageWrapper allowedRoles={['technician', 'admin']}>
+      <PageWrapper allowedRoles={['tecnico', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
-          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
+          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECNICO_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -323,12 +323,12 @@ export default function TechnicianViewRequestPage() {
 
   if (!request) { 
     return (
-      <PageWrapper allowedRoles={['technician', 'admin']}>
+      <PageWrapper allowedRoles={['tecnico', 'admin']}>
          <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground">Levantamento Não Encontrado</h2>
           <p className="text-muted-foreground">Não foi possível carregar os detalhes do Levantamento. Verifique se o ID é válido.</p>
-          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
+          <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECNICO_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
         </div>
@@ -337,7 +337,7 @@ export default function TechnicianViewRequestPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician', 'admin']}>
+    <PageWrapper allowedRoles={['tecnico', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-6">
             <Button variant="outline" onClick={() => router.back()} className="group">
@@ -459,7 +459,7 @@ export default function TechnicianViewRequestPage() {
           </CardContent>
         </Card>
 
-        {request.status === 'Pending' && user?.role === 'technician' ? (
+        {request.status === 'Pending' && user?.role === 'tecnico' ? (
           <ResponseForm request={request} />
         ) : request.status !== 'Pending' ? (
           <Card className="mt-6 bg-card/80">
@@ -470,9 +470,9 @@ export default function TechnicianViewRequestPage() {
               <p><strong>Status:</strong> {request.status === 'Positive' ? 'Positivo' : request.status === 'Negative' ? 'Negativo' : request.status === 'Inconclusive' ? 'Inconclusivo' : 'Pendente'}</p>
               <p className="mt-2"><strong>Recomendação:</strong></p>
               <p className="whitespace-pre-wrap bg-muted p-3 rounded-md mt-1">{request.recommendation}</p>
-              {request.technicianName && request.responseDate && (
+              {request.tecnicoName && request.responseDate && (
                 <p className="text-xs text-muted-foreground mt-3">
-                   {request.technicianId === user?.id ? `Por Você (${request.technicianName})` : `Por ${request.technicianName}`} em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
+                   {request.tecnicoId === user?.id ? `Por Você (${request.tecnicoName})` : `Por ${request.tecnicoName}`} em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
                 </p>
               )}
             </CardContent>

@@ -62,7 +62,7 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
     const safeUser: AppUser = {
       id: docSnap.id,
       cpf: typeof data.cpf === 'string' ? data.cpf : '',
-      role: ['farmer', 'technician', 'admin'].includes(data.role) ? data.role : 'farmer',
+      role: ['farmer', 'tecnico', 'admin'].includes(data.role) ? data.role : 'farmer',
       name: typeof data.name === 'string' ? data.name : 'Nome Inválido',
       email: typeof data.email === 'string' ? data.email : undefined,
       phone: typeof data.phone === 'string' ? data.phone : undefined,
@@ -131,7 +131,7 @@ export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> 
         return acc;
     }, [] as AppUser[]);
 
-    // Now, filter them in the code based on the technician's assigned municipalities.
+    // Now, filter them in the code based on the tecnico's assigned municipalities.
     const filteredFarmers = (municipalities && municipalities.length > 0)
       ? allFarmers.filter(farmer => farmer.municipality && municipalities.includes(farmer.municipality))
       : allFarmers;
@@ -186,15 +186,15 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
     }
   }
 
-  // Check for related requests for farmers or technicians
+  // Check for related requests for farmers or tecnicos
    if (currentUserDoc.role === 'farmer') {
     const requestQuery = query(collection(db!, 'requests'), where('farmerCpf', '==', currentUserDoc.cpf));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
       throw new Error('Este agricultor possui Levantamentos e não pode ser removido. Remova os Levantamentos primeiro.');
     }
-  } else if (currentUserDoc.role === 'technician') {
-    const requestQuery = query(collection(db!, 'requests'), where('technicianId', '==', userId), where('status', '!=', 'Pending'));
+  } else if (currentUserDoc.role === 'tecnico') {
+    const requestQuery = query(collection(db!, 'requests'), where('tecnicoId', '==', userId), where('status', '!=', 'Pending'));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
       throw new Error('Este técnico possui respostas associadas a Levantamentos e não pode ser removido.');

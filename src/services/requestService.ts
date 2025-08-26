@@ -39,7 +39,7 @@ const requestFromFirestore = (docSnap: any): AgriRequest => {
 
 
 export const addRequest = async (
-  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'>
+  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'tecnicoId' | 'tecnicoName' | 'recommendation'>
 ): Promise<AgriRequest> => {
   ensureFirebaseInitialized();
   try {
@@ -49,8 +49,8 @@ export const addRequest = async (
       status: 'Pending' as RequestStatus,
       photoUrls: requestData.photoUrls,
       recommendation: null,
-      technicianId: null,
-      technicianName: null,
+      tecnicoId: null,
+      tecnicoName: null,
       responseDate: null,
       mandiocaPlantedArea: requestData.mandiocaPlantedArea ?? null,
       mandiocaInfectedArea: requestData.mandiocaInfectedArea ?? null,

@@ -1,11 +1,11 @@
 
 import PageWrapper from '@/components/shared/PageWrapper';
-import TechnicianRequestForm from '@/components/technician/TechnicianRequestForm';
+import TecnicoRequestForm from '@/components/tecnico/TecnicoRequestForm';
 
-export default function TechnicianSubmitRequestPage() {
+export default function TecnicoSubmitRequestPage() {
   return (
-    <PageWrapper allowedRoles={['technician']}>
-      <TechnicianRequestForm />
+    <PageWrapper allowedRoles={['tecnico']}>
+      <TecnicoRequestForm />
     </PageWrapper>
   );
 }

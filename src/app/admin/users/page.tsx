@@ -44,11 +44,11 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
       console.error(`Erro ao buscar Levantamentos para agricultor ${user.id}:`, e);
       activityCount = { requestCount: 0 };
     }
-  } else if (user.role === 'technician') {
+  } else if (user.role === 'tecnico') {
     try {
       const q = firestoreQuery(
         collection(db, 'requests'),
-        where('technicianId', '==', user.id),
+        where('tecnicoId', '==', user.id),
         where('status', '!=', 'Pending')
       );
       const snapshot = await getDocs(q);
@@ -150,7 +150,7 @@ export default function ManageUsersPage() {
   const getRoleDisplayName = (role: AppUserType['role']) => {
     switch (role) {
       case 'admin': return 'Administrador';
-      case 'technician': return 'Técnico';
+      case 'tecnico': return 'Técnico';
       case 'farmer': return 'Agricultor';
       default: return role;
     }
@@ -166,7 +166,7 @@ export default function ManageUsersPage() {
   const totalCounts = useMemo(() => {
     return {
       farmers: users.filter(u => u.role === 'farmer').length,
-      technicians: users.filter(u => u.role === 'technician').length,
+      tecnicos: users.filter(u => u.role === 'tecnico').length,
       admins: users.filter(u => u.role === 'admin').length,
     };
   }, [users]);
@@ -190,13 +190,13 @@ export default function ManageUsersPage() {
                 <SelectContent>
                   <SelectItem value="all">Todas as Funções</SelectItem>
                   <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
-                  <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
+                  <SelectItem value="tecnico">Técnicos ({totalCounts.tecnicos})</SelectItem>
                   <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
              <Button asChild className="w-full sm:w-auto">
-                <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
+                <Link href={APP_ROUTES.ADMIN_CREATE_TECNICO}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Criar Técnico
                 </Link>
@@ -228,7 +228,7 @@ export default function ManageUsersPage() {
             <UserCheck className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCounts.technicians}</div>
+            <div className="text-2xl font-bold">{totalCounts.tecnicos}</div>
           </CardContent>
         </Card>
         <Card>

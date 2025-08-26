@@ -22,11 +22,11 @@ export default function AppHeader() {
 
   if (!user) return null;
 
-  const userRoleDisplay = user.role === 'farmer' ? 'Agricultor' : user.role === 'technician' ? 'Técnico' : 'Administrador';
+  const userRoleDisplay = user.role === 'farmer' ? 'Agricultor' : user.role === 'tecnico' ? 'Técnico' : 'Administrador';
   
   let homeDashboardLink = APP_ROUTES.LOGIN;
   if (user.role === 'farmer') homeDashboardLink = APP_ROUTES.FARMER_DASHBOARD;
-  else if (user.role === 'technician') homeDashboardLink = APP_ROUTES.TECHNICIAN_DASHBOARD;
+  else if (user.role === 'tecnico') homeDashboardLink = APP_ROUTES.TECNICO_DASHBOARD;
   else if (user.role === 'admin') homeDashboardLink = APP_ROUTES.ADMIN_DASHBOARD;
 
 
@@ -55,16 +55,16 @@ export default function AppHeader() {
             </>
           )}
 
-          {/* Technician Links */}
-           {user.role === 'technician' && (
+          {/* Tecnico Links */}
+           {user.role === 'tecnico' && (
             <>
-              <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD}>
+              <Link href={APP_ROUTES.TECNICO_DASHBOARD}>
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="h-5 w-5 md:mr-2" />
                   <span className="hidden md:inline">Painel</span>
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
+              <Link href={APP_ROUTES.TECNICO_ANALYTICS_PANEL}>
                 <Button variant="ghost" size="sm">
                   <BarChart3 className="h-5 w-5 md:mr-2" />
                   <span className="hidden md:inline">Análise</span>
@@ -88,7 +88,7 @@ export default function AppHeader() {
                   <span className="hidden md:inline">Usuários</span>
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
+              <Link href={APP_ROUTES.TECNICO_ANALYTICS_PANEL}>
                 <Button variant="ghost" size="sm">
                   <BarChart3 className="h-5 w-5 md:mr-2" />
                   <span className="hidden md:inline">Análise</span>

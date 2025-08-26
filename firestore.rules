@@ -1,26 +1,47 @@
 rules_version = '2';
 service cloud.firestore {
-	match /databases/{database}/documents {
-		match /users/{userId} {
-    	allow read, write: if request.auth != null && request.auth.uid == userId;
+  match /databases/{database}/documents {
+    // Regras para a coleção de usuários
+    match /users/{userId} {
+      // Permite que um usuário autenticado leia os dados de outro usuário (necessário para o técnico ver detalhes do agricultor).
+      allow read: if request.auth != null;
+      
+      // Permite que um usuário autenticado escreva (crie/atualize) apenas seu próprio documento.
+      // Admins não podem alterar outros usuários diretamente por regras de segurança; isso é feito via Genkit Flow (servidor).
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // A exclusão de usuários é tratada pelo serviço (backend) que verifica permissões de admin.
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-    
+
+    // Regras para a coleção de levantamentos
     match /requests/{requestId} {
-    
-    // Agricultores podem criar requests
-			allow create: if request.auth != null && request.auth.uid == request.resource.data.farmerId;
-       // Agricultores can read their own requests
-      allow read: if request.auth != null && request.auth.uid == resource.data.farmerId;
-   
-          // Tecnicos and Admins can read all requests
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
+      // Permite a criação de um levantamento se:
+      // 1. O usuário autenticado é o próprio agricultor (farmerId corresponde ao UID).
+      // OU
+      // 2. O usuário autenticado tem a função de 'tecnico'.
+      allow create: if request.auth != null && 
+                    (request.auth.uid == request.resource.data.farmerId || 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'tecnico');
 
-       // Tecnicos can update requests (to add a response)
-      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician';
+      // Permite leitura se:
+      // 1. O usuário é o agricultor dono do levantamento.
+      // OU
+      // 2. O usuário tem a função de 'tecnico' ou 'admin'.
+      allow read: if request.auth != null &&
+                  (request.auth.uid == resource.data.farmerId ||
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['tecnico', 'admin']);
 
-        // Admins can delete requests
-    	allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Permite atualização se:
+      // 1. O usuário tem a função de 'tecnico' (para adicionar uma resposta).
+      // OU
+      // 2. O usuário tem a função de 'admin' (para correções).
+      allow update: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['tecnico', 'admin'];
+
+      // Permite exclusão apenas se o usuário tiver a função de 'admin'.
+      allow delete: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
-    

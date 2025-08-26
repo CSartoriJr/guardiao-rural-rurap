@@ -18,7 +18,7 @@ import { firebaseInitializedCorrectly } from '@/lib/firebase';
 // It's a subset of the main User type, reflecting what an admin can change.
 const UserUpdateSchema = z.object({
   name: z.string().optional(),
-  role: z.enum(['farmer', 'technician', 'admin']).optional(),
+  role: z.enum(['farmer', 'tecnico', 'admin']).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),

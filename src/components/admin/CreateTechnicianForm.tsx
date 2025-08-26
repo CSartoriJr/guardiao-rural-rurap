@@ -24,10 +24,10 @@ const cpfValidation = z.string().refine(cpf => {
 }, { message: 'O CPF deve ter 11 dígitos.' });
 
 
-const technicianFormSchema = z.object({
+const tecnicoFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
-  email: z.string().email({ message: 'E-mail inválido (para contato, não para login principal).' }), // Added email for technician
+  email: z.string().email({ message: 'E-mail inválido (para contato, não para login principal).' }), // Added email for tecnico
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
   assignedMunicipalities: z.array(z.string()).optional(),
@@ -36,18 +36,18 @@ const technicianFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
-type TechnicianFormValues = z.infer<typeof technicianFormSchema>;
+type TecnicoFormValues = z.infer<typeof tecnicoFormSchema>;
 
-export default function CreateTechnicianForm() {
+export default function CreateTecnicoForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
-  const { user: adminUser, createTechnicianWithAuth } = useAuth(); // Use createTechnicianWithAuth from AuthContext
+  const { user: adminUser, createTecnicoWithAuth } = useAuth(); // Use createTecnicoWithAuth from AuthContext
   const router = useRouter();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<TechnicianFormValues>({
-    resolver: zodResolver(technicianFormSchema),
+  const { control, handleSubmit, reset, formState: { errors } } = useForm<TecnicoFormValues>({
+    resolver: zodResolver(tecnicoFormSchema),
     defaultValues: {
       name: '',
       cpf: '',
@@ -58,12 +58,12 @@ export default function CreateTechnicianForm() {
     },
   });
 
-  const onSubmit: SubmitHandler<TechnicianFormValues> = async (data) => {
+  const onSubmit: SubmitHandler<TecnicoFormValues> = async (data) => {
     if (!adminUser || adminUser.role !== 'admin') {
       toast({ title: "Acesso Negado", description: "Apenas administradores podem criar técnicos.", variant: "destructive" });
       return;
     }
-    if (!createTechnicianWithAuth) {
+    if (!createTecnicoWithAuth) {
       toast({ title: "Erro de Configuração", description: "Funcionalidade de criação de técnico não está disponível.", variant: "destructive" });
       return;
     }
@@ -87,24 +87,24 @@ export default function CreateTechnicianForm() {
          throw new Error("Firebase não inicializado para verificar CPF.");
       }
 
-      const technicianData = {
+      const tecnicoData = {
         name: data.name,
         cpf: data.cpf,
-        email: data.email, // Pass the actual email for technician document
+        email: data.email, // Pass the actual email for tecnico document
         passwordInput: data.password,
         assignedMunicipalities: data.assignedMunicipalities,
       };
       
-      const newTechnician = await createTechnicianWithAuth(technicianData);
+      const newTecnico = await createTecnicoWithAuth(tecnicoData);
       
-      if (newTechnician) {
+      if (newTecnico) {
         toast({
           title: 'Técnico Criado!',
-          description: `O técnico ${newTechnician.name} (CPF: ${newTechnician.cpf}) foi criado com sucesso.`,
+          description: `O técnico ${newTecnico.name} (CPF: ${newTecnico.cpf}) foi criado com sucesso.`,
         });
         reset();
       } else {
-        // This case should ideally be handled by createTechnicianWithAuth throwing an error
+        // This case should ideally be handled by createTecnicoWithAuth throwing an error
         toast({ title: "Falha na Criação", description: "Não foi possível criar o técnico. Verifique os logs.", variant: "destructive" });
       }
     } catch (error: any) {

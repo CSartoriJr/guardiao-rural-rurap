@@ -46,7 +46,7 @@ const cafValidation = z.string().refine(val => {
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
-  role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
+  role: z.enum(['farmer', 'tecnico', 'admin'], { required_error: "A função é obrigatória." }),
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
   address: z.string().optional(),
@@ -210,7 +210,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       userDataToUpdate.familyMembers = data.familyMembers;
       userDataToUpdate.caf = data.caf;
       userDataToUpdate.assignedMunicipalities = undefined;
-    } else if (data.role === 'technician') {
+    } else if (data.role === 'tecnico') {
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
         userDataToUpdate.phone = undefined;
         userDataToUpdate.address = undefined;
@@ -244,7 +244,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     if (user.role === 'farmer' && (user.requestCount ?? 0) > 0) {
       return "Este agricultor possui Levantamentos e não pode ser removido.";
     }
-    if (user.role === 'technician' && (user.responseCount ?? 0) > 0) {
+    if (user.role === 'tecnico' && (user.responseCount ?? 0) > 0) {
       return "Este técnico possui respostas e não pode ser removido.";
     }
     return "Remover documento do usuário (Auth user não será afetado)";
@@ -277,7 +277,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell className="text-center">
                   {user.role === 'farmer'
                     ? (user.requestCount !== undefined ? user.requestCount : '-')
-                    : user.role === 'technician'
+                    : user.role === 'tecnico'
                     ? (user.responseCount !== undefined ? user.responseCount : '-')
                     : 'N/A'}
                 </TableCell>
@@ -296,7 +296,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       user.id === currentAdminId ||
                       (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
                       (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||
-                      (user.role === 'technician' && (user.responseCount ?? 0) > 0)
+                      (user.role === 'tecnico' && (user.responseCount ?? 0) > 0)
                     }
                     title={getDeleteButtonTitle(user)}
                   >
@@ -360,7 +360,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="farmer">Agricultor</SelectItem>
-                          <SelectItem value="technician">Técnico</SelectItem>
+                          <SelectItem value="tecnico">Técnico</SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
                         </SelectContent>
                       </Select>
@@ -379,7 +379,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
                 </div>
                 
-                {watchedRole === 'technician' && (
+                {watchedRole === 'tecnico' && (
                   <div className="space-y-1">
                     <Label htmlFor="edit-assignedMunicipalities">Municípios Atribuídos</Label>
                      <p className="text-xs text-muted-foreground">O técnico só verá os levantamentos dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>

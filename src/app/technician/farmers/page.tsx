@@ -79,7 +79,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities
 };
 
 
-export default function TechnicianFarmersPage() {
+export default function TecnicoFarmersPage() {
   const { user, initializing } = useAuth();
   const { toast } = useToast();
   const [farmers, setFarmers] = useState<User[]>([]);
@@ -90,7 +90,7 @@ export default function TechnicianFarmersPage() {
 
   useEffect(() => {
     if (initializing) return;
-    if (user && user.role === 'technician') {
+    if (user && user.role === 'tecnico') {
       setIsLoading(true);
       getFarmersList(user.assignedMunicipalities)
         .then(data => {
@@ -113,7 +113,7 @@ export default function TechnicianFarmersPage() {
 
   if (isLoading || initializing) {
     return (
-      <PageWrapper allowedRoles={['technician']}>
+      <PageWrapper allowedRoles={['tecnico']}>
         <div className="space-y-6">
           <Skeleton className="h-10 w-1/3" />
           <Skeleton className="h-8 w-2/5" />
@@ -132,7 +132,7 @@ export default function TechnicianFarmersPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician']}>
+    <PageWrapper allowedRoles={['tecnico']}>
        <Dialog open={!!selectedFarmer} onOpenChange={(open) => !open && setSelectedFarmer(null)}>
         <div className="mb-8">
             <h1 className="text-3xl font-headline text-gray-800">Meus Agricultores</h1>

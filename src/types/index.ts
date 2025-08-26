@@ -3,7 +3,7 @@
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
-  role: 'farmer' | 'technician' | 'admin';
+  role: 'farmer' | 'tecnico' | 'admin';
   name: string;
   email?: string; // Firebase Auth uses email, so we'll store the actual email or a dummy one if CPF is used for auth.
   password?: string; // Only used for initial creation/reset, not stored directly in Firestore if using Firebase Auth.
@@ -15,7 +15,7 @@ export interface User {
   municipality?: string;
   familyMembers?: number;
 
-  // Fields specific to technician role
+  // Fields specific to tecnico role
   assignedMunicipalities?: string[];
 }
 
@@ -38,8 +38,8 @@ export interface AgriRequest {
   status: RequestStatus;
   recommendation?: string;
   submissionDate: string; // ISO date string (from Firestore Timestamp)
-  technicianId?: string; // Firebase Auth UID of the technician
-  technicianName?: string;
+  tecnicoId?: string; // Firebase Auth UID of the tecnico
+  tecnicoName?: string;
   responseDate?: string; // ISO date string (from Firestore Timestamp)
   municipality?: string;
   mandiocaPlantedArea?: number;

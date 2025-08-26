@@ -133,7 +133,7 @@ const requestFormSchema = z.object({
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
 
-export default function TechnicianRequestForm() {
+export default function TecnicoRequestForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, startTransition] = useTransition();
   const { toast } = useToast();
@@ -176,7 +176,7 @@ export default function TechnicianRequestForm() {
 
 
   useEffect(() => {
-    if (user && user.role === 'technician') {
+    if (user && user.role === 'tecnico') {
       setIsFarmerListLoading(true);
       getFarmersList(user.assignedMunicipalities)
         .then(setFarmers)
@@ -229,7 +229,7 @@ export default function TechnicianRequestForm() {
 
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
-    if (!user || user.role !== 'technician') {
+    if (!user || user.role !== 'tecnico') {
       toast({ title: "Erro", description: "Apenas técnicos logados podem enviar levantamentos.", variant: "destructive" });
       return;
     }
@@ -245,7 +245,7 @@ export default function TechnicianRequestForm() {
 
     setIsSubmitting(true);
     try {
-      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
+      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'tecnicoId' | 'tecnicoName' | 'recommendation'> = {
         farmerId: selectedFarmer.id,
         farmerCpf: selectedFarmer.cpf,
         farmerName: selectedFarmer.name,
@@ -281,10 +281,10 @@ export default function TechnicianRequestForm() {
         title: 'Levantamento Enviado!',
         description: `Levantamento para ${selectedFarmer.name} enviado. A IA está processando a localização. ID: ${newRequest.id}.`,
       });
-      router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
+      router.push(APP_ROUTES.TECNICO_DASHBOARD);
       
       if (newRequest.id) {
-          console.log(`[TechnicianRequestForm] Starting background AI processing for request ${newRequest.id}`);
+          console.log(`[TecnicoRequestForm] Starting background AI processing for request ${newRequest.id}`);
           const aiInput = {
               mandiocaVariety: newRequest.mandiocaVariety,
               macaxeiraVariety: newRequest.macaxeiraVariety,
@@ -325,12 +325,12 @@ export default function TechnicianRequestForm() {
               
               if (needsDBUpdate) {
                   await updateRequest(newRequest.id, updatedFields);
-                  console.log(`[TechnicianRequestForm] AI processing complete, request ${newRequest.id} updated with:`, updatedFields);
+                  console.log(`[TecnicoRequestForm] AI processing complete, request ${newRequest.id} updated with:`, updatedFields);
               } else {
-                  console.log(`[TechnicianRequestForm] AI processing complete for ${newRequest.id}, no updates needed.`);
+                  console.log(`[TecnicoRequestForm] AI processing complete for ${newRequest.id}, no updates needed.`);
               }
           }).catch(aiError => {
-              console.error(`[TechnicianRequestForm] Background AI processing failed for request ${newRequest.id}:`, aiError);
+              console.error(`[TecnicoRequestForm] Background AI processing failed for request ${newRequest.id}:`, aiError);
           });
       }
 
@@ -775,7 +775,7 @@ export default function TechnicianRequestForm() {
             type="button"
             variant="outline"
             className="w-full sm:w-auto"
-            onClick={() => router.push(APP_ROUTES.TECHNICIAN_DASHBOARD)}
+            onClick={() => router.push(APP_ROUTES.TECNICO_DASHBOARD)}
             disabled={isSubmitting}
           >
             <XCircle className="mr-2 h-4 w-4" />
