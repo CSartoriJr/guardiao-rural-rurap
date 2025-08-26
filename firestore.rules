@@ -1,47 +1,42 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the requesting user is an admin
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Rules for the users collection
     match /users/{userId} {
-      // 1. Any authenticated user can read another user's profile (e.g., for a technician to see farmer details).
-      // 2. An admin can create a user document (this allows the server-side flow to work).
-      // 3. A user can only update or delete their own document.
-      allow read: if request.auth != null;
-      allow create: if isAdmin();
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      // Permite a criação de um usuário se o solicitante for um técnico ou admin.
+      allow create: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
+
+      // Permite que um usuário leia seu próprio documento, ou que um técnico/admin leia qualquer documento.
+      allow read: if request.auth != null && 
+                  (request.auth.uid == userId || 
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
+      
+      // Permite que um usuário atualize apenas seu próprio documento.
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Apenas administradores podem deletar usuários.
+      allow delete: if request.auth != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rules for the requests collection
     match /requests/{requestId} {
-      // Allow creation if:
-      // 1. The user is the farmer themselves.
-      // 2. The user is a technician (creating on behalf of a farmer).
-      allow create: if request.auth != null &&
-                    (request.auth.uid == request.resource.data.farmerId ||
+      // Permite a criação se o usuário for o próprio agricultor OU um técnico.
+      allow create: if request.auth != null && 
+                    (request.auth.uid == request.resource.data.farmerId || 
                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
 
-      // Allow reading if:
-      // 1. The user is the farmer who owns the request.
-      // 2. The user is a technician or an admin.
-      allow read: if request.auth != null &&
+      // Permite leitura para o agricultor dono do levantamento, ou para técnicos/admins.
+      allow read: if request.auth.uid != null && 
                   (request.auth.uid == resource.data.farmerId ||
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
-
-      // Allow updates if:
-      // 1. The user is a technician (e.g., to add a recommendation).
-      // 2. The user is an admin.
-      allow update: if request.auth != null &&
+      
+      // Permite que técnicos e administradores atualizem levantamentos.
+      allow update: if request.auth.uid != null &&
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
 
-      // Allow deletion only if the user is an admin.
-      allow delete: if isAdmin();
+      // Apenas administradores podem deletar levantamentos.
+      allow delete: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
