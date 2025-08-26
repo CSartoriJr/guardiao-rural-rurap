@@ -110,24 +110,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Generic function to create an auth user and then call the server flow to create the Firestore doc.
   const createAuthAndFirestoreUser = async (
-    userData: Omit<AppUser, 'id'> & { passwordInput: string; role: AppUser['role'] },
-    isTempAuth: boolean = false
+    userData: Omit<AppUser, 'id'> & { passwordInput: string; role: AppUser['role'] }
   ): Promise<AppUser | null> => {
-    if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
-    setLoading(true);
+    if (!firebaseInitializedCorrectly || !firebaseAuth) {
+      throw new Error("Firebase Auth não está inicializado.");
+    }
     
+    // Admins and Technicians always create users in a temporary auth session
+    // to avoid logging themselves out. This is also used when a tech registers a farmer.
+    const useTempAuth = userData.role !== 'farmer' || !!userData.registeredByTechnicianId;
+
     let authProvider = firebaseAuth;
-    let tempApp: FirebaseApp | undefined = undefined;
+    let tempApp: FirebaseApp | undefined;
+    setLoading(true);
 
     try {
-      // For admin/technician/by-technician creation, we use a temporary auth instance to avoid logging out the current user.
-      if (isTempAuth) {
+      if (useTempAuth) {
         const tempAppName = `auth-worker-${userData.role}-${Date.now()}`;
-        console.log(`[AuthContext] Initializing temporary Firebase app: ${tempAppName}`);
         tempApp = initializeApp(firebaseConfig, tempAppName);
         authProvider = getAuth(tempApp);
+        console.log(`[AuthContext] Using temporary Firebase app: ${tempAppName}`);
       }
 
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
@@ -140,7 +143,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const { passwordInput, ...firestoreData } = userData;
 
-      // Call the secure server flow to create the document in Firestore
       console.log(`[AuthContext] Calling server flow to create Firestore document for user ${fbUser.uid}`);
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
@@ -149,11 +151,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log(`[AuthContext] Server flow completed successfully for user ${fbUser.uid}`);
 
       return appUser;
+
     } catch (error: any) {
-      console.error(`[AuthContext] ${userData.role} creation failed:`, error.code, error.message);
+      console.error(`[AuthContext] ${userData.role} creation failed:`, error.message, error);
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('Este CPF já está cadastrado.');
       }
+      // Re-throw a generic or specific error message to be caught by the form.
       throw new Error(error.message || `Falha ao cadastrar ${userData.role}.`);
     } finally {
       if (tempApp) {
@@ -164,9 +168,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
   const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
-    return createAuthAndFirestoreUser({ ...userData, role: 'farmer' }, false);
+    // This is for a farmer self-registering.
+    return createAuthAndFirestoreUser({ ...userData, role: 'farmer' });
   };
 
   const registerFarmerByTechnician = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }, technician: AppUser): Promise<AppUser | null> => {
@@ -175,17 +179,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: 'farmer' as const,
         registeredByTechnicianId: technician.id,
         registeredByTechnicianName: technician.name,
-    }
-    // Use a temporary auth instance so the technician doesn't get logged out
-    return createAuthAndFirestoreUser(userDataWithTechnician, true);
+    };
+    return createAuthAndFirestoreUser(userDataWithTechnician);
   };
   
   const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }): Promise<AppUser | null> => {
-    return createAuthAndFirestoreUser({ ...userData, role: 'technician' }, true);
+    return createAuthAndFirestoreUser({ ...userData, role: 'technician' });
   };
 
   const createAdminWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
-    return createAuthAndFirestoreUser({ ...userData, role: 'admin' }, true);
+    return createAuthAndFirestoreUser({ ...userData, role: 'admin' });
   };
   
   const updateCurrentUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {
