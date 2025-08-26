@@ -1,27 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      // Regra 1: Usuários podem ler e escrever seus próprios documentos.
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+	match /databases/{database}/documents {
+		match /users/{userId} {
+    	allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
+    
     match /requests/{requestId} {
-      // Regra 2: Usuário autenticado pode criar um request se o ID do agricultor no request for o seu próprio.
-      // Isso permite que agricultores e técnicos (em nome de agricultores) criem requests.
-      // A lógica do aplicativo deve garantir que o agricultorId correto seja definido.
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.farmerId;
-      
-      // Regra 3: Permite leitura para o agricultor dono do request, ou para técnicos e administradores.
-      allow read: if request.auth != null && 
-                  (resource.data.farmerId == request.auth.uid || 
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
-                   
-      // Regra 4: Permite que técnicos atualizem um request (para adicionar uma resposta).
+    
+    // Agricultores podem criar requests
+			allow create: if request.auth != null && request.auth.uid == request.resource.data.farmerId;
+       // Agricultores can read their own requests
+      allow read: if request.auth != null && request.auth.uid == resource.data.farmerId;
+   
+          // Tecnicos and Admins can read all requests
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
+
+       // Tecnicos can update requests (to add a response)
       allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician';
 
-      // Regra 5: Permite que administradores excluam um request.
-      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        // Admins can delete requests
+    	allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
+    
