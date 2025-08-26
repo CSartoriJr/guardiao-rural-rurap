@@ -17,7 +17,7 @@ import {
 } from 'firebase/auth';
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
 import { getUserDocument } from '@/services/userService';
-import { createUserDocumentOnServer } from '@/ai/flows/create-user-document'; // Import the new server flow
+import { createUserDocumentOnServer } from '@/ai/flows/create-user-document'; // Import the server flow
 
 interface AuthContextType {
   user: AppUser | null;

@@ -33,6 +33,8 @@ const CreateUserDocumentInputSchema = z.object({
     familyMembers: z.number().int().nonnegative().optional(),
     assignedMunicipalities: z.array(z.string()).optional(),
     caf: z.string().optional(),
+    registeredByTechnicianId: z.string().optional(),
+    registeredByTechnicianName: z.string().optional(),
   }).describe('The data to be stored in the Firestore user document.'),
 });
 
