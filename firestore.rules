@@ -3,17 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      // Permite a criação de um usuário se o solicitante for um técnico ou admin.
+      // Permite a criação de um usuário se o solicitante for um técnico ou admin,
+      // ou se o usuário estiver criando seu próprio registro (auto-cadastro do agricultor).
       allow create: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
-
+                     (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'] ||
+                      request.auth.uid == userId);
+      
       // Permite que um usuário leia seu próprio documento, ou que um técnico/admin leia qualquer documento.
       allow read: if request.auth != null && 
                   (request.auth.uid == userId || 
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
       
-      // Permite que um usuário atualize apenas seu próprio documento.
-      allow update: if request.auth != null && request.auth.uid == userId;
+      // Permite que um usuário atualize apenas seu próprio documento, ou que um admin atualize qualquer documento.
+      allow update: if request.auth != null && 
+                    (request.auth.uid == userId ||
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
 
       // Apenas administradores podem deletar usuários.
       allow delete: if request.auth != null &&
@@ -27,16 +31,17 @@ service cloud.firestore {
                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
 
       // Permite leitura para o agricultor dono do levantamento, ou para técnicos/admins.
-      allow read: if request.auth.uid != null && 
-                  (request.auth.uid == resource.data.farmerId ||
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
-      
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.farmerId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']
+      );
+
       // Permite que técnicos e administradores atualizem levantamentos.
-      allow update: if request.auth.uid != null &&
+      allow update: if request.auth != null &&
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
 
       // Apenas administradores podem deletar levantamentos.
-      allow delete: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
