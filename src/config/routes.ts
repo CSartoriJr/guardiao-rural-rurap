@@ -12,6 +12,7 @@ export const APP_ROUTES = {
   TECHNICIAN_VIEW_REQUEST: (id: string) => `/technician/request/${id}`,
   TECHNICIAN_ANALYTICS_PANEL: '/technician/analytics',
   TECHNICIAN_REGISTER_FARMER: '/technician/register-farmer',
+  TECHNICIAN_FARMERS_LIST: '/technician/farmers', // Added route for farmer list
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_CREATE_TECHNICIAN: '/admin/create-technician',
   ADMIN_CREATE_ADMIN: '/admin/create-admin',

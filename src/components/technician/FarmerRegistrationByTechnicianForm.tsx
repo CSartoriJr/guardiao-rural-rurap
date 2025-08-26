@@ -106,7 +106,7 @@ export default function FarmerRegistrationByTechnicianForm() {
           description: `O agricultor ${newUser.name} foi cadastrado com sucesso. A senha inicial é o CPF (apenas números).`,
         });
         reset();
-        router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
+        router.push(APP_ROUTES.TECHNICIAN_FARMERS_LIST); // Changed to redirect to farmers list
       }
     } catch (error: any) {
       console.error("Falha ao cadastrar agricultor:", error);
