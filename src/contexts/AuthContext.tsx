@@ -26,7 +26,7 @@ interface AuthContextType {
   login: (numericCpf: string, password: string) => Promise<AppUser | null>;
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
-  createTecnicoWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
+  createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   updateCurrentUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -136,12 +136,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const createTecnicoWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
+  const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
     let tempApp: FirebaseApp | undefined = undefined;
     try {
-      tempApp = initializeApp(firebaseConfig, `auth-worker-tecnico-${Date.now()}`);
+      tempApp = initializeApp(firebaseConfig, `auth-worker-technician-${Date.now()}`);
       const tempAuth = getAuth(tempApp);
 
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
@@ -153,13 +153,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const appUser = await createUserDocument(fbUser, {
         ...userData,
-        role: 'tecnico',
+        role: 'technician',
         email: userData.email, // Use real email
       });
 
       return appUser;
     } catch (error: any) {
-      console.error("[AuthContext] Tecnico creation with auth failed:", error.code, error.message);
+      console.error("[AuthContext] Technician creation with auth failed:", error.code, error.message);
        if (error.code === 'auth/email-already-in-use') {
         throw new Error('Este CPF (e-mail) já está cadastrado para outro técnico.');
       }
@@ -236,7 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTecnicoWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
       {children}
     </AuthContext.Provider>
   );

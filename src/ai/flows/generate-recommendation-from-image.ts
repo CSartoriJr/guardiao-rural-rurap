@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview AI-powered assistant for tecnicos. It processes cassava type, submitted photos,
+ * @fileOverview AI-powered assistant for technicians. It processes cassava type, submitted photos,
  * and optionally, device-provided GPS coordinates. It attempts to extract GPS from images if not provided by the device,
  * and determines the Amapá municipality based on the coordinates.
  *
@@ -70,7 +70,7 @@ const prompt = ai.definePrompt({
   name: 'generateRecommendationPrompt',
   input: {schema: GenerateRecommendationInputSchema},
   output: {schema: GenerateRecommendationOutputSchema},
-  prompt: `You are an expert agricultural tecnico specializing in cassava plants (mandioca/macaxeira) in the state of Amapá, Brazil.
+  prompt: `You are an expert agricultural technician specializing in cassava plants (mandioca/macaxeira) in the state of Amapá, Brazil.
 Your task is to determine the GPS coordinates and identify the Amapá municipality based on the provided plant information and images.
 
 Valid Amapá Municipalities: ${amapaMunicipalities.join(', ')}.

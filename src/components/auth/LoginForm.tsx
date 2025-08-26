@@ -35,8 +35,8 @@ export default function LoginForm() {
       toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${loggedInUser.name}!` });
       if (loggedInUser.role === 'farmer') {
         router.push(APP_ROUTES.FARMER_DASHBOARD);
-      } else if (loggedInUser.role === 'tecnico') {
-        router.push(APP_ROUTES.TECNICO_DASHBOARD);
+      } else if (loggedInUser.role === 'technician') {
+        router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
       } else if (loggedInUser.role === 'admin') {
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       }

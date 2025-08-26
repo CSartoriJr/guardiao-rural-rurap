@@ -16,8 +16,8 @@ export default function HomePage() {
       if (user) {
         if (user.role === 'farmer') {
           router.replace(APP_ROUTES.FARMER_DASHBOARD);
-        } else if (user.role === 'tecnico') {
-          router.replace(APP_ROUTES.TECNICO_DASHBOARD);
+        } else if (user.role === 'technician') {
+          router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
         } else if (user.role === 'admin') {
           router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         } else {

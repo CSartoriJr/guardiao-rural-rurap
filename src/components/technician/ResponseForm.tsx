@@ -43,7 +43,7 @@ const statusOptions: StatusOption[] = [
 export default function ResponseForm({ request }: ResponseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user: tecnicoUser } = useAuth(); 
+  const { user: technicianUser } = useAuth(); 
   const router = useRouter();
 
   const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
@@ -55,7 +55,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
   });
 
   const onSubmit: SubmitHandler<ResponseFormValues> = async (data) => {
-    if (!tecnicoUser || !tecnicoUser.id || !tecnicoUser.name) {
+    if (!technicianUser || !technicianUser.id || !technicianUser.name) {
       toast({ title: "Erro", description: "Técnico não está logado ou nome não definido.", variant: "destructive" });
       return;
     }
@@ -66,8 +66,8 @@ export default function ResponseForm({ request }: ResponseFormProps) {
     setIsSubmitting(true);
     try {
       const updatesForFirestore: Partial<AgriRequest> = {
-        tecnicoId: tecnicoUser.id,
-        tecnicoName: tecnicoUser.name,
+        technicianId: technicianUser.id,
+        technicianName: technicianUser.name,
         recommendation: data.recommendation,
         status: data.status,
         responseDate: new Date().toISOString(), // Will be converted to Timestamp by service
@@ -79,7 +79,7 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         title: 'Resposta Enviada!',
         description: `Sua resposta para o Levantamento ID ${request.id} foi salva no Firestore.`,
       });
-      router.push(APP_ROUTES.TECNICO_DASHBOARD);
+      router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error: any) {
       console.error("Falha ao enviar resposta:", error);
       toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar a resposta. Por favor, tente novamente.", variant: "destructive" });

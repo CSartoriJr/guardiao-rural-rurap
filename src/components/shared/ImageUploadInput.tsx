@@ -15,7 +15,7 @@ interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
   id: string;
   currentImageUrl?: string | null;
-  userId?: string | null; // Allow passing the user ID, e.g., for tecnicos uploading for farmers
+  userId?: string | null; // Allow passing the user ID, e.g., for technicians uploading for farmers
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, userId: propUserId }: ImageUploadInputProps) {

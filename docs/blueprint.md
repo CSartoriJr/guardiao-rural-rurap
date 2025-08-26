@@ -4,10 +4,10 @@
 
 - User Login: User authentication via login.
 - Request Submission: Submission form for farmers including fields for cassava type, geo-referenced photo uploads.
-- Tecnico Dashboard: Tecnico dashboard to view and respond to farmer requests.
-- Recommendation Input: Text area for the tecnico to input recommendations, coupled with radio buttons for tecnico to mark the result as positive, negative, or inconclusive.
+- Technician Dashboard: Technician dashboard to view and respond to farmer requests.
+- Recommendation Input: Text area for the technician to input recommendations, coupled with radio buttons for technician to mark the result as positive, negative, or inconclusive.
 - Result Notification: Confirmation display screen of recommendation status for the farmer, on the farmer's phone.
-- AI Recommendation Tool: AI powered tool to assist tecnicos by suggesting common recommendations based on cassava type and submitted photos, before they send response to farmers.
+- AI Recommendation Tool: AI powered tool to assist technicians by suggesting common recommendations based on cassava type and submitted photos, before they send response to farmers.
 
 ## Style Guidelines:
 

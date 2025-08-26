@@ -28,7 +28,7 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
       } else if (!allowedRoles.includes(user.role)) {
         console.log(`[PageWrapper] User role '${user.role}' not in allowed roles [${allowedRoles.join(', ')}]. Redirecting.`);
         if (user.role === 'farmer') router.replace(APP_ROUTES.FARMER_DASHBOARD);
-        else if (user.role === 'tecnico') router.replace(APP_ROUTES.TECNICO_DASHBOARD);
+        else if (user.role === 'technician') router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
         else if (user.role === 'admin') router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         else router.replace(APP_ROUTES.LOGIN); // Fallback
       } else {

@@ -16,14 +16,14 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // Fetch all requests from Firestore
-const fetchAllTecnicoRequests = async (): Promise<AgriRequest[]> => {
-  console.log("[TecnicoAnalyticsPage] Fetching all requests from Firestore for analytics.");
+const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
+  console.log("[TechnicianAnalyticsPage] Fetching all requests from Firestore for analytics.");
   try {
     const requests = await getAllRequestsSystemWide();
-    console.log(`[TecnicoAnalyticsPage] Fetched ${requests.length} requests from Firestore.`);
+    console.log(`[TechnicianAnalyticsPage] Fetched ${requests.length} requests from Firestore.`);
     return requests;
   } catch (error) {
-    console.error("[TecnicoAnalyticsPage] Error fetching requests from Firestore for analytics:", error);
+    console.error("[TechnicianAnalyticsPage] Error fetching requests from Firestore for analytics:", error);
     // Error will be handled in the useEffect hook that calls this function.
     throw error; // Re-throw to be caught by the caller
   }
@@ -34,7 +34,7 @@ interface ChartDataItem {
   count: number;
 }
 
-export default function TecnicoAnalyticsPage() {
+export default function TechnicianAnalyticsPage() {
   const [requests, setRequests] = useState<AgriRequest[]>([]);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ export default function TecnicoAnalyticsPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetchAllTecnicoRequests()
+    fetchAllTechnicianRequests()
       .then(data => {
         setRequests(data);
         if (data.length === 0) {
@@ -128,7 +128,7 @@ export default function TecnicoAnalyticsPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper allowedRoles={['tecnico', 'admin']}>
+      <PageWrapper allowedRoles={['technician', 'admin']}>
         <div className="space-y-8">
           <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-1/3" />
@@ -169,7 +169,7 @@ export default function TecnicoAnalyticsPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['tecnico', 'admin']}>
+    <PageWrapper allowedRoles={['technician', 'admin']}>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-headline text-gray-800">Painel de Análise</h1>

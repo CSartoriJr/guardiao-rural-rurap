@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
-import TecnicoRequestCard from '@/components/tecnico/RequestCard';
+import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +28,7 @@ const getStatusDisplayName = (statusValue: RequestStatus | 'all'): string => {
   return option ? option.label : 'Status Desconhecido';
 };
 
-export default function TecnicoDashboard() {
+export default function TechnicianDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
@@ -41,14 +41,14 @@ export default function TecnicoDashboard() {
       
       let requestPromise: Promise<AgriRequest[]>;
 
-      const hasAssignedMunicipalities = user.role === 'tecnico' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
+      const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
 
       if (hasAssignedMunicipalities) {
-        console.log(`Fetching requests for tecnico ${user.id} in municipalities:`, user.assignedMunicipalities);
+        console.log(`Fetching requests for technician ${user.id} in municipalities:`, user.assignedMunicipalities);
         requestPromise = getRequestsForMunicipalities(user.assignedMunicipalities!);
       } else {
         console.log(`Fetching all system-wide requests for user ${user.id} (no specific municipalities assigned).`);
-        requestPromise = getAllRequestsSystemWide(); // Admins and tecnicos without specific municipalities see all
+        requestPromise = getAllRequestsSystemWide(); // Admins and technicians without specific municipalities see all
       }
       
       requestPromise
@@ -100,7 +100,7 @@ export default function TecnicoDashboard() {
   };
 
   return (
-    <PageWrapper allowedRoles={['tecnico']}>
+    <PageWrapper allowedRoles={['technician']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
@@ -108,7 +108,7 @@ export default function TecnicoDashboard() {
             <ClipboardList className="h-5 w-5 mr-2"/>
             <span>{getHeaderText()}</span>
           </div>
-           <Link href={APP_ROUTES.TECNICO_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
+           <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
               <PlusCircle className="mr-2 h-5 w-5" /> Novo Levantamento
             </Button>
@@ -144,7 +144,7 @@ export default function TecnicoDashboard() {
       ) : filteredRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRequests.map(request => (
-            <TecnicoRequestCard key={request.id} request={request} />
+            <TechnicianRequestCard key={request.id} request={request} />
           ))}
         </div>
       ) : (

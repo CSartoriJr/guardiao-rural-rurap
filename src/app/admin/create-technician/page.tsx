@@ -1,11 +1,11 @@
 
 import PageWrapper from '@/components/shared/PageWrapper';
-import CreateTecnicoForm from '@/components/admin/CreateTecnicoForm';
+import CreateTechnicianForm from '@/components/admin/CreateTechnicianForm';
 
-export default function CreateTecnicoPage() {
+export default function CreateTechnicianPage() {
   return (
     <PageWrapper allowedRoles={['admin']}>
-      <CreateTecnicoForm />
+      <CreateTechnicianForm />
     </PageWrapper>
   );
 }

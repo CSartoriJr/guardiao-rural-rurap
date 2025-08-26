@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
-import TecnicoRequestCard from '@/components/tecnico/RequestCard'; // Reusing for display
+import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
 import type { AgriRequest, RequestStatus } from '@/types';
 import { getAllRequestsForAdmin } from '@/services/requestService';
 import { useAuth } from '@/hooks/useAuth';
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
       ) : filteredRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRequests.map(request => (
-            <TecnicoRequestCard key={request.id} request={request} />
+            <TechnicianRequestCard key={request.id} request={request} />
           ))}
         </div>
       ) : (

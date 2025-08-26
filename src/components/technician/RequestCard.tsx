@@ -10,7 +10,7 @@ import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock, Spro
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface TecnicoRequestCardProps {
+interface TechnicianRequestCardProps {
   request: AgriRequest;
 }
 
@@ -44,7 +44,7 @@ const getPlantAndVarietyDisplay = (req: AgriRequest): string => {
     return plantTypeStr;
 }
 
-export default function TecnicoRequestCard({ request }: TecnicoRequestCardProps) {
+export default function TechnicianRequestCard({ request }: TechnicianRequestCardProps) {
     // Ensure photoUrls is an array and has at least 3 elements, providing placeholders if not.
   const photoDisplayUrls = (
     Array.isArray(request.photoUrls) && request.photoUrls.length >= 3
@@ -61,7 +61,7 @@ export default function TecnicoRequestCard({ request }: TecnicoRequestCardProps)
         </div>
         <div className="flex justify-between items-center">
             <CardDescription className="text-xs truncate pr-2">ID: {request.id}</CardDescription>
-            <Link href={APP_ROUTES.TECNICO_VIEW_REQUEST(request.id)} className="ml-auto flex-shrink-0">
+            <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto flex-shrink-0">
                 <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs">
                     <Eye className="mr-1 h-3 w-3" /> Ver
                 </Button>
