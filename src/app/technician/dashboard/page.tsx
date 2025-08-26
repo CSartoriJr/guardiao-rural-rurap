@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -6,7 +5,7 @@ import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, ListFilter, PlusCircle } from 'lucide-react';
+import { ClipboardList, Frown, ListFilter, PlusCircle, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
@@ -111,6 +110,11 @@ export default function TechnicianDashboard() {
            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
               <PlusCircle className="mr-2 h-5 w-5" /> Novo Levantamento
+            </Button>
+          </Link>
+          <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
+            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full">
+              <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
             </Button>
           </Link>
         </div>
