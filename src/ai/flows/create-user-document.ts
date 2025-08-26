@@ -69,6 +69,8 @@ const createUserDocumentFlow = ai.defineFlow(
     };
     
     // Clean up undefined fields before sending to Firestore.
+    // Firestore v9+ handles undefined fields gracefully by not writing them,
+    // but this ensures no 'undefined' values are accidentally part of our logic.
     Object.keys(finalUserData).forEach(key => {
         const K = key as keyof AppUser;
         if (finalUserData[K] === undefined) {

@@ -124,12 +124,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // For admin/technician/by-technician creation, we use a temporary auth instance to avoid logging out the current user.
       if (isTempAuth) {
-        tempApp = initializeApp(firebaseConfig, `auth-worker-${userData.role}-${Date.now()}`);
+        const tempAppName = `auth-worker-${userData.role}-${Date.now()}`;
+        console.log(`[AuthContext] Initializing temporary Firebase app: ${tempAppName}`);
+        tempApp = initializeApp(firebaseConfig, tempAppName);
         authProvider = getAuth(tempApp);
       }
 
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
       
+      console.log(`[AuthContext] Creating Firebase Auth user with email: ${firebaseCompatibleEmail}`);
       const userCredential = await createUserWithEmailAndPassword(authProvider, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
@@ -138,10 +141,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { passwordInput, ...firestoreData } = userData;
 
       // Call the secure server flow to create the document in Firestore
+      console.log(`[AuthContext] Calling server flow to create Firestore document for user ${fbUser.uid}`);
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
         userData: firestoreData,
       });
+      console.log(`[AuthContext] Server flow completed successfully for user ${fbUser.uid}`);
 
       return appUser;
     } catch (error: any) {
@@ -152,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error(error.message || `Falha ao cadastrar ${userData.role}.`);
     } finally {
       if (tempApp) {
+        console.log(`[AuthContext] Deleting temporary Firebase app.`);
         await deleteApp(tempApp);
       }
       setLoading(false);
