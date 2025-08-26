@@ -18,14 +18,14 @@ interface UploadImageResult {
 
 export function uploadImage(
   file: File,
-  userId: string,
+  userId: string, // This is the ID of the folder owner (the farmer)
   onProgressUpdate?: (percentage: number) => void
 ): UploadImageResult {
   ensureFirebaseInitialized();
   console.log(`[ImageUploadService] Initiating upload for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
   if (!userId) {
-    const err = new Error('User ID é obrigatório para o upload da imagem.');
+    const err = new Error('ID do agricultor é obrigatório para o upload da imagem.');
     console.error(`[ImageUploadService] ${err.message}`);
     // Create a "dummy task" so the UI doesn't break if it expects an UploadTask
     const dummyTask = {
@@ -41,7 +41,7 @@ export function uploadImage(
 
   const fileExtension = file.name.split('.').pop() || 'dat';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-  const storagePath = `laudos/${userId}/${uniqueFileName}`;
+  const storagePath = `requests_images/${userId}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
   console.log(`[ImageUploadService] Attempting to upload to path: ${storagePath}`);

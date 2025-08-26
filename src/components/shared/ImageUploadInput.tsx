@@ -15,9 +15,10 @@ interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
   id: string;
   currentImageUrl?: string | null;
+  userId?: string | null; // Allow passing the user ID, e.g., for technicians uploading for farmers
 }
 
-export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl }: ImageUploadInputProps) {
+export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, userId: propUserId }: ImageUploadInputProps) {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -27,9 +28,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   
   const displayUrl = currentImageUrl;
+  const targetUserId = propUserId || authUser?.id; // Use passed userId, fallback to authenticated user's ID
 
   useEffect(() => {
     // Cleanup function to cancel ongoing upload if the component unmounts.
@@ -71,9 +73,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    if (!user || !user.id) {
-      const errorMsg = 'Você precisa estar logado para fazer o upload.';
-      toast({ title: 'Erro de Autenticação', description: errorMsg, variant: 'destructive' });
+    if (!targetUserId) {
+      const errorMsg = 'ID do agricultor não encontrado. Você precisa estar logado e selecionar um agricultor.';
+      toast({ title: 'Erro de Autenticação/Seleção', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsUploading(false);
       return;
@@ -104,10 +106,10 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     // Upload the selected file (either compressed or original)
     try {
-      console.log(`[ImageUpload] Passing file to uploadImage service. Size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`[ImageUploadService] Passing file to uploadImage service for user: ${targetUserId}. File size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       const { uploadTask, promise: uploadPromise } = uploadImage(
         fileToUpload,
-        user.id,
+        targetUserId, // Use the correct target user ID for the upload path
         (percentage) => {
             setUploadProgress(percentage);
         }
@@ -161,7 +163,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         className="hidden"
         accept="image/*"
         onChange={handleFileChange}
-        disabled={isUploading}
+        disabled={isUploading || !targetUserId}
         aria-hidden="true"
       />
       <Input
@@ -173,7 +175,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         accept="image/*"
         capture="user"
         onChange={handleFileChange}
-        disabled={isUploading}
+        disabled={isUploading || !targetUserId}
         aria-hidden="true"
       />
 
@@ -203,11 +205,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !targetUserId}>
               <Camera className="mr-2 h-4 w-4" />
               Tirar Foto
             </Button>
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading || !targetUserId}>
               <FileImage className="mr-2 h-4 w-4" />
               Escolher da Galeria
             </Button>

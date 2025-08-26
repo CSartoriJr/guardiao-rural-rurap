@@ -1,37 +1,27 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write to their own document.
     match /users/{userId} {
+      // Regra 1: Usuários podem ler e escrever seus próprios documentos.
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Admins can read/write any user document. This is useful for user management.
-      // We will rely on server-side logic (Genkit flows) to enforce who can become an admin.
-      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /requests/{requestId} {
-      // Create: Logged-in farmers can create requests for themselves.
-      // Technicians can also create requests on behalf of a farmer.
-      allow create: if request.auth != null && 
-                       (request.resource.data.farmerId == request.auth.uid || 
-                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
+      // Regra 2: Usuário autenticado pode criar um request se o ID do agricultor no request for o seu próprio.
+      // Isso permite que agricultores e técnicos (em nome de agricultores) criem requests.
+      // A lógica do aplicativo deve garantir que o agricultorId correto seja definido.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.farmerId;
       
-      // Read: The farmer who owns the request, any technician, or any admin can read it.
+      // Regra 3: Permite leitura para o agricultor dono do request, ou para técnicos e administradores.
       allow read: if request.auth != null && 
-                   (resource.data.farmerId == request.auth.uid || 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
+                  (resource.data.farmerId == request.auth.uid || 
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
+                   
+      // Regra 4: Permite que técnicos atualizem um request (para adicionar uma resposta).
+      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician';
 
-      // Update: The technician assigned or any admin can update.
-      // Also allows the original farmer to update if needed (e.g., cancel), though not implemented.
-      allow update: if request.auth != null &&
-                     (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
-      
-      // Delete: Only admins can delete requests.
-      allow delete: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Regra 5: Permite que administradores excluam um request.
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }

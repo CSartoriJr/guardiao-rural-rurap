@@ -172,6 +172,8 @@ export default function TechnicianRequestForm() {
   const isMandiocaChecked = watch('isMandioca');
   const isMacaxeiraChecked = watch('isMacaxeira');
   const hasSecondaryActivity = watch('hasSecondaryActivity');
+  const selectedFarmerId = watch('farmerId');
+
 
   useEffect(() => {
     if (user && user.role === 'technician') {
@@ -633,6 +635,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl1"
                 onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl1}
+                userId={selectedFarmerId}
               />
             </div>
             <div>
@@ -641,6 +644,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl2"
                 onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl2}
+                userId={selectedFarmerId}
               />
             </div>
             <div>
@@ -649,6 +653,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl3"
                 onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl3}
+                userId={selectedFarmerId}
               />
             </div>
           </div>
