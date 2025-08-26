@@ -17,6 +17,7 @@ import { firebaseInitializedCorrectly, db } from '@/lib/firebase'; // For checki
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { amapaMunicipalities } from '@/lib/mockData';
+import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin';
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -69,7 +70,6 @@ export default function CreateTechnicianForm() {
     }
     setIsSubmitting(true);
     try {
-      // Check if CPF already exists in Firestore users collection
       if (firebaseInitializedCorrectly && db) {
         const usersRef = collection(db, "users");
         const q = query(usersRef, where("cpf", "==", data.cpf));
@@ -87,15 +87,21 @@ export default function CreateTechnicianForm() {
          throw new Error("Firebase não inicializado para verificar CPF.");
       }
 
-      const technicianData = {
+      const technicianAuthData = {
         name: data.name,
         cpf: data.cpf,
-        email: data.email, // Pass the actual email for technician document
+        email: data.email,
         passwordInput: data.password,
-        assignedMunicipalities: data.assignedMunicipalities,
       };
       
-      const newTechnician = await createTechnicianWithAuth(technicianData);
+      const newTechnician = await createTechnicianWithAuth(technicianAuthData);
+      
+      if (newTechnician && data.assignedMunicipalities && data.assignedMunicipalities.length > 0) {
+        await updateUserAsAdmin({ 
+          userId: newTechnician.id, 
+          updatedData: { assignedMunicipalities: data.assignedMunicipalities } 
+        });
+      }
       
       if (newTechnician) {
         toast({
@@ -104,7 +110,6 @@ export default function CreateTechnicianForm() {
         });
         reset();
       } else {
-        // This case should ideally be handled by createTechnicianWithAuth throwing an error
         toast({ title: "Falha na Criação", description: "Não foi possível criar o técnico. Verifique os logs.", variant: "destructive" });
       }
     } catch (error: any) {

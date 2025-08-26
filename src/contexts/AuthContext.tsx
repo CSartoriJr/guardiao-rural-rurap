@@ -20,14 +20,14 @@ import { getUserDocument } from '@/services/userService';
 import { createUserDocumentOnServer } from '@/ai/flows/create-user-document'; // Import the new server flow
 
 interface AuthContextType {
-  user: AppUser | null; 
-  firebaseUser: FirebaseUserType | null; 
+  user: AppUser | null;
+  firebaseUser: FirebaseUserType | null;
   loading: boolean;
   initializing: boolean;
   login: (numericCpf: string, password: string) => Promise<AppUser | null>;
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
-  createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
+  createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   updateCurrentUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(appUserDoc);
         } else {
           console.warn(`[AuthContext] User ${fbUser.uid} authenticated with Firebase, but no Firestore document found. Logging out.`);
-          await signOut(firebaseAuth); 
+          await signOut(firebaseAuth);
           setUser(null);
         }
         setLoading(false);
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         console.warn(`[AuthContext] User ${fbUser.uid} authenticated but has no Firestore document. Logging out.`);
         await signOut(firebaseAuth);
-        return null; 
+        return null;
       }
     } catch (error: any) {
       console.error("[AuthContext] Login failed:", error.message);
@@ -119,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await updateProfile(fbUser, { displayName: userData.name });
       
-      // Use the new server flow to create the document
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
         userData: { ...userData, role: 'farmer' }
@@ -136,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
+  const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
     let tempApp: FirebaseApp | undefined = undefined;
@@ -151,7 +150,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await updateProfile(fbUser, { displayName: userData.name });
 
-      // Use the new server flow to create the document
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
         userData: { ...userData, role: 'technician' }
@@ -187,7 +185,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await updateProfile(fbUser, { displayName: userData.name });
       
-      // Use the new server flow to create the document
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
         userData: { ...userData, role: 'admin' }

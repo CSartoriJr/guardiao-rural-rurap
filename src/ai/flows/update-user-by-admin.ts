@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for administrators to securely update user documents.
@@ -13,20 +14,11 @@ import { ai } from '@/ai/genkit';
 import { updateUserDocument } from '@/services/userService';
 import { z } from 'genkit';
 import { firebaseInitializedCorrectly } from '@/lib/firebase';
+import type { User } from '@/types';
 
 // Zod schema for the data that can be updated.
 // It's a subset of the main User type, reflecting what an admin can change.
-const UserUpdateSchema = z.object({
-  name: z.string().optional(),
-  role: z.enum(['farmer', 'technician', 'admin']).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  municipality: z.string().optional(),
-  familyMembers: z.number().optional(),
-  assignedMunicipalities: z.array(z.string()).optional(),
-  caf: z.string().optional(),
-});
+const UserUpdateSchema = z.custom<Partial<User>>();
 
 
 // Input for the flow: which user to update, and what data to update.

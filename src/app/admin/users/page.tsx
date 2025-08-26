@@ -119,21 +119,19 @@ export default function ManageUsersPage() {
         throw new Error(result.message || 'Falha ao atualizar usuário no servidor.');
       }
       
-      // Re-fetch and update the specific user with new counts
-      const userIndex = users.findIndex(u => u.id === userId);
-      if (userIndex !== -1) {
-        const oldUserData = users[userIndex];
-        const updatedUserWithOldCounts = { ...oldUserData, ...firestoreData }; // Apply updates, keep old counts for now
-        const activity = await countUserActivity(updatedUserWithOldCounts as AppUserType); // Recalculate activity
-        const fullyUpdatedUser = { ...updatedUserWithOldCounts, ...activity };
+      setUsers(prevUsers => {
+          const userIndex = prevUsers.findIndex(u => u.id === userId);
+          if (userIndex === -1) return prevUsers;
 
-        setUsers(prevUsers => {
           const newUsers = [...prevUsers];
-          newUsers[userIndex] = fullyUpdatedUser;
+          // Merge existing user data with the updates
+          const updatedUser = { ...newUsers[userIndex], ...firestoreData };
+          newUsers[userIndex] = updatedUser;
+          
           newUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           return newUsers;
         });
-      }
+
       toast({ title: "Usuário Atualizado", description: `Os dados de ${updatedData.name || 'usuário'} foram atualizados.` });
     } catch (error: any) {
       console.error("Falha ao atualizar usuário:", error);
