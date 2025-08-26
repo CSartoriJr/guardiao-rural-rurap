@@ -28,7 +28,16 @@ const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
   }
   const usersCollectionRef = collection(db, 'users');
   const userSnapshot = await getDocs(usersCollectionRef);
-  const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUserType));
+  const userList = userSnapshot.docs.reduce((acc, doc) => {
+    const data = doc.data();
+    // Garante que o usuário tenha os campos mínimos necessários (id e nome)
+    if (data && typeof data.name === 'string' && data.name.trim() !== '') {
+      acc.push({ id: doc.id, ...data } as AppUserType);
+    } else {
+      console.warn(`[ManageUsersPage] Skipping malformed user document with ID: ${doc.id}`);
+    }
+    return acc;
+  }, [] as AppUserType[]);
   return userList;
 };
 
@@ -84,7 +93,8 @@ export default function ManageUsersPage() {
             return { ...u, ...activity };
           });
           const usersWithCounts = await Promise.all(usersWithCountsPromises);
-          usersWithCounts.sort((a, b) => a.name.localeCompare(b.name));
+          // Adiciona uma verificação para garantir que ambos a.name e b.name existam antes de comparar
+          usersWithCounts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           setUsers(usersWithCounts);
         })
         .catch(error => {
@@ -120,7 +130,7 @@ export default function ManageUsersPage() {
         setUsers(prevUsers => {
           const newUsers = [...prevUsers];
           newUsers[userIndex] = fullyUpdatedUser;
-          newUsers.sort((a, b) => a.name.localeCompare(b.name));
+          newUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           return newUsers;
         });
       }
