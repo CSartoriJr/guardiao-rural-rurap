@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let tempApp: FirebaseApp | undefined = undefined;
 
     try {
-      // For admin/technician creation, we use a temporary auth instance to avoid logging out the current admin.
+      // For admin/technician/by-technician creation, we use a temporary auth instance to avoid logging out the current user.
       if (isTempAuth) {
         tempApp = initializeApp(firebaseConfig, `auth-worker-${userData.role}-${Date.now()}`);
         authProvider = getAuth(tempApp);

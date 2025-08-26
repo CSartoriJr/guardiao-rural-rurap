@@ -3,7 +3,7 @@
 /**
  * @fileOverview A secure flow for creating a user document in Firestore.
  * This flow is called by the AuthContext after a new Firebase Auth user has been created.
- * It runs on the server to bypass client-side security rules that prevent a user (e.g., an admin)
+ * It runs on the server to bypass client-side security rules that prevent a user (e.g., a technician or admin)
  * from creating a document for another user.
  *
  * - createUserDocumentFlow - The flow that handles the document creation logic.

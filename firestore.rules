@@ -1,51 +1,48 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // As regras de criação e atualização são agora mais simples porque a lógica
-    // complexa (ex: admin criando técnico) é tratada por fluxos de servidor (Genkit flows),
-    // que são executados com privilégios de administrador e, portanto, contornam essas regras.
-    // As regras aqui se aplicam principalmente às operações feitas diretamente pelo cliente (navegador).
     match /users/{userId} {
-      
-      // Permite que qualquer usuário autenticado leia os dados de outro usuário.
-      // Isso é necessário para que técnicos e administradores possam ver os detalhes dos agricultores.
-      allow read: if request.auth != null;
-
-      // Um usuário pode criar seu próprio documento (auto-cadastro de agricultor).
-      // A criação por administradores/técnicos é feita por um fluxo de servidor seguro.
+      // Allow a user to create their own document (for farmer self-registration).
+      // All other user creation (technician, admin, farmer-by-technician) MUST be
+      // handled by a secure server-side flow (like a Genkit Flow), which bypasses these rules.
       allow create: if request.auth.uid == userId;
-      
-      // Um usuário só pode atualizar seu próprio documento.
-      // A atualização de um usuário por outro (ex: admin edita técnico) deve usar um fluxo de servidor.
-      allow update: if request.auth.uid == userId;
 
-      // Um usuário não pode se deletar. A exclusão é uma operação administrativa
-      // que deve ser feita por um fluxo de servidor seguro.
-      allow delete: if false; 
+      // Allow a user to read their own document.
+      // Allow admins and technicians to read any user document.
+      allow read: if request.auth.uid != null && 
+                  (request.auth.uid == userId || 
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
+      
+      // Allow a user to update their own document.
+      // Admins can also update any user document (e.g., to assign municipalities to a technician).
+      allow update: if request.auth.uid != null && 
+                    (request.auth.uid == userId ||
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+
+      // Only admins can delete user documents.
+      allow delete: if request.auth.uid != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /requests/{requestId} {
-      // Permite a criação de um levantamento se o usuário estiver logado.
-      // A lógica de quem pode criar (agricultor ou técnico) é tratada no código do aplicativo.
-      allow create: if request.auth != null;
+      // Allow creation if the user is the farmer themselves OR if the request is being made by a technician.
+      allow create: if request.auth.uid != null && 
+                    (request.auth.uid == request.resource.data.farmerId || 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
 
-      // Permite a leitura de um levantamento se:
-      // 1. O solicitante for o próprio agricultor que criou o levantamento.
-      // 2. O solicitante for um técnico ou administrador.
-      allow read: if request.auth != null && 
+      // Allow read for the farmer who owns the request, or for technicians/admins.
+      allow read: if request.auth.uid != null && 
                   (request.auth.uid == resource.data.farmerId ||
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
 
-      // Permite a atualização de um levantamento apenas por técnicos ou administradores
-      // (ex: para adicionar uma recomendação).
-      allow update: if request.auth != null && 
+      // Allow technicians and admins to update requests (e.g., to add a recommendation).
+      allow update: if request.auth.uid != null &&
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
 
-      // Permite a exclusão de um levantamento apenas por administradores.
-      allow delete: if request.auth != null &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Only admins can delete requests.
+      allow delete: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
