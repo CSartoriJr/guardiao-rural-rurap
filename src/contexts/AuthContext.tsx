@@ -109,99 +109,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
+  // Generic function to create an auth user and then call the server flow to create the Firestore doc.
+  const createAuthAndFirestoreUser = async (
+    userData: Omit<AppUser, 'id'> & { passwordInput: string; role: AppUser['role'] },
+    isTempAuth: boolean = false
+  ): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
     setLoading(true);
+    
+    let authProvider = firebaseAuth;
+    let tempApp: FirebaseApp | undefined = undefined;
+
     try {
+      // For admin/technician creation, we use a temporary auth instance to avoid logging out the current admin.
+      if (isTempAuth) {
+        tempApp = initializeApp(firebaseConfig, `auth-worker-${userData.role}-${Date.now()}`);
+        authProvider = getAuth(tempApp);
+      }
+
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
-      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, firebaseCompatibleEmail, userData.passwordInput);
+      
+      const userCredential = await createUserWithEmailAndPassword(authProvider, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
       await updateProfile(fbUser, { displayName: userData.name });
       
+      const { passwordInput, ...firestoreData } = userData;
+
+      // Call the secure server flow to create the document in Firestore
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
-        userData: { ...userData, role: 'farmer' }
+        userData: firestoreData,
       });
+
       return appUser;
     } catch (error: any) {
-      console.error("[AuthContext] Farmer registration failed:", error.code, error.message);
+      console.error(`[AuthContext] ${userData.role} creation failed:`, error.code, error.message);
       if (error.code === 'auth/email-already-in-use') {
-        throw new Error('Este CPF (e-mail) já está cadastrado.');
+        throw new Error('Este CPF já está cadastrado.');
       }
-      throw new Error(error.message || 'Falha no cadastro.');
+      throw new Error(error.message || `Falha ao cadastrar ${userData.role}.`);
     } finally {
+      if (tempApp) {
+        await deleteApp(tempApp);
+      }
       setLoading(false);
     }
+  };
+
+
+  const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
+    return createAuthAndFirestoreUser({ ...userData, role: 'farmer' }, false);
   };
   
   const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }): Promise<AppUser | null> => {
-    if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
-    setLoading(true);
-    let tempApp: FirebaseApp | undefined = undefined;
-    try {
-      tempApp = initializeApp(firebaseConfig, `auth-worker-technician-${Date.now()}`);
-      const tempAuth = getAuth(tempApp);
-
-      const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
-      
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, firebaseCompatibleEmail, userData.passwordInput);
-      const fbUser = userCredential.user;
-
-      await updateProfile(fbUser, { displayName: userData.name });
-
-      const appUser = await createUserDocumentOnServer({
-        userId: fbUser.uid,
-        userData: { ...userData, role: 'technician' }
-      });
-
-      return appUser;
-    } catch (error: any) {
-      console.error("[AuthContext] Technician creation with auth failed:", error.code, error.message);
-       if (error.code === 'auth/email-already-in-use') {
-        throw new Error('Este CPF (e-mail) já está cadastrado para outro usuário.');
-      }
-      throw new Error(error.message || 'Falha ao criar técnico.');
-    } finally {
-      if (tempApp) {
-        await deleteApp(tempApp);
-      }
-      setLoading(false);
-    }
+    return createAuthAndFirestoreUser({ ...userData, role: 'technician' }, true);
   };
 
   const createAdminWithAuth = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
-    if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
-    setLoading(true);
-    let tempApp: FirebaseApp | undefined = undefined;
-    try {
-      tempApp = initializeApp(firebaseConfig, `auth-worker-admin-${Date.now()}`);
-      const tempAuth = getAuth(tempApp);
-
-      const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
-      
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, firebaseCompatibleEmail, userData.passwordInput);
-      const fbUser = userCredential.user;
-
-      await updateProfile(fbUser, { displayName: userData.name });
-      
-      const appUser = await createUserDocumentOnServer({
-        userId: fbUser.uid,
-        userData: { ...userData, role: 'admin' }
-      });
-      return appUser;
-    } catch (error: any) {
-      console.error("[AuthContext] Admin creation with auth failed:", error.code, error.message);
-       if (error.code === 'auth/email-already-in-use') {
-        throw new Error('Este CPF (e-mail) já está cadastrado para outro usuário.');
-      }
-      throw new Error(error.message || 'Falha ao criar administrador.');
-    } finally {
-      if (tempApp) {
-        await deleteApp(tempApp);
-      }
-      setLoading(false);
-    }
+    return createAuthAndFirestoreUser({ ...userData, role: 'admin' }, true);
   };
   
   const updateCurrentUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {

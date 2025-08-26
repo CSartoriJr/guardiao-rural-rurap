@@ -1,37 +1,47 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para a coleção de usuários
-    match /users/{userId} {
-      // Qualquer usuário autenticado pode ler os dados de outro usuário (necessário para o técnico ver os detalhes do agricultor).
-      // Apenas o próprio usuário pode modificar seus dados.
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if the requesting user is an admin
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Regras para a coleção de levantamentos
+    // Rules for the users collection
+    match /users/{userId} {
+      // 1. Any authenticated user can read another user's profile (e.g., for a technician to see farmer details).
+      // 2. An admin can create a user document (this allows the server-side flow to work).
+      // 3. A user can only update or delete their own document.
+      allow read: if request.auth != null;
+      allow create: if isAdmin();
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for the requests collection
     match /requests/{requestId} {
-      // Permite a criação de um levantamento se:
-      // 1. O criador for o próprio agricultor (farmerId no documento é o mesmo que o UID do usuário).
-      // OU
-      // 2. O criador for um usuário com a função de 'technician'.
+      // Allow creation if:
+      // 1. The user is the farmer themselves.
+      // 2. The user is a technician (creating on behalf of a farmer).
       allow create: if request.auth != null &&
                     (request.auth.uid == request.resource.data.farmerId ||
                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
 
-      // Um agricultor pode ler seus próprios levantamentos.
-      // Técnicos e Administradores podem ler todos os levantamentos.
+      // Allow reading if:
+      // 1. The user is the farmer who owns the request.
+      // 2. The user is a technician or an admin.
       allow read: if request.auth != null &&
                   (request.auth.uid == resource.data.farmerId ||
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
 
-      // Um técnico ou administrador pode atualizar um levantamento.
+      // Allow updates if:
+      // 1. The user is a technician (e.g., to add a recommendation).
+      // 2. The user is an admin.
       allow update: if request.auth != null &&
                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin'];
 
-      // Apenas administradores podem excluir levantamentos.
-      allow delete: if request.auth != null &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Allow deletion only if the user is an admin.
+      allow delete: if isAdmin();
     }
   }
 }
