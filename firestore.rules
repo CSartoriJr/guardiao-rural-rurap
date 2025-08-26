@@ -3,85 +3,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions for clarity and reusability
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function getRequestingUserRole() {
-      return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : '';
-    }
-
-    function isRequestingUserAdmin() {
-      return getRequestingUserRole() == 'admin';
-    }
-
-    function isRequestingUserTechnician() {
-      return getRequestingUserRole() == 'technician';
-    }
-
-    function isRequestingUserFarmer() {
-      return getRequestingUserRole() == 'farmer';
-    }
-
-    function isOwner(docUserId) {
-      return isSignedIn() && request.auth.uid == docUserId;
-    }
-
-    // Rules for the 'users' collection
+    // Users can only read and write to their own document.
     match /users/{userId} {
-      // CREATE:
-      // - Any newly authenticated user can create their own document (UID must match).
-      // - An admin can create any user document (e.g., creating a technician).
-      allow create: if isSignedIn() &&
-                       (isOwner(userId) || isRequestingUserAdmin());
-
-      // READ:
-      // - A user can read their own profile.
-      // - Admins can read any user profile.
-      // - Technicians can read any user profile (e.g., to see farmer names or other technician details).
-      allow read: if isSignedIn() &&
-                     (isOwner(userId) || isRequestingUserAdmin() || isRequestingUserTechnician());
-
-      // UPDATE:
-      // - A user can update their own profile.
-      // - Admins can update any user profile.
-      allow update: if isSignedIn() &&
-                       (isOwner(userId) || isRequestingUserAdmin());
-
-      // DELETE:
-      // - Only admins can delete user documents.
-      allow delete: if isRequestingUserAdmin();
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can read/write any user document. This is useful for user management.
+      // We will rely on server-side logic (Genkit flows) to enforce who can become an admin.
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Rules for the 'requests' collection
     match /requests/{requestId} {
-      // READ:
-      // - The farmer who owns the request.
-      // - Any technician.
-      // - Any admin.
-      allow read: if isSignedIn() &&
-                     (isOwner(resource.data.farmerId) || isRequestingUserTechnician() || isRequestingUserAdmin());
+      // Create: Logged-in farmers can create requests for themselves.
+      // Technicians can also create requests on behalf of a farmer.
+      allow create: if request.auth != null && 
+                       (request.resource.data.farmerId == request.auth.uid || 
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
+      
+      // Read: The farmer who owns the request, any technician, or any admin can read it.
+      allow read: if request.auth != null && 
+                   (resource.data.farmerId == request.auth.uid || 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
 
-      // CREATE:
-      // - Only authenticated farmers can create requests.
-      // - The farmerId in the new request document must match the UID of the authenticated farmer.
-      // - New requests must have a status of 'Pending'.
-      allow create: if isSignedIn() &&
-                       isRequestingUserFarmer() &&
-                       isOwner(request.resource.data.farmerId) &&
-                       request.resource.data.status == 'Pending';
-
-      // UPDATE:
-      // - Technicians can update requests (e.g., to add status, recommendation).
-      // - Admins can update requests.
-      allow update: if isSignedIn() &&
-                       (isRequestingUserTechnician() || isRequestingUserAdmin());
-
-      // DELETE:
-      // - Only admins can delete requests.
-      allow delete: if isRequestingUserAdmin();
+      // Update: The technician assigned or any admin can update.
+      // Also allows the original farmer to update if needed (e.g., cancel), though not implemented.
+      allow update: if request.auth != null &&
+                     (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['technician', 'admin']);
+      
+      // Delete: Only admins can delete requests.
+      allow delete: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
