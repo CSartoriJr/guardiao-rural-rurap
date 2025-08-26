@@ -6,13 +6,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, FileText } from 'lucide-react';
+import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getFarmersList } from '@/app/actions/farmerActions';
 import type { User } from '@/types';
+import Link from 'next/link';
+import { APP_ROUTES } from '@/config/routes';
 
 interface FarmerListProps {
   farmers: User[];
@@ -36,7 +38,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities
         <p className="text-muted-foreground mt-2">
           Não foram encontrados agricultores {assignedMunicipalities.length > 0 ? `para os seus municípios atribuídos: ${assignedMunicipalities.join(', ')}.` : 'no sistema.'}
         </p>
-        <p className="text-muted-foreground mt-1 text-sm">Verifique o cadastro dos agricultores ou fale com um administrador.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Você pode cadastrar um novo agricultor ou falar com um administrador.</p>
       </div>
     );
   }
@@ -134,9 +136,17 @@ export default function TechnicianFarmersPage() {
   return (
     <PageWrapper allowedRoles={['technician']}>
        <Dialog open={!!selectedFarmer} onOpenChange={(open) => !open && setSelectedFarmer(null)}>
-        <div className="mb-8">
-            <h1 className="text-3xl font-headline text-gray-800">Meus Agricultores</h1>
-            <p className="text-muted-foreground">Visualize os detalhes dos agricultores sob sua responsabilidade.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+                <h1 className="text-3xl font-headline text-gray-800">Meus Agricultores</h1>
+                <p className="text-muted-foreground">Visualize e cadastre os agricultores sob sua responsabilidade.</p>
+            </div>
+            <Button asChild>
+                <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Cadastrar Agricultor
+                </Link>
+            </Button>
         </div>
         
         <Card className="mb-6">
@@ -192,6 +202,12 @@ export default function TechnicianFarmersPage() {
                     <Label className="text-right">Nº Familiares</Label>
                     <p>{selectedFarmer.familyMembers !== undefined ? selectedFarmer.familyMembers : 'Não informado'}</p>
                 </div>
+                 {selectedFarmer.registeredByTechnicianName && (
+                    <div className="grid grid-cols-[100px_1fr] items-center gap-4 border-t pt-4 mt-2">
+                        <Label className="text-right font-semibold">Registrado Por</Label>
+                        <p>{selectedFarmer.registeredByTechnicianName}</p>
+                    </div>
+                )}
             </div>
             )}
         </DialogContent>

@@ -1,5 +1,4 @@
 
-
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
@@ -8,6 +7,8 @@ export interface User {
   email?: string; // Firebase Auth uses email, so we'll store the actual email or a dummy one if CPF is used for auth.
   password?: string; // Only used for initial creation/reset, not stored directly in Firestore if using Firebase Auth.
   caf?: string;
+  registeredByTechnicianId?: string; // ID of the technician who registered the farmer
+  registeredByTechnicianName?: string; // Name of the technician who registered the farmer
 
   // Fields specific to farmer role, stored in Firestore document
   phone?: string;

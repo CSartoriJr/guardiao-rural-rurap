@@ -27,6 +27,7 @@ interface AuthContextType {
   login: (numericCpf: string, password: string) => Promise<AppUser | null>;
   logout: () => void;
   registerFarmer: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
+  registerFarmerByTechnician: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }, technician: AppUser) => Promise<AppUser | null>;
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   updateCurrentUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -161,6 +162,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
     return createAuthAndFirestoreUser({ ...userData, role: 'farmer' }, false);
   };
+
+  const registerFarmerByTechnician = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }, technician: AppUser): Promise<AppUser | null> => {
+    const userDataWithTechnician = {
+        ...userData,
+        role: 'farmer' as const,
+        registeredByTechnicianId: technician.id,
+        registeredByTechnicianName: technician.name,
+    }
+    // Use a temporary auth instance so the technician doesn't get logged out
+    return createAuthAndFirestoreUser(userDataWithTechnician, true);
+  };
   
   const createTechnicianWithAuth = async (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }): Promise<AppUser | null> => {
     return createAuthAndFirestoreUser({ ...userData, role: 'technician' }, true);
@@ -199,7 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, registerFarmerByTechnician, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
       {children}
     </AuthContext.Provider>
   );
