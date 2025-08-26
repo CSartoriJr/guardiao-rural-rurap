@@ -16,7 +16,8 @@ import {
   reauthenticateWithCredential,
 } from 'firebase/auth';
 import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
-import { createUserDocument, getUserDocument } from '@/services/userService';
+import { getUserDocument } from '@/services/userService';
+import { createUserDocumentOnServer } from '@/ai/flows/create-user-document'; // Import the new server flow
 
 interface AuthContextType {
   user: AppUser | null; 
@@ -117,12 +118,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const fbUser = userCredential.user;
 
       await updateProfile(fbUser, { displayName: userData.name });
-
-      const appUser = await createUserDocument(fbUser, {
-        ...userData,
-        role: 'farmer',
-        email: userData.email, // Use the real email for the document
-        caf: userData.caf
+      
+      // Use the new server flow to create the document
+      const appUser = await createUserDocumentOnServer({
+        userId: fbUser.uid,
+        userData: { ...userData, role: 'farmer' }
       });
       return appUser;
     } catch (error: any) {
@@ -151,17 +151,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await updateProfile(fbUser, { displayName: userData.name });
 
-      const appUser = await createUserDocument(fbUser, {
-        ...userData,
-        role: 'technician',
-        email: userData.email, // Use real email
+      // Use the new server flow to create the document
+      const appUser = await createUserDocumentOnServer({
+        userId: fbUser.uid,
+        userData: { ...userData, role: 'technician' }
       });
 
       return appUser;
     } catch (error: any) {
       console.error("[AuthContext] Technician creation with auth failed:", error.code, error.message);
        if (error.code === 'auth/email-already-in-use') {
-        throw new Error('Este CPF (e-mail) já está cadastrado para outro técnico.');
+        throw new Error('Este CPF (e-mail) já está cadastrado para outro usuário.');
       }
       throw new Error(error.message || 'Falha ao criar técnico.');
     } finally {
@@ -186,11 +186,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const fbUser = userCredential.user;
 
       await updateProfile(fbUser, { displayName: userData.name });
-
-      const appUser = await createUserDocument(fbUser, {
-        ...userData,
-        role: 'admin',
-        email: userData.email, // Use real email
+      
+      // Use the new server flow to create the document
+      const appUser = await createUserDocumentOnServer({
+        userId: fbUser.uid,
+        userData: { ...userData, role: 'admin' }
       });
       return appUser;
     } catch (error: any) {
