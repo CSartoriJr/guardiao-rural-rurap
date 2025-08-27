@@ -18,9 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos os Status' },
   { value: 'Pending', label: 'Pendente' },
-  { value: 'Positive', label: 'Suspeita de Contaminação' },
+  { value: 'Positive', label: 'Positivo' },
   { value: 'Negative', label: 'Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
+  { value: 'Suspeita de Infecção', label: 'Suspeita de Infecção' },
 ];
 
 const getStatusDisplayName = (statusValue: RequestStatus | 'all'): string => {
@@ -61,12 +62,13 @@ export default function AdminDashboard() {
   }, [user, toast]);
 
   const adminStatusCounts = useMemo(() => {
-    if (!requests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, all: 0 };
+    if (!requests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0, all: 0 };
     return {
       Pending: requests.filter(req => req.status === 'Pending').length,
       Positive: requests.filter(req => req.status === 'Positive').length,
       Negative: requests.filter(req => req.status === 'Negative').length,
       Inconclusive: requests.filter(req => req.status === 'Inconclusive').length,
+      'Suspeita de Infecção': requests.filter(req => req.status === 'Suspeita de Infecção').length,
       all: requests.length,
     };
   }, [requests]);

@@ -17,9 +17,10 @@ import { Button } from '@/components/ui/button';
 const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos os Status' },
   { value: 'Pending', label: 'Pendente' },
-  { value: 'Positive', label: 'Suspeita de Contaminação' },
+  { value: 'Positive', label: 'Positivo' },
   { value: 'Negative', label: 'Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
+  { value: 'Suspeita de Infecção', label: 'Suspeita de Infecção' },
 ];
 
 const getStatusDisplayName = (statusValue: RequestStatus | 'all'): string => {
@@ -71,12 +72,13 @@ export default function TechnicianDashboard() {
   }, [user, toast]);
 
   const statusCounts = useMemo(() => {
-    if (!allRequests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, all: 0 };
+    if (!allRequests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0, all: 0 };
     return {
       Pending: allRequests.filter(req => req.status === 'Pending').length,
       Positive: allRequests.filter(req => req.status === 'Positive').length,
       Negative: allRequests.filter(req => req.status === 'Negative').length,
       Inconclusive: allRequests.filter(req => req.status === 'Inconclusive').length,
+      'Suspeita de Infecção': allRequests.filter(req => req.status === 'Suspeita de Infecção').length,
       all: allRequests.length,
     };
   }, [allRequests]);

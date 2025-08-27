@@ -20,7 +20,7 @@ export interface User {
   assignedMunicipalities?: string[];
 }
 
-export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive';
+export type RequestStatus = 'Pending' | 'Positive' | 'Negative' | 'Inconclusive' | 'Suspeita de Infecção';
 export type DeviceLocationStatus = 'idle' | 'fetching' | 'success' | 'error' | 'denied' | 'unavailable' | 'timeout' | 'unsupported';
 export type SoilTexture = "Arenoso" | "Argiloso" | "Textura Média";
 export type VegetationType = "Mata (Floresta)" | "Cerrado";

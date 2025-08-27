@@ -10,15 +10,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Briefcase, Download, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast'; // Import useToast
+import Link from 'next/link';
 
-const StatusDisplay = ({ status, recommendation, technicianName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate'>) => {
+const StatusDisplay = ({ status, recommendation, technicianName, responseDate, laudoPdfUrl }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate' | 'laudoPdfUrl'>) => {
   let IconComponent;
   let badgeClass = '';
   let title = '';
@@ -28,8 +29,8 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
     case 'Positive':
       IconComponent = CheckCircle2;
       badgeClass = 'bg-green-100 text-green-700 border-green-300';
-      title = 'Diagnóstico Suspeita de Contaminação';
-      statusText = 'Suspeita de Contaminação';
+      title = 'Diagnóstico Positivo';
+      statusText = 'Positivo';
       break;
     case 'Negative':
       IconComponent = XCircle;
@@ -42,6 +43,12 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
       badgeClass = 'bg-yellow-100 text-yellow-700 border-yellow-300';
       title = 'Diagnóstico Inconclusivo';
       statusText = 'Inconclusivo';
+      break;
+    case 'Suspeita de Infecção':
+      IconComponent = AlertCircleIcon;
+      badgeClass = 'bg-orange-100 text-orange-700 border-orange-300';
+      title = 'Diagnóstico de Suspeita de Infecção';
+      statusText = 'Suspeita de Infecção';
       break;
     default: // Pending
       IconComponent = Clock;
@@ -68,6 +75,14 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
             <p className="text-xs text-muted-foreground mt-3">
               Por {technicianName} em {format(new Date(responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
             </p>
+          )}
+          {laudoPdfUrl && (
+            <Button asChild className="mt-4">
+                <Link href={laudoPdfUrl} target="_blank" rel="noopener noreferrer">
+                    <Download className="mr-2 h-4 w-4"/>
+                    Baixar Laudo (PDF)
+                </Link>
+            </Button>
           )}
         </CardContent>
       )}
@@ -110,7 +125,7 @@ export default function FarmerViewRequestPage() {
     setIsLoading(true);
     getRequestById(requestId)
       .then(data => {
-        if (data && (data.farmerCpf === user.cpf || user.role === 'admin')) { 
+        if (data && (data.farmerCpf === user.cpf || user.role === 'admin' || user.role === 'technician')) { 
           setRequest(data);
         } else if (data) {
           setError("Você não tem autorização para ver este Levantamento.");
@@ -288,11 +303,31 @@ export default function FarmerViewRequestPage() {
       </>
     );
   };
+  
+  const SecondaryActivityDisplay = ({ request }: { request: AgriRequest | null }) => {
+    if (!request || request.hasSecondaryActivity === undefined) return null;
 
+    return (
+        <div className='mt-4'>
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Briefcase className="h-4 w-4 mr-2 text-primary" />Atividade Secundária na Área</h3>
+            {request.hasSecondaryActivity ? (
+                <>
+                  <p className="text-lg text-foreground">Sim</p>
+                  {request.secondaryActivityYes && <p className="text-sm text-muted-foreground pl-6">Atividade: {request.secondaryActivityYes}</p>}
+                </>
+            ) : (
+                <>
+                  <p className="text-lg text-foreground">Não</p>
+                  {request.secondaryActivityNo && <p className="text-sm text-muted-foreground pl-6">Atividade Pretendida: {request.secondaryActivityNo}</p>}
+                </>
+            )}
+        </div>
+    );
+  };
 
   if (isLoading || initializing) { 
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
@@ -333,7 +368,7 @@ export default function FarmerViewRequestPage() {
 
   if (error) {
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
@@ -347,7 +382,7 @@ export default function FarmerViewRequestPage() {
 
   if (!request) {
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground">Levantamento Não Encontrado</h2>
@@ -361,7 +396,7 @@ export default function FarmerViewRequestPage() {
   }
   
   return (
-    <PageWrapper allowedRoles={['farmer', 'admin']}>
+    <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar
@@ -401,6 +436,9 @@ export default function FarmerViewRequestPage() {
                 <p className="text-lg text-foreground">{request.vegetationType}</p>
               </div>
             )}
+            
+            <SecondaryActivityDisplay request={request} />
+
 
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
@@ -432,6 +470,7 @@ export default function FarmerViewRequestPage() {
           recommendation={request.recommendation}
           technicianName={request.technicianName}
           responseDate={request.responseDate}
+          laudoPdfUrl={request.laudoPdfUrl}
         />
       </div>
 

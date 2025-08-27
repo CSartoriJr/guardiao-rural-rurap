@@ -20,7 +20,7 @@ import FileUploadInput from '../shared/FileUploadInput';
 
 const responseFormSchema = z.object({
   recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
-  status: z.enum(['Positive', 'Negative', 'Inconclusive'], { required_error: "O status é obrigatório." }),
+  status: z.enum(['Positive', 'Negative', 'Inconclusive', 'Suspeita de Infecção'], { required_error: "O status é obrigatório." }),
   laudoPdfUrl: z.string().url().nullable(),
 }).superRefine((data, ctx) => {
     if (data.status === 'Positive' && !data.laudoPdfUrl) {
@@ -48,6 +48,7 @@ const statusOptions: StatusOption[] = [
   { value: 'Positive', label: 'Positivo' },
   { value: 'Negative', label: 'Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
+  { value: 'Suspeita de Infecção', label: 'Suspeita de Infecção' },
 ];
 
 
