@@ -16,11 +16,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { updateRequest as updateRequestInFirestore } from '@/services/requestService'; // Use Firestore service
+import FileUploadInput from '../shared/FileUploadInput';
 
 const responseFormSchema = z.object({
   recommendation: z.string().min(10, { message: 'A recomendação deve ter pelo menos 10 caracteres.' }),
   status: z.enum(['Positive', 'Negative', 'Inconclusive'], { required_error: "O status é obrigatório." }),
+  laudoPdfUrl: z.string().url().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.status === 'Positive' && !data.laudoPdfUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'O envio do laudo em PDF é obrigatório para o status "Positivo".',
+        path: ['laudoPdfUrl'],
+      });
+    }
 });
+
 
 type ResponseFormValues = z.infer<typeof responseFormSchema>;
 
@@ -42,17 +53,21 @@ const statusOptions: StatusOption[] = [
 
 export default function ResponseForm({ request }: ResponseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const { user: technicianUser } = useAuth(); 
   const router = useRouter();
 
-  const { control, handleSubmit, formState: { errors } } = useForm<ResponseFormValues>({
+  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<ResponseFormValues>({
     resolver: zodResolver(responseFormSchema),
     defaultValues: {
       recommendation: request.recommendation || '', 
       status: request.status !== 'Pending' ? request.status : undefined,
+      laudoPdfUrl: request.laudoPdfUrl || null,
     },
   });
+  
+  const watchedStatus = watch('status');
 
   const onSubmit: SubmitHandler<ResponseFormValues> = async (data) => {
     if (!technicianUser || !technicianUser.id || !technicianUser.name) {
@@ -70,19 +85,20 @@ export default function ResponseForm({ request }: ResponseFormProps) {
         technicianName: technicianUser.name,
         recommendation: data.recommendation,
         status: data.status,
-        responseDate: new Date().toISOString(), // Will be converted to Timestamp by service
+        responseDate: new Date().toISOString(),
+        laudoPdfUrl: data.laudoPdfUrl || undefined,
       };
 
       await updateRequestInFirestore(request.id, updatesForFirestore); 
       
       toast({
         title: 'Resposta Enviada!',
-        description: `Sua resposta para o Levantamento ID ${request.id} foi salva no Firestore.`,
+        description: `Sua resposta para o Levantamento ID ${request.id} foi salva.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
     } catch (error: any) {
       console.error("Falha ao enviar resposta:", error);
-      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar a resposta. Por favor, tente novamente.", variant: "destructive" });
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar a resposta.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -135,15 +151,41 @@ export default function ResponseForm({ request }: ResponseFormProps) {
             />
             {errors.status && <p className="text-sm text-destructive mt-1">{errors.status.message}</p>}
           </div>
+
+          {watchedStatus === 'Positive' && (
+            <div>
+              <Label htmlFor="laudoPdfUrl">Laudo (PDF Obrigatório)</Label>
+              <Controller
+                name="laudoPdfUrl"
+                control={control}
+                render={({ field }) => (
+                   <FileUploadInput
+                    id="laudoPdfUrl"
+                    onUploadStart={() => setIsUploading(true)}
+                    onUploadComplete={(url) => {
+                      field.onChange(url);
+                      setIsUploading(false);
+                    }}
+                    currentFileUrl={field.value}
+                    uploadPath={`laudos/${request.id}`}
+                    acceptedFileTypes={['application/pdf']}
+                    fileTypeDescription="PDF"
+                  />
+                )}
+              />
+              {errors.laudoPdfUrl && <p className="text-sm text-destructive mt-1">{errors.laudoPdfUrl.message}</p>}
+            </div>
+          )}
+
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
-             {isSubmitting ? (
+          <Button type="submit" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting || isUploading}>
+             {isSubmitting || isUploading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Enviar Resposta
+            {isUploading ? 'Aguardando Upload...' : 'Enviar Resposta'}
           </Button>
         </CardFooter>
       </form>

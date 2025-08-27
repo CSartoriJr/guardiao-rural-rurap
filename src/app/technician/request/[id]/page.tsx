@@ -11,7 +11,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Briefcase, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
+import Link from 'next/link';
 
 
 export default function TechnicianViewRequestPage() {
@@ -226,6 +227,27 @@ export default function TechnicianViewRequestPage() {
           </div>
         )}
       </>
+    );
+  };
+  
+ const SecondaryActivityDisplay = ({ request }: { request: AgriRequest | null }) => {
+    if (!request || request.hasSecondaryActivity === undefined) return null;
+
+    return (
+        <div className='mt-4'>
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Briefcase className="h-4 w-4 mr-2 text-primary" />Atividade Secundária na Área</h3>
+            {request.hasSecondaryActivity ? (
+                <>
+                  <p className="text-lg text-foreground">Sim</p>
+                  {request.secondaryActivityYes && <p className="text-sm text-muted-foreground pl-6">Atividade: {request.secondaryActivityYes}</p>}
+                </>
+            ) : (
+                <>
+                  <p className="text-lg text-foreground">Não</p>
+                  {request.secondaryActivityNo && <p className="text-sm text-muted-foreground pl-6">Atividade Pretendida: {request.secondaryActivityNo}</p>}
+                </>
+            )}
+        </div>
     );
   };
 
@@ -433,6 +455,8 @@ export default function TechnicianViewRequestPage() {
                 <p className="text-lg text-foreground">{request.vegetationType}</p>
               </div>
             )}
+            
+            <SecondaryActivityDisplay request={request} />
 
              <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>
@@ -474,6 +498,14 @@ export default function TechnicianViewRequestPage() {
                 <p className="text-xs text-muted-foreground mt-3">
                    {request.technicianId === user?.id ? `Por Você (${request.technicianName})` : `Por ${request.technicianName}`} em {format(new Date(request.responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
                 </p>
+              )}
+               {request.laudoPdfUrl && (
+                <Button asChild className="mt-4">
+                    <Link href={request.laudoPdfUrl} target="_blank" rel="noopener noreferrer">
+                        <Download className="mr-2 h-4 w-4"/>
+                        Baixar Laudo (PDF)
+                    </Link>
+                </Button>
               )}
             </CardContent>
           </Card>

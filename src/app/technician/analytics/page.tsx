@@ -112,7 +112,7 @@ export default function TechnicianAnalyticsPage() {
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
-    { name: 'Positivo', count: stats.positive },
+    { name: 'Suspeita de Contaminação', count: stats.positive },
     { name: 'Negativo', count: stats.negative },
     { name: 'Inconclusivo', count: stats.inconclusive },
   ].filter(item => item.count > 0);
@@ -232,11 +232,11 @@ export default function TechnicianAnalyticsPage() {
                     </Card>
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
                         <CardHeader className="pb-2 text-center">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Positivos</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Suspeitos de Contaminação</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
                         <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
-                        <p className="text-xs text-muted-foreground">Diagnósticos positivos</p>
+                        <p className="text-xs text-muted-foreground">Diagnósticos Suspeitos de Contaminação</p>
                         </CardContent>
                     </Card>
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">

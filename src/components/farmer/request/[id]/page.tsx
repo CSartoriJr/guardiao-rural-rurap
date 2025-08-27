@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -9,15 +10,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Briefcase } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Briefcase, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast'; // Import useToast
+import Link from 'next/link';
 
-const StatusDisplay = ({ status, recommendation, technicianName, responseDate }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate'>) => {
+const StatusDisplay = ({ status, recommendation, technicianName, responseDate, laudoPdfUrl }: Pick<AgriRequest, 'status' | 'recommendation' | 'technicianName' | 'responseDate' | 'laudoPdfUrl'>) => {
   let IconComponent;
   let badgeClass = '';
   let title = '';
@@ -68,6 +70,14 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
               Por {technicianName} em {format(new Date(responseDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
             </p>
           )}
+          {laudoPdfUrl && (
+            <Button asChild className="mt-4">
+                <Link href={laudoPdfUrl} target="_blank" rel="noopener noreferrer">
+                    <Download className="mr-2 h-4 w-4"/>
+                    Baixar Laudo (PDF)
+                </Link>
+            </Button>
+          )}
         </CardContent>
       )}
       {status === 'Pending' && (
@@ -109,7 +119,7 @@ export default function FarmerViewRequestPage() {
     setIsLoading(true);
     getRequestById(requestId)
       .then(data => {
-        if (data && (data.farmerCpf === user.cpf || user.role === 'admin')) { 
+        if (data && (data.farmerCpf === user.cpf || user.role === 'admin' || user.role === 'technician')) { 
           setRequest(data);
         } else if (data) {
           setError("Você não tem autorização para ver este Levantamento.");
@@ -311,7 +321,7 @@ export default function FarmerViewRequestPage() {
 
   if (isLoading || initializing) { 
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
@@ -352,7 +362,7 @@ export default function FarmerViewRequestPage() {
 
   if (error) {
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
@@ -366,7 +376,7 @@ export default function FarmerViewRequestPage() {
 
   if (!request) {
     return (
-      <PageWrapper allowedRoles={['farmer', 'admin']}>
+      <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground">Levantamento Não Encontrado</h2>
@@ -380,7 +390,7 @@ export default function FarmerViewRequestPage() {
   }
   
   return (
-    <PageWrapper allowedRoles={['farmer', 'admin']}>
+    <PageWrapper allowedRoles={['farmer', 'technician', 'admin']}>
       <div className="max-w-3xl mx-auto">
         <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Voltar
@@ -454,6 +464,7 @@ export default function FarmerViewRequestPage() {
           recommendation={request.recommendation}
           technicianName={request.technicianName}
           responseDate={request.responseDate}
+          laudoPdfUrl={request.laudoPdfUrl}
         />
       </div>
 

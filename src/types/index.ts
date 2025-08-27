@@ -59,4 +59,5 @@ export interface AgriRequest {
   hasSecondaryActivity?: boolean;
   secondaryActivityYes?: string;
   secondaryActivityNo?: string;
+  laudoPdfUrl?: string; // URL for the uploaded PDF report
 }

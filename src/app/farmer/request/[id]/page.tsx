@@ -28,8 +28,8 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate }:
     case 'Positive':
       IconComponent = CheckCircle2;
       badgeClass = 'bg-green-100 text-green-700 border-green-300';
-      title = 'Diagnóstico Positivo';
-      statusText = 'Positivo';
+      title = 'Diagnóstico Suspeita de Contaminação';
+      statusText = 'Suspeita de Contaminação';
       break;
     case 'Negative':
       IconComponent = XCircle;

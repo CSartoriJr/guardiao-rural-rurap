@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos os Status' },
   { value: 'Pending', label: 'Pendente' },
-  { value: 'Positive', label: 'Positivo' },
+  { value: 'Positive', label: 'Suspeita de Contaminação' },
   { value: 'Negative', label: 'Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
 ];

@@ -11,7 +11,7 @@ const ensureFirebaseInitialized = () => {
   }
 };
 
-interface UploadImageResult {
+interface UploadFileResult {
   uploadTask: UploadTask;
   promise: Promise<string>;
 }
@@ -20,47 +20,55 @@ export function uploadImage(
   file: File,
   userId: string, // This is the ID of the folder owner (the farmer)
   onProgressUpdate?: (percentage: number) => void
-): UploadImageResult {
-  ensureFirebaseInitialized();
-  console.log(`[ImageUploadService] Initiating upload for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+): UploadFileResult {
+  return uploadFile(file, `requests/${userId}`, onProgressUpdate);
+}
 
-  if (!userId) {
-    const err = new Error('ID do agricultor é obrigatório para o upload da imagem.');
-    console.error(`[ImageUploadService] ${err.message}`);
-    // Create a "dummy task" so the UI doesn't break if it expects an UploadTask
+
+export function uploadFile(
+  file: File,
+  path: string, // This is the full path e.g., `requests/${userId}` or `laudos/${requestId}`
+  onProgressUpdate?: (percentage: number) => void
+): UploadFileResult {
+  ensureFirebaseInitialized();
+  console.log(`[FileUploader] Initiating upload for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+
+  if (!path) {
+    const err = new Error('O caminho de destino é obrigatório para o upload do arquivo.');
+    console.error(`[FileUploader] ${err.message}`);
     const dummyTask = {
-      cancel: () => { console.warn("[ImageUploadService] Dummy task cancel called."); },
+      cancel: () => console.warn("[FileUploader] Dummy task cancel called."),
       snapshot: { totalBytes: 0, bytesTransferred: 0, state: 'error', ref: {} } as any,
       then: () => Promise.reject(err),
       catch: () => Promise.reject(err),
-      pause: () => { console.warn("[ImageUploadService] Dummy task pause called."); },
-      resume: () => { console.warn("[ImageUploadService] Dummy task resume called."); }
+      pause: () => console.warn("[FileUploader] Dummy task pause called."),
+      resume: () => console.warn("[FileUploader] Dummy task resume called.")
     } as unknown as UploadTask;
     return { uploadTask: dummyTask, promise: Promise.reject(err) };
   }
 
   const fileExtension = file.name.split('.').pop() || 'dat';
   const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-  const storagePath = `laudos/${userId}/${uniqueFileName}`;
+  const storagePath = `${path}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
-  console.log(`[ImageUploadService] Attempting to upload to path: ${storagePath}`);
+  console.log(`[FileUploader] Attempting to upload to path: ${storagePath}`);
   const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {
-    console.log('[ImageUploadService] Attaching event listeners to upload task.');
+    console.log('[FileUploader] Attaching event listeners to upload task.');
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        console.log(`[ImageUploadService] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
+        console.log(`[FileUploader] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
         if (onProgressUpdate) {
           onProgressUpdate(Math.round(progress));
         }
       },
       (error: FirebaseStorageError) => { 
-        console.error(`[ImageUploadService] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
+        console.error(`[FileUploader] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
         
-        let userFriendlyMessage = 'Ocorreu um erro ao enviar sua imagem. Tente novamente.';
+        let userFriendlyMessage = 'Ocorreu um erro ao enviar seu arquivo. Tente novamente.';
         switch(error.code) {
             case 'storage/unauthorized':
                 userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
@@ -80,15 +88,15 @@ export function uploadImage(
       },
       async () => {
         try {
-          console.log('[ImageUploadService] Upload complete. Getting download URL...');
+          console.log('[FileUploader] Upload complete. Getting download URL...');
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log(`[ImageUploadService] File ${file.name} uploaded successfully. URL:`, downloadURL);
+          console.log(`[FileUploader] File ${file.name} uploaded successfully. URL:`, downloadURL);
           if (onProgressUpdate) {
             onProgressUpdate(100); 
           }
           resolve(downloadURL);
         } catch (e: any) {
-          console.error(`[ImageUploadService] Error getting download URL for ${file.name}:`, e);
+          console.error(`[FileUploader] Error getting download URL for ${file.name}:`, e);
           const getUrlError = new Error(e.message || 'Falha ao obter URL de download após o upload.');
           (getUrlError as any).code = e.code || 'storage/get-url-failed';
           reject(getUrlError);

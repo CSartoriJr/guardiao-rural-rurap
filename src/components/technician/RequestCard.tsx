@@ -17,7 +17,7 @@ interface TechnicianRequestCardProps {
 const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
   switch (status) {
     case 'Positive':
-      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Suspeito de Contaminação</Badge>;
     case 'Negative':
       return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
     case 'Inconclusive':
