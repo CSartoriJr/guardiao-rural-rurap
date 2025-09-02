@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
 import type { AgriRequest, RequestStatus } from '@/types';
-import { getAllRequestsForAdmin } from '@/services/requestService';
+import { getAllRequestsSystemWide } from '@/services/requestService'; // Changed to system-wide fetch
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user && user.role === 'admin') {
       setIsLoading(true);
-      getAllRequestsForAdmin()
+      getAllRequestsSystemWide() // Use the system-wide function to fetch ALL requests
         .then(data => {
           setRequests(data);
         })
