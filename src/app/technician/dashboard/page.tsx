@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, RequestStatus } from '@/types';
-import { getAllRequestsForAdmin as getAllRequestsSystemWide, getRequestsForMunicipalities } from '@/services/requestService'; 
+import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown, ListFilter, PlusCircle, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,25 +33,13 @@ export default function TechnicianDashboard() {
   const { toast } = useToast();
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all'); // Default to all
+  const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('Pending'); // Default to Pending
 
   useEffect(() => {
     if (user) {
       setIsLoading(true);
       
-      let requestPromise: Promise<AgriRequest[]>;
-
-      const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
-
-      if (hasAssignedMunicipalities) {
-        console.log(`Fetching requests for technician ${user.id} in municipalities:`, user.assignedMunicipalities);
-        requestPromise = getRequestsForMunicipalities(user.assignedMunicipalities!);
-      } else {
-        console.log(`Fetching all system-wide requests for user ${user.id} (no specific municipalities assigned).`);
-        requestPromise = getAllRequestsSystemWide(); // Admins and technicians without specific municipalities see all
-      }
-      
-      requestPromise
+      getAllRequestsSystemWide() // Always fetch all requests now
         .then(data => {
           setAllRequests(data);
         })
@@ -71,24 +59,40 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
+  const technicianVisibleRequests = useMemo(() => {
+    if (!user) return [];
+    
+    const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
+
+    if (hasAssignedMunicipalities) {
+      // Filter client-side if technician has assigned municipalities
+      return allRequests.filter(req => 
+        user.assignedMunicipalities!.includes(req.municipality || '')
+      );
+    }
+    
+    // Admins and technicians without specific municipalities see all
+    return allRequests;
+  }, [allRequests, user]);
+
+
   const statusCounts = useMemo(() => {
-    if (!allRequests) return { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0, all: 0 };
-    return {
-      Pending: allRequests.filter(req => req.status === 'Pending').length,
-      Positive: allRequests.filter(req => req.status === 'Positive').length,
-      Negative: allRequests.filter(req => req.status === 'Negative').length,
-      Inconclusive: allRequests.filter(req => req.status === 'Inconclusive').length,
-      'Suspeita de Infecção': allRequests.filter(req => req.status === 'Suspeita de Infecção').length,
-      all: allRequests.length,
-    };
-  }, [allRequests]);
+    const counts = { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0, all: 0 };
+    technicianVisibleRequests.forEach(req => {
+      counts.all++;
+      if (req.status && counts.hasOwnProperty(req.status)) {
+        counts[req.status as RequestStatus]++;
+      }
+    });
+    return counts;
+  }, [technicianVisibleRequests]);
 
   const filteredRequests = useMemo(() => {
     if (statusFilter === 'all') {
-      return allRequests;
+      return technicianVisibleRequests;
     }
-    return allRequests.filter(request => request.status === statusFilter);
-  }, [allRequests, statusFilter]);
+    return technicianVisibleRequests.filter(request => request.status === statusFilter);
+  }, [technicianVisibleRequests, statusFilter]);
 
   const getHeaderText = () => {
     if (isLoading) return 'Carregando...';
@@ -160,9 +164,9 @@ export default function TechnicianDashboard() {
             Nenhum Levantamento Encontrado
           </h2>
           <p className="text-muted-foreground">
-            {statusFilter !== 'all' && allRequests.length > 0
+            {statusFilter !== 'all' && technicianVisibleRequests.length > 0
               ? `Nenhum Levantamento encontrado com o status "${getStatusDisplayName(statusFilter)}".`
-              : `Não há Levantamentos com o status "${getStatusDisplayName(statusFilter)}" no momento.`}
+              : `Não há Levantamentos designados a você com o status "${getStatusDisplayName(statusFilter)}" no momento.`}
           </p>
         </div>
       )}
