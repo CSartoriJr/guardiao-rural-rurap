@@ -2,44 +2,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
-import type { AgriRequest, RequestStatus } from '@/types';
+import type { AgriRequest } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, ListFilter, PlusCircle, UserPlus } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
-
-const statusOptions: { value: RequestStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos os Status' },
-  { value: 'Pending', label: 'Pendente' },
-  { value: 'Positive', label: 'Positivo' },
-  { value: 'Negative', label: 'Negativo' },
-  { value: 'Inconclusive', label: 'Inconclusivo' },
-  { value: 'Suspeita de Infecção', label: 'Suspeita de Infecção' },
-];
-
-const getStatusDisplayName = (statusValue: RequestStatus | 'all'): string => {
-  const option = statusOptions.find(opt => opt.value === statusValue);
-  return option ? option.label : 'Status Desconhecido';
-};
 
 export default function TechnicianDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('Pending'); // Default to Pending
 
   useEffect(() => {
     if (user) {
       setIsLoading(true);
       
-      getAllRequestsSystemWide() // Always fetch all requests now
+      getAllRequestsSystemWide() // Always fetch all requests
         .then(data => {
           setAllRequests(data);
         })
@@ -76,34 +59,6 @@ export default function TechnicianDashboard() {
   }, [allRequests, user]);
 
 
-  const statusCounts = useMemo(() => {
-    const counts = { Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0, all: 0 };
-    technicianVisibleRequests.forEach(req => {
-      counts.all++;
-      if (req.status && counts.hasOwnProperty(req.status)) {
-        counts[req.status as RequestStatus]++;
-      }
-    });
-    return counts;
-  }, [technicianVisibleRequests]);
-
-  const filteredRequests = useMemo(() => {
-    if (statusFilter === 'all') {
-      return technicianVisibleRequests;
-    }
-    return technicianVisibleRequests.filter(request => request.status === statusFilter);
-  }, [technicianVisibleRequests, statusFilter]);
-
-  const getHeaderText = () => {
-    if (isLoading) return 'Carregando...';
-    const count = filteredRequests.length;
-    const noun = count === 1 ? 'Levantamento' : 'Levantamentos';
-    if (statusFilter === 'all') {
-      return `${count} ${noun} Exibido${count === 1 ? '' : 's'}`;
-    }
-    return `${count} ${noun} ${getStatusDisplayName(statusFilter)}${count === 1 ? '' : 's'}`;
-  };
-
   return (
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
@@ -111,7 +66,7 @@ export default function TechnicianDashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>{getHeaderText()}</span>
+            <span>{isLoading ? 'Carregando...' : `${technicianVisibleRequests.length} Levantamentos Visíveis`}</span>
           </div>
            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
@@ -126,34 +81,15 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row justify-start items-center gap-4">
-        <div className="w-full sm:w-auto sm:min-w-[250px]"> {/* Adjusted min-width for longer text */}
-          <Label htmlFor="status-filter" className="text-sm font-medium text-foreground">Filtrar por Status</Label>
-           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RequestStatus | 'all')}>
-            <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
-              <ListFilter className="mr-2 h-4 w-4 text-primary" />
-              <SelectValue placeholder="Filtrar por status..." />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label} ({option.value === 'all' ? statusCounts.all : statusCounts[option.value as RequestStatus]})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {isLoading ? (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
-      ) : filteredRequests.length > 0 ? (
+      ) : technicianVisibleRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRequests.map(request => (
+          {technicianVisibleRequests.map(request => (
             <TechnicianRequestCard key={request.id} request={request} />
           ))}
         </div>
@@ -164,9 +100,7 @@ export default function TechnicianDashboard() {
             Nenhum Levantamento Encontrado
           </h2>
           <p className="text-muted-foreground">
-            {statusFilter !== 'all' && technicianVisibleRequests.length > 0
-              ? `Nenhum Levantamento encontrado com o status "${getStatusDisplayName(statusFilter)}".`
-              : `Não há Levantamentos designados a você com o status "${getStatusDisplayName(statusFilter)}" no momento.`}
+            Não há Levantamentos designados a você no momento.
           </p>
         </div>
       )}
