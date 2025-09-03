@@ -97,6 +97,22 @@ O Git pode pedir seu nome de usuário e senha (ou um token de acesso pessoal) do
 
 ---
 
+## Solução de Problemas
+
+### Erro: `remote origin already exists`
+
+Se você receber esta mensagem de erro ao executar o comando `git remote add origin ...`, significa que seu projeto já tem um "remoto" configurado com o nome `origin`.
+
+Para corrigir, em vez de adicionar um novo, você pode simplesmente **atualizar o endereço (URL)** do remoto existente com o seguinte comando:
+
+```bash
+git remote set-url origin https://github.com/SEU-USUARIO/NOME-DO-REPOSITORIO.git
+```
+
+Depois de executar este comando, continue para o **Passo 7** para enviar seu código.
+
+---
+
 Pronto! Atualize a página do seu repositório no GitHub e você verá todos os seus arquivos lá. A partir de agora, para salvar novas alterações, você só precisará executar:
 
 ```bash
