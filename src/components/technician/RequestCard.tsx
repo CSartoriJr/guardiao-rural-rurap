@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock, Sprout } from 'lucide-react';
+import { Eye, User, CalendarDays, CheckCircle2, XCircle, HelpCircle, Clock, Sprout, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,11 +17,13 @@ interface TechnicianRequestCardProps {
 const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
   switch (status) {
     case 'Positive':
-      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Suspeito de Contaminação</Badge>;
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
     case 'Negative':
       return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
     case 'Inconclusive':
       return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusivo</Badge>;
+    case 'Suspeita de Infecção':
+        return <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white"><AlertCircleIcon className="mr-1 h-3 w-3" />Suspeita</Badge>;
     default: // Pending
       return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pendente</Badge>;
   }

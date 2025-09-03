@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { AgriRequest } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +80,7 @@ export default function TechnicianAnalyticsPage() {
     const positive = filteredRequests.filter(r => r.status === 'Positive').length;
     const negative = filteredRequests.filter(r => r.status === 'Negative').length;
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
+    const suspected = filteredRequests.filter(r => r.status === 'Suspeita de Infecção').length;
     
     const cassavaVarieties: { [key: string]: number } = {};
     filteredRequests.forEach(req => {
@@ -107,14 +108,15 @@ export default function TechnicianAnalyticsPage() {
       .sort((a,b) => b.count - a.count);
 
 
-    return { total, pending, positive, negative, inconclusive, cassavaVarietiesArray, requestsByMunicipalityArray };
+    return { total, pending, positive, negative, inconclusive, suspected, cassavaVarietiesArray, requestsByMunicipalityArray };
   }, [filteredRequests, requests, selectedMunicipality]);
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
-    { name: 'Suspeita de Contaminação', count: stats.positive },
+    { name: 'Positivo', count: stats.positive },
     { name: 'Negativo', count: stats.negative },
     { name: 'Inconclusivo', count: stats.inconclusive },
+    { name: 'Suspeita de Infecção', count: stats.suspected },
   ].filter(item => item.count > 0);
 
   const cassavaVarietyChartData: ChartDataItem[] = stats.cassavaVarietiesArray.slice(0, 5); // Top 5
@@ -232,20 +234,20 @@ export default function TechnicianAnalyticsPage() {
                     </Card>
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
                         <CardHeader className="pb-2 text-center">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Suspeitos de Contaminação</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-green-600"/>Positivos</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
                         <div className="text-2xl font-bold text-green-600">{stats.positive}</div>
-                        <p className="text-xs text-muted-foreground">Diagnósticos Suspeitos de Contaminação</p>
+                        <p className="text-xs text-muted-foreground">Diagnósticos Positivos</p>
                         </CardContent>
                     </Card>
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
                         <CardHeader className="pb-2 text-center">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Negativos/ Inconclusivos</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1"><AlertCircleIcon className="h-4 w-4 text-orange-600"/>Suspeitas</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{stats.negative + stats.inconclusive}</div>
-                        <p className="text-xs text-muted-foreground">Necessitam atenção</p>
+                        <div className="text-2xl font-bold text-orange-600">{stats.suspected}</div>
+                        <p className="text-xs text-muted-foreground">Suspeitas de Infecção</p>
                         </CardContent>
                     </Card>
                 </div>
