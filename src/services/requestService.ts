@@ -1,4 +1,3 @@
-
 // src/services/requestService.ts
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { collection, addDoc, getDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, Timestamp, serverTimestamp } from 'firebase/firestore';
@@ -39,7 +38,7 @@ const requestFromFirestore = (docSnap: any): AgriRequest => {
 
 
 export const addRequest = async (
-  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'>
+  requestData: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'recommendation'> & { technicianId?: string; technicianName?: string }
 ): Promise<AgriRequest> => {
   ensureFirebaseInitialized();
   try {
@@ -49,8 +48,8 @@ export const addRequest = async (
       status: 'Pending' as RequestStatus,
       photoUrls: requestData.photoUrls,
       recommendation: null,
-      technicianId: null,
-      technicianName: null,
+      technicianId: requestData.technicianId || null, // Include technician info if available
+      technicianName: requestData.technicianName || null,
       responseDate: null,
       mandiocaPlantedArea: requestData.mandiocaPlantedArea ?? null,
       mandiocaInfectedArea: requestData.mandiocaInfectedArea ?? null,

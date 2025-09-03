@@ -245,10 +245,12 @@ export default function TechnicianRequestForm() {
 
     setIsSubmitting(true);
     try {
-      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'technicianId' | 'technicianName' | 'recommendation'> = {
+      const requestDataForFirestore: Omit<AgriRequest, 'id' | 'submissionDate' | 'status' | 'responseDate' | 'recommendation'> & {technicianId?: string; technicianName?: string;} = {
         farmerId: selectedFarmer.id,
         farmerCpf: selectedFarmer.cpf,
         farmerName: selectedFarmer.name,
+        technicianId: user.id,
+        technicianName: user.name,
         mandiocaVariety: data.mandiocaVariety,
         macaxeiraVariety: data.macaxeiraVariety,
         isMandioca: data.isMandioca,
