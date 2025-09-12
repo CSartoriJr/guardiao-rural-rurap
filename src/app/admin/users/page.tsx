@@ -45,12 +45,13 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
   if (!firebaseInitializedCorrectly || !db) return {};
   let activityCount: { requestCount?: number; responseCount?: number } = {};
 
-  if (user.role === 'farmer' && user.id) {
+  if (user.role === 'farmer' && user.cpf) { // Check for CPF existence
     try {
-      const requests = await getRequestsForFarmer(user.id);
+      // Use user.cpf to fetch requests, as required by getRequestsForFarmer
+      const requests = await getRequestsForFarmer(user.cpf);
       activityCount = { requestCount: requests.length };
     } catch (e) {
-      console.error(`Erro ao buscar Levantamentos para agricultor ${user.id}:`, e);
+      console.error(`Erro ao buscar Levantamentos para agricultor ${user.id} (CPF: ${user.cpf}):`, e);
       activityCount = { requestCount: 0 };
     }
   } else if (user.role === 'technician') {
