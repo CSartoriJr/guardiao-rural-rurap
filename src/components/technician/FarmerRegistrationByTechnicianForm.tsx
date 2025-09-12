@@ -12,14 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { User } from '@/types';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, UserPlus, Phone, Mail, Home, MapPin, Users as UsersIcon, FileText, ArrowLeft, PlusCircle, LayoutDashboard } from 'lucide-react';
+import { Loader2, UserPlus, Phone, Mail, Home, MapPin, Users as UsersIcon, FileText, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import Link from 'next/link';
-
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
@@ -49,8 +46,6 @@ type FarmerRegistrationFormValues = z.infer<typeof farmerRegistrationFormSchema>
 
 export default function FarmerRegistrationByTechnicianForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPostRegistrationDialog, setShowPostRegistrationDialog] = useState(false);
-  const [newlyRegisteredFarmer, setNewlyRegisteredFarmer] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
   const { user: technicianUser, registerFarmerByTechnician } = useAuth();
@@ -108,8 +103,7 @@ export default function FarmerRegistrationByTechnicianForm() {
           description: `O agricultor ${newUser.name} foi cadastrado com sucesso. A senha inicial é o CPF (apenas números).`,
         });
         reset();
-        setNewlyRegisteredFarmer(newUser);
-        setShowPostRegistrationDialog(true);
+        router.push(APP_ROUTES.TECHNICIAN_REGISTER_FARMER_SUCCESS);
       }
     } catch (error: any) {
       console.error("Falha ao cadastrar agricultor:", error);
@@ -323,30 +317,6 @@ export default function FarmerRegistrationByTechnicianForm() {
         </form>
         </Card>
     </div>
-    <AlertDialog open={showPostRegistrationDialog} onOpenChange={setShowPostRegistrationDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Agricultor Cadastrado!</AlertDialogTitle>
-          <AlertDialogDescription>
-            O agricultor {newlyRegisteredFarmer?.name} foi cadastrado com sucesso. O que você gostaria de fazer a seguir?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogCancel asChild>
-                <Link href={APP_ROUTES.TECHNICIAN_DASHBOARD}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Painel Inicial
-                </Link>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-                <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Novo Levantamento
-                </Link>
-            </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
