@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -10,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Briefcase, Download, AlertCircleIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -304,26 +303,6 @@ export default function FarmerViewRequestPage() {
     );
   };
   
-  const SecondaryActivityDisplay = ({ request }: { request: AgriRequest | null }) => {
-    if (!request || request.hasSecondaryActivity === undefined) return null;
-
-    return (
-        <div className='mt-4'>
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center"><Briefcase className="h-4 w-4 mr-2 text-primary" />Atividade Secundária na Área</h3>
-            {request.hasSecondaryActivity ? (
-                <>
-                  <p className="text-lg text-foreground">Sim</p>
-                  {request.secondaryActivityYes && <p className="text-sm text-muted-foreground pl-6">Atividade: {request.secondaryActivityYes}</p>}
-                </>
-            ) : (
-                <>
-                  <p className="text-lg text-foreground">Não</p>
-                  {request.secondaryActivityNo && <p className="text-sm text-muted-foreground pl-6">Atividade Pretendida: {request.secondaryActivityNo}</p>}
-                </>
-            )}
-        </div>
-    );
-  };
 
   if (isLoading || initializing) { 
     return (
@@ -436,9 +415,6 @@ export default function FarmerViewRequestPage() {
                 <p className="text-lg text-foreground">{request.vegetationType}</p>
               </div>
             )}
-            
-            <SecondaryActivityDisplay request={request} />
-
 
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center"><ImageIcon className="h-4 w-4 mr-2 text-primary" />Fotos Enviadas</h3>

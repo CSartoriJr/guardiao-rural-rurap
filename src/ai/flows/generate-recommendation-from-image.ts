@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI-powered assistant for technicians. It processes cassava type, submitted photos,
@@ -47,9 +46,6 @@ const GenerateRecommendationInputSchema = z.object({
   deviceLongitude: z.number().optional().describe('GPS Longitude provided by the farmer\'s device, if available. Numerical value between -180 and 180.'),
   soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"]).optional().describe('The soil texture of the planting area.'),
   vegetationType: z.enum(["Mata (Floresta)", "Cerrado"]).optional().describe('The type of vegetation in the area.'),
-  hasSecondaryActivity: z.boolean().optional().describe('Whether the farmer has a secondary activity in the area.'),
-  secondaryActivityYes: z.string().optional().describe('Description of the secondary activity if it exists.'),
-  secondaryActivityNo: z.string().optional().describe('Description of the intended future activity if none exists.'),
 });
 export type GenerateRecommendationInput = z.infer<typeof GenerateRecommendationInputSchema>;
 
@@ -89,11 +85,6 @@ Plant Information:
 {{/if}}
 {{#if soilTexture}}- Soil Texture: {{{soilTexture}}}{{/if}}
 {{#if vegetationType}}- Vegetation Type: {{{vegetationType}}}{{/if}}
-{{#if hasSecondaryActivity}}
-- Secondary Activity: Yes - {{{secondaryActivityYes}}}
-{{else}}
-- Secondary Activity: No - Intends to develop: {{{secondaryActivityNo}}}
-{{/if}}
 
 Images Provided (as URLs):
 - Photo 1 (Panoramic): {{media url=photoDataUri1}}

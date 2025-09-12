@@ -1,4 +1,3 @@
-
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
@@ -56,8 +55,5 @@ export interface AgriRequest {
   macaxeiraSymptomsDate?: string; // ISO String;
   soilTexture?: SoilTexture;
   vegetationType?: VegetationType;
-  hasSecondaryActivity?: boolean;
-  secondaryActivityYes?: string;
-  secondaryActivityNo?: string;
   laudoPdfUrl?: string; // URL for the uploaded PDF report
 }

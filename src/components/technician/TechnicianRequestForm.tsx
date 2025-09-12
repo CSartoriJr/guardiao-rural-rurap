@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus, User, SoilTexture, VegetationType } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService';
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users, CalendarIcon, WholeWord, Leaf, Briefcase } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users, CalendarIcon, WholeWord, Leaf } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
@@ -47,9 +47,6 @@ const requestFormSchema = z.object({
   macaxeiraSymptomsDate: z.date().optional(),
   soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"], { required_error: "A textura do solo é obrigatória." }),
   vegetationType: z.enum(["Mata (Floresta)", "Cerrado"], { required_error: "O tipo de vegetação é obrigatório."}),
-  hasSecondaryActivity: z.enum(["yes", "no"], { required_error: "Selecione Sim ou Não."}),
-  secondaryActivityYes: z.string().optional(),
-  secondaryActivityNo: z.string().optional(),
 })
 .refine(data => data.isMandioca || data.isMacaxeira, {
   message: "Selecione pelo menos Mandioca ou Macaxeira.",
@@ -91,22 +88,6 @@ const requestFormSchema = z.object({
                 path: ['macaxeiraPlantingDate'],
             });
         }
-    }
-
-    if (data.hasSecondaryActivity === "yes" && (!data.secondaryActivityYes || data.secondaryActivityYes.trim().length < 3)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Descreva a atividade secundária (mínimo 3 caracteres).",
-            path: ['secondaryActivityYes'],
-        });
-    }
-
-    if (data.hasSecondaryActivity === "no" && (!data.secondaryActivityNo || data.secondaryActivityNo.trim().length < 3)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Descreva a atividade que pretende desenvolver (mínimo 3 caracteres).",
-            path: ['secondaryActivityNo'],
-        });
     }
 
     const mpa = typeof data.mandiocaPlantedArea === 'number' ? data.mandiocaPlantedArea : undefined;
@@ -161,8 +142,6 @@ export default function TechnicianRequestForm() {
       mandiocaInfectedArea: '',
       macaxeiraPlantedArea: '',
       macaxeiraInfectedArea: '',
-      secondaryActivityYes: '',
-      secondaryActivityNo: '',
     },
   });
   
@@ -171,7 +150,6 @@ export default function TechnicianRequestForm() {
   const photoUrl3 = watch('photoUrl3');
   const isMandiocaChecked = watch('isMandioca');
   const isMacaxeiraChecked = watch('isMacaxeira');
-  const hasSecondaryActivity = watch('hasSecondaryActivity');
   const selectedFarmerId = watch('farmerId');
 
 
@@ -272,9 +250,6 @@ export default function TechnicianRequestForm() {
         municipality: selectedFarmer.municipality || undefined,
         soilTexture: data.soilTexture,
         vegetationType: data.vegetationType,
-        hasSecondaryActivity: data.hasSecondaryActivity === 'yes',
-        secondaryActivityYes: data.secondaryActivityYes,
-        secondaryActivityNo: data.secondaryActivityNo,
       };
       
       const newRequest = await addRequestToFirestore(requestDataForFirestore); 
@@ -303,9 +278,6 @@ export default function TechnicianRequestForm() {
               deviceLongitude: newRequest.longitude,
               soilTexture: newRequest.soilTexture,
               vegetationType: newRequest.vegetationType,
-              hasSecondaryActivity: newRequest.hasSecondaryActivity,
-              secondaryActivityYes: newRequest.secondaryActivityYes,
-              secondaryActivityNo: newRequest.secondaryActivityNo,
           };
 
           generateRecommendation(aiInput).then(async aiOutput => {
@@ -708,51 +680,6 @@ export default function TechnicianRequestForm() {
             />
             {errors.vegetationType && <p className="text-sm text-destructive">{errors.vegetationType.message}</p>}
           </div>
-
-           <div className="space-y-2">
-              <Label className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-primary" />Desenvolve atividade secundária na área?</Label>
-               <Controller
-                  name="hasSecondaryActivity"
-                  control={control}
-                  render={({ field }) => (
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex flex-row space-x-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="yes" id="activity-yes" />
-                        <Label htmlFor="activity-yes" className="font-normal">Sim</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id="activity-no" />
-                        <Label htmlFor="activity-no" className="font-normal">Não</Label>
-                      </div>
-                    </RadioGroup>
-                  )}
-                />
-              {errors.hasSecondaryActivity && <p className="text-sm text-destructive">{errors.hasSecondaryActivity.message}</p>}
-          </div>
-          
-          {hasSecondaryActivity === 'yes' && (
-             <div className="space-y-2">
-                  <Label htmlFor="secondaryActivityYes">Qual a atividade?</Label>
-                  <Controller name="secondaryActivityYes" control={control} render={({ field }) => (
-                      <Textarea id="secondaryActivityYes" placeholder="Descreva a atividade..." {...field} />
-                  )} />
-                  {errors.secondaryActivityYes && <p className="text-sm text-destructive">{errors.secondaryActivityYes.message}</p>}
-              </div>
-          )}
-
-          {hasSecondaryActivity === 'no' && (
-              <div className="space-y-2">
-                  <Label htmlFor="secondaryActivityNo">Qual atividade pretende desenvolver?</Label>
-                  <Controller name="secondaryActivityNo" control={control} render={({ field }) => (
-                      <Textarea id="secondaryActivityNo" placeholder="Descreva a atividade futura..." {...field} />
-                  )} />
-                  {errors.secondaryActivityNo && <p className="text-sm text-destructive">{errors.secondaryActivityNo.message}</p>}
-              </div>
-          )}
 
           <Separator />
 
