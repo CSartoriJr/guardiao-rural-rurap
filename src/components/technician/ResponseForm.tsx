@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -46,7 +45,7 @@ interface StatusOption {
 
 const statusOptions: StatusOption[] = [
   { value: 'Positive', label: 'Positivo' },
-  { value: 'Negative', label: 'Negativo' },
+  { value: 'Negative', label: 'Possivelmente Negativo' },
   { value: 'Inconclusive', label: 'Inconclusivo' },
   { value: 'Suspeita de Infecção', label: 'Suspeita de Infecção' },
 ];

@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AgriRequest } from '@/types';
@@ -19,7 +18,7 @@ const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
     case 'Positive':
       return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
     case 'Negative':
-      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
+      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Possivelmente Negativo</Badge>;
     case 'Inconclusive':
       return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusivo</Badge>;
     case 'Suspeita de Infecção':

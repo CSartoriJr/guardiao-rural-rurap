@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AgriRequest } from '@/types';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APP_ROUTES } from '@/config/routes';
-import { Eye, CheckCircle2, XCircle, HelpCircle, Clock, Sprout } from 'lucide-react';
+import { Eye, CheckCircle2, XCircle, HelpCircle, Clock, Sprout, AlertCircleIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -19,9 +18,11 @@ const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
     case 'Positive':
       return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Positivo</Badge>;
     case 'Negative':
-      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Negativo</Badge>;
+      return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Possivelmente Negativo</Badge>;
     case 'Inconclusive':
       return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><HelpCircle className="mr-1 h-3 w-3" />Inconclusivo</Badge>;
+    case 'Suspeita de Infecção':
+        return <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white"><AlertCircleIcon className="mr-1 h-3 w-3" />Suspeita</Badge>;
     default: // Pending
       return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pendente</Badge>;
   }

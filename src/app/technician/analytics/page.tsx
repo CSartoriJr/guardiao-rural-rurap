@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -9,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { AgriRequest } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2 } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
@@ -114,7 +113,7 @@ export default function TechnicianAnalyticsPage() {
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
     { name: 'Positivo', count: stats.positive },
-    { name: 'Negativo', count: stats.negative },
+    { name: 'Possivelmente Negativo', count: stats.negative },
     { name: 'Inconclusivo', count: stats.inconclusive },
     { name: 'Suspeita de Infecção', count: stats.suspected },
   ].filter(item => item.count > 0);

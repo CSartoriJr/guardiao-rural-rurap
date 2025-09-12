@@ -467,7 +467,7 @@ export default function TechnicianViewRequestPage() {
               <CardTitle className="font-headline text-xl">Resposta Enviada</CardTitle>
             </CardHeader>
             <CardContent>
-              <p><strong>Status:</strong> {request.status === 'Positive' ? 'Positivo' : request.status === 'Negative' ? 'Negativo' : request.status === 'Inconclusive' ? 'Inconclusivo' : 'Pendente'}</p>
+              <p><strong>Status:</strong> {request.status === 'Positive' ? 'Positivo' : request.status === 'Negative' ? 'Possivelmente Negativo' : request.status === 'Inconclusive' ? 'Inconclusivo' : request.status === 'Suspeita de Infecção' ? 'Suspeita de Infecção' : 'Pendente'}</p>
               <p className="mt-2"><strong>Recomendação:</strong></p>
               <p className="whitespace-pre-wrap bg-muted p-3 rounded-md mt-1">{request.recommendation}</p>
               {request.technicianName && request.responseDate && (

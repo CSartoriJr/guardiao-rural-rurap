@@ -34,8 +34,8 @@ const StatusDisplay = ({ status, recommendation, technicianName, responseDate, l
     case 'Negative':
       IconComponent = XCircle;
       badgeClass = 'bg-red-100 text-red-700 border-red-300';
-      title = 'Diagnóstico Negativo';
-      statusText = 'Negativo';
+      title = 'Diagnóstico Possivelmente Negativo';
+      statusText = 'Possivelmente Negativo';
       break;
     case 'Inconclusive':
       IconComponent = HelpCircle;
