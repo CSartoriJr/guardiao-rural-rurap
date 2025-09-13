@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -39,7 +38,8 @@ const farmerRegistrationFormSchema = z.object({
   email: z.string().email({ message: 'E-mail inválido (será usado para notificações, não para login).' }),
   caf: cafValidation.optional(),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
-  municipality: z.string().min(1, { message: 'Selecione uma unidade.' }),
+  organizationalUnit: z.string().min(1, { message: 'A Unidade Organizacional é obrigatória.' }),
+  municipality: z.string().min(1, { message: 'Selecione um município.' }),
   familyMembers: z.coerce.number().int().nonnegative({ message: 'O número de componentes familiares deve ser zero ou mais.' }),
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
@@ -70,6 +70,7 @@ export default function FarmerRegistrationForm() {
       email: '',
       caf: '',
       address: '',
+      organizationalUnit: '',
       municipality: '',
       familyMembers: 0,
       password: '',
@@ -91,6 +92,7 @@ export default function FarmerRegistrationForm() {
         email: data.email, // Actual email for communication
         caf: data.caf,
         address: data.address,
+        organizationalUnit: data.organizationalUnit,
         municipality: data.municipality,
         familyMembers: data.familyMembers,
       };
@@ -170,6 +172,8 @@ export default function FarmerRegistrationForm() {
     e.target.value = formatted;
     fieldOnChange(formatted);
   };
+  
+  const filteredMunicipalities = amapaMunicipalities.filter(m => !["Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"].includes(m));
 
   return (
     <Card className="w-full max-w-lg shadow-xl">
@@ -254,29 +258,28 @@ export default function FarmerRegistrationForm() {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="address" className="flex items-center"><Home className="mr-1.5 h-3.5 w-3.5" />Endereço Completo</Label>
-            <Controller
-              name="address"
-              control={control}
-              render={({ field }) => <Input id="address" placeholder="Rua, Número, Bairro, Complemento..." {...field} />}
-            />
-            {errors.address && <p className="text-xs text-destructive pt-1">{errors.address.message}</p>}
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Unidade Organizacional</Label>
+              <Label htmlFor="address" className="flex items-center"><Home className="mr-1.5 h-3.5 w-3.5" />Endereço Completo</Label>
+              <Controller
+                name="address"
+                control={control}
+                render={({ field }) => <Input id="address" placeholder="Rua, Número, Bairro, etc." {...field} />}
+              />
+              {errors.address && <p className="text-xs text-destructive pt-1">{errors.address.message}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Município</Label>
               <Controller
                 name="municipality"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <SelectTrigger id="municipality">
-                      <SelectValue placeholder="Selecione sua unidade" />
+                      <SelectValue placeholder="Selecione um município" />
                     </SelectTrigger>
                     <SelectContent>
-                      {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
+                      {filteredMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                         <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                       ))}
                     </SelectContent>
@@ -284,6 +287,18 @@ export default function FarmerRegistrationForm() {
                 )}
               />
               {errors.municipality && <p className="text-xs text-destructive pt-1">{errors.municipality.message}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-1">
+              <Label htmlFor="organizationalUnit">Unidade Organizacional</Label>
+              <Controller
+                name="organizationalUnit"
+                control={control}
+                render={({ field }) => <Input id="organizationalUnit" placeholder="Ex: Ramal do Pracuúba" {...field} />}
+              />
+              {errors.organizationalUnit && <p className="text-xs text-destructive pt-1">{errors.organizationalUnit.message}</p>}
             </div>
             <div className="space-y-1">
               <Label htmlFor="familyMembers" className="flex items-center"><UsersIcon className="mr-1.5 h-3.5 w-3.5" />Nº de Componentes Familiares</Label>

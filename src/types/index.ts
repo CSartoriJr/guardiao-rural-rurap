@@ -12,6 +12,7 @@ export interface User {
   // Fields specific to farmer role, stored in Firestore document
   phone?: string;
   address?: string;
+  organizationalUnit?: string;
   municipality?: string;
   familyMembers?: number;
 

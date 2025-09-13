@@ -1,4 +1,3 @@
-
 'use client';
 import type { User as AppUser } from '@/types';
 import type { User as FirebaseUserType } from 'firebase/auth';

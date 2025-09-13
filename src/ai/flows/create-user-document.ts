@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A secure flow for creating a user document in Firestore.
@@ -29,6 +28,7 @@ const CreateUserDocumentInputSchema = z.object({
     email: z.string().email().optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
+    organizationalUnit: z.string().optional(),
     municipality: z.string().optional(),
     familyMembers: z.number().int().nonnegative().optional(),
     assignedMunicipalities: z.array(z.string()).optional(),
