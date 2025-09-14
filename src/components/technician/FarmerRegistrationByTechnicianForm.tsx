@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -294,13 +295,24 @@ export default function FarmerRegistrationByTechnicianForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                <Label htmlFor="organizationalUnit">Unidade Organizacional</Label>
-                <Controller
-                    name="organizationalUnit"
-                    control={control}
-                    render={({ field }) => <Input id="organizationalUnit" placeholder="Ex: Ramal do Pracuúba" {...field} />}
-                />
-                {errors.organizationalUnit && <p className="text-xs text-destructive pt-1">{errors.organizationalUnit.message}</p>}
+                    <Label htmlFor="organizationalUnit">Unidade Organizacional</Label>
+                    <Controller
+                        name="organizationalUnit"
+                        control={control}
+                        render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger id="organizationalUnit">
+                            <SelectValue placeholder="Selecione uma unidade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
+                                <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        )}
+                    />
+                    {errors.organizationalUnit && <p className="text-xs text-destructive pt-1">{errors.organizationalUnit.message}</p>}
                 </div>
                 <div className="space-y-1">
                 <Label htmlFor="familyMembers" className="flex items-center"><UsersIcon className="mr-1.5 h-3.5 w-3.5" />Nº de Componentes Familiares</Label>

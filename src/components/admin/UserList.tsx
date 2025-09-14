@@ -50,6 +50,7 @@ const editUserFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
   address: z.string().optional(),
+  organizationalUnit: z.string().optional(),
   municipality: z.string().optional(),
   familyMembers: z.coerce.number().int().nonnegative().optional(),
   assignedMunicipalities: z.array(z.string()).optional(),
@@ -74,8 +75,15 @@ const editUserFormSchema = z.object({
     if (!data.municipality) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Unidade Organizacional é obrigatória para agricultor.',
+        message: 'Município é obrigatório para agricultor.',
         path: ['municipality'],
+      });
+    }
+     if (!data.organizationalUnit) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Unidade Organizacional é obrigatória para agricultor.',
+        path: ['organizationalUnit'],
       });
     }
     if (data.familyMembers === undefined || data.familyMembers < 0) {
@@ -105,6 +113,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       phone: '',
       email: '',
       address: '',
+      organizationalUnit: '',
       municipality: '',
       familyMembers: 0,
       assignedMunicipalities: [],
@@ -114,6 +123,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
   const watchedRole = watch('role', editingUser?.role);
   const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+  const organizationalUnitOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+  const filteredMunicipalities = amapaMunicipalities.filter(m => !["Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"].includes(m));
+
 
   const handleEditClick = (user: UserWithActivityCount) => {
     setEditingUser(user);
@@ -124,6 +136,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       phone: user.phone || '',
       email: user.email || '',
       address: user.address || '',
+      organizationalUnit: user.organizationalUnit || '',
       municipality: user.municipality || '',
       familyMembers: user.familyMembers !== undefined ? user.familyMembers : 0,
       assignedMunicipalities: user.assignedMunicipalities || [],
@@ -206,6 +219,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     if (data.role === 'farmer') {
       userDataToUpdate.phone = data.phone;
       userDataToUpdate.address = data.address;
+      userDataToUpdate.organizationalUnit = data.organizationalUnit;
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
       userDataToUpdate.caf = data.caf;
@@ -214,12 +228,14 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
         userDataToUpdate.phone = undefined;
         userDataToUpdate.address = undefined;
+        userDataToUpdate.organizationalUnit = undefined;
         userDataToUpdate.municipality = undefined;
         userDataToUpdate.familyMembers = undefined;
         userDataToUpdate.caf = undefined;
     } else { // Admin
       userDataToUpdate.phone = undefined;
       userDataToUpdate.address = undefined;
+      userDataToUpdate.organizationalUnit = undefined;
       userDataToUpdate.municipality = undefined;
       userDataToUpdate.familyMembers = undefined;
       userDataToUpdate.assignedMunicipalities = undefined;
@@ -438,18 +454,18 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       />
                       {errors.address && <p className="text-xs text-destructive pt-1">{errors.address.message}</p>}
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Unidade Organizacional</Label>
+                     <div className="space-y-1">
+                      <Label htmlFor="edit-municipality" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Município</Label>
                       <Controller
                         name="municipality"
                         control={control}
                         render={({ field }) => (
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <SelectTrigger id="edit-municipality">
-                              <SelectValue placeholder="Selecione uma unidade" />
+                              <SelectValue placeholder="Selecione um município" />
                             </SelectTrigger>
                             <SelectContent>
-                              {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
+                              {filteredMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                                 <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                               ))}
                             </SelectContent>
@@ -457,6 +473,26 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         )}
                       />
                       {errors.municipality && <p className="text-xs text-destructive pt-1">{errors.municipality.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-organizationalUnit" className="flex items-center"><MapPin className="mr-1.5 h-3.5 w-3.5" />Unidade Organizacional</Label>
+                      <Controller
+                        name="organizationalUnit"
+                        control={control}
+                        render={({ field }) => (
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger id="organizationalUnit">
+                                <SelectValue placeholder="Selecione uma unidade" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {organizationalUnitOptions.sort((a,b) => a.label.localeCompare(b.label)).map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                      />
+                      {errors.organizationalUnit && <p className="text-xs text-destructive pt-1">{errors.organizationalUnit.message}</p>}
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="edit-familyMembers" className="flex items-center"><UsersIconLucide className="mr-1.5 h-3.5 w-3.5" />Nº de Componentes Familiares</Label>

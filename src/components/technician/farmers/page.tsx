@@ -185,8 +185,12 @@ export default function TechnicianFarmersPage() {
                     <p>{selectedFarmer.address || 'Não informado'}</p>
                 </div>
                  <div className="grid grid-cols-[150px_1fr] items-center gap-4">
-                    <Label className="text-right">Unidade Organizacional</Label>
+                    <Label className="text-right">Município</Label>
                     <p>{selectedFarmer.municipality || 'Não informado'}</p>
+                </div>
+                 <div className="grid grid-cols-[150px_1fr] items-center gap-4">
+                    <Label className="text-right">Unidade Organizacional</Label>
+                    <p>{selectedFarmer.organizationalUnit || 'Não informado'}</p>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] items-center gap-4">
                     <Label className="text-right">Nº Familiares</Label>
