@@ -1,8 +1,7 @@
 
 import { genkit, type InitPlugins } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { firebase } from '@genkit-ai/firebase'; // Correct import for Firebase Genkit plugin
-import { firebaseConfig, firebaseInitializedCorrectly } from '@/lib/firebase';
+import { firebaseInitializedCorrectly } from '@/lib/firebase';
 import { z } from 'genkit'; // Genkit re-exports Zod's 'z'
 
 const googleApiKey = process.env.GOOGLE_API_KEY;
@@ -14,23 +13,7 @@ if (!firebaseInitializedCorrectly) {
   genkitInitializationError = "[Genkit] Cannot initialize Genkit plugins because Firebase core initialization failed.";
   console.error(genkitInitializationError);
 } else {
-  // Always initialize the Firebase plugin if Firebase itself is ready.
-  // This is crucial for server-side functions (flows) to have context.
-  console.log('[Genkit] Initializing Firebase plugin for Genkit.');
-  genkitPlugins.push(firebase({
-      firestore: {
-          // You could specify a specific client here, but by default,
-          // it will use the initialized client from @/lib/firebase
-      },
-      auth: {
-          // Likewise for auth
-      },
-      app: {
-          // And for the app itself.
-      }
-  }));
-
-  // Then, conditionally initialize the Google AI plugin.
+  // Conditionally initialize the Google AI plugin.
   if (googleApiKey) {
     console.log('[Genkit] Initializing Google AI plugin using GOOGLE_API_KEY.');
     try {
