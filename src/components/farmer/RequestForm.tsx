@@ -19,30 +19,29 @@ import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { Textarea } from '../ui/textarea';
+import { parse, isValid, isFuture, format, parseISO } from 'date-fns';
 
+const dateSchema = z.string().refine((val) => {
+  const parsedDate = parse(val, 'dd/MM/yyyy', new Date());
+  return isValid(parsedDate) && !isFuture(parsedDate);
+}, { message: "Data inválida ou no futuro. Use dd/mm/aaaa." });
 
 const requestFormSchema = z.object({
   mandiocaVariety: z.string().optional(),
   macaxeiraVariety: z.string().optional(),
   isMandioca: z.boolean().optional(),
   isMacaxeira: z.boolean().optional(),
-  photoUrl1: z.string().url({ message: "A URL da foto Panorâmica é inválida."}).nullable(), // Now expects URL
-  photoUrl2: z.string().url({ message: "A URL da foto de Envassoramento é inválida."}).nullable(), // Now expects URL
-  photoUrl3: z.string().url({ message: "A URL da foto do Corte do Ápice é inválida."}).nullable(), // Now expects URL
+  photoUrl1: z.string().url({ message: "A URL da foto Panorâmica é inválida."}).nullable(),
+  photoUrl2: z.string().url({ message: "A URL da foto de Envassoramento é inválida."}).nullable(),
+  photoUrl3: z.string().url({ message: "A URL da foto do Corte do Ápice é inválida."}).nullable(),
   mandiocaPlantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   mandiocaInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
   macaxeiraPlantedArea: z.coerce.number().min(0, {message: "A área plantada deve ser um número positivo."}).optional().or(z.literal('')),
   macaxeiraInfectedArea: z.coerce.number().min(0, {message: "A área infectada deve ser um número positivo."}).optional().or(z.literal('')),
-  mandiocaPlantingDate: z.date().optional(),
-  mandiocaSymptomsDate: z.date().optional(),
-  macaxeiraPlantingDate: z.date().optional(),
-  macaxeiraSymptomsDate: z.date().optional(),
+  mandiocaPlantingDate: z.string().optional(),
+  mandiocaSymptomsDate: z.string().optional(),
+  macaxeiraPlantingDate: z.string().optional(),
+  macaxeiraSymptomsDate: z.string().optional(),
   soilTexture: z.enum(["Arenoso", "Argiloso", "Textura Média"], { required_error: "A textura do solo é obrigatória." }),
   vegetationType: z.enum(["Mata (Floresta)", "Cerrado"], { required_error: "O tipo de vegetação é obrigatório."}),
 })
@@ -57,55 +56,53 @@ const requestFormSchema = z.object({
 .superRefine((data, ctx) => {
     if (data.isMandioca) {
         if (!data.mandiocaVariety || data.mandiocaVariety.trim().length < 2) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "A variedade da Mandioca deve ter pelo menos 2 caracteres.",
-            path: ['mandiocaVariety'],
-          });
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A variedade da Mandioca deve ter pelo menos 2 caracteres.", path: ['mandiocaVariety'] });
         }
         if (!data.mandiocaPlantingDate) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "A data de início do plantio é obrigatória.",
-                path: ['mandiocaPlantingDate'],
-            });
+             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A data de início do plantio é obrigatória.", path: ['mandiocaPlantingDate'] });
+        } else {
+            const parsedPlantingDate = parse(data.mandiocaPlantingDate, 'dd/MM/yyyy', new Date());
+            if (!isValid(parsedPlantingDate) || isFuture(parsedPlantingDate)) {
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data de plantio inválida. Use dd/mm/aaaa.", path: ['mandiocaPlantingDate'] });
+            }
+        }
+        if (data.mandiocaSymptomsDate) {
+            const parsedSymptomsDate = parse(data.mandiocaSymptomsDate, 'dd/MM/yyyy', new Date());
+             if (!isValid(parsedSymptomsDate) || isFuture(parsedSymptomsDate)) {
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data de sintomas inválida. Use dd/mm/aaaa.", path: ['mandiocaSymptomsDate'] });
+            }
         }
     }
     if (data.isMacaxeira) {
         if (!data.macaxeiraVariety || data.macaxeiraVariety.trim().length < 2) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.",
-            path: ['macaxeiraVariety'],
-          });
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A variedade da Macaxeira deve ter pelo menos 2 caracteres.", path: ['macaxeiraVariety'] });
         }
         if (!data.macaxeiraPlantingDate) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "A data de início do plantio é obrigatória.",
-                path: ['macaxeiraPlantingDate'],
-            });
+             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A data de início do plantio é obrigatória.", path: ['macaxeiraPlantingDate'] });
+        } else {
+             const parsedPlantingDate = parse(data.macaxeiraPlantingDate, 'dd/MM/yyyy', new Date());
+            if (!isValid(parsedPlantingDate) || isFuture(parsedPlantingDate)) {
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data de plantio inválida. Use dd/mm/aaaa.", path: ['macaxeiraPlantingDate'] });
+            }
+        }
+         if (data.macaxeiraSymptomsDate) {
+            const parsedSymptomsDate = parse(data.macaxeiraSymptomsDate, 'dd/MM/yyyy', new Date());
+             if (!isValid(parsedSymptomsDate) || isFuture(parsedSymptomsDate)) {
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data de sintomas inválida. Use dd/mm/aaaa.", path: ['macaxeiraSymptomsDate'] });
+            }
         }
     }
 
     const mpa = typeof data.mandiocaPlantedArea === 'number' ? data.mandiocaPlantedArea : undefined;
     const mia = typeof data.mandiocaInfectedArea === 'number' ? data.mandiocaInfectedArea : undefined;
     if (mpa !== undefined && mia !== undefined && mia > mpa) {
-       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "A área infectada não pode ser maior que a área plantada.",
-        path: ['mandiocaInfectedArea'],
-      });
+       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A área infectada não pode ser maior que a área plantada.", path: ['mandiocaInfectedArea'] });
     }
 
     const xpa = typeof data.macaxeiraPlantedArea === 'number' ? data.macaxeiraPlantedArea : undefined;
     const xia = typeof data.macaxeiraInfectedArea === 'number' ? data.macaxeiraInfectedArea : undefined;
     if (xpa !== undefined && xia !== undefined && xia > xpa) {
-       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "A área infectada não pode ser maior que a área plantada.",
-        path: ['macaxeiraInfectedArea'],
-      });
+       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A área infectada não pode ser maior que a área plantada.", path: ['macaxeiraInfectedArea'] });
     }
 });
 
@@ -187,6 +184,17 @@ export default function RequestForm() {
     fetchDeviceLocation();
   }, [fetchDeviceLocation]);
 
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 8) value = value.substring(0, 8);
+    let formattedValue = value;
+    if (value.length > 4) {
+      formattedValue = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
+    } else if (value.length > 2) {
+      formattedValue = `${value.substring(0, 2)}/${value.substring(2)}`;
+    }
+    fieldOnChange(formattedValue);
+  };
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user || !user.id || !user.name || !user.cpf) {
@@ -214,10 +222,10 @@ export default function RequestForm() {
         mandiocaInfectedArea: typeof data.mandiocaInfectedArea === 'number' ? data.mandiocaInfectedArea : undefined,
         macaxeiraPlantedArea: typeof data.macaxeiraPlantedArea === 'number' ? data.macaxeiraPlantedArea : undefined,
         macaxeiraInfectedArea: typeof data.macaxeiraInfectedArea === 'number' ? data.macaxeiraInfectedArea : undefined,
-        mandiocaPlantingDate: data.mandiocaPlantingDate?.toISOString() || undefined,
-        mandiocaSymptomsDate: data.mandiocaSymptomsDate?.toISOString() || undefined,
-        macaxeiraPlantingDate: data.macaxeiraPlantingDate?.toISOString() || undefined,
-        macaxeiraSymptomsDate: data.macaxeiraSymptomsDate?.toISOString() || undefined,
+        mandiocaPlantingDate: data.mandiocaPlantingDate ? parse(data.mandiocaPlantingDate, 'dd/MM/yyyy', new Date()).toISOString() : undefined,
+        mandiocaSymptomsDate: data.mandiocaSymptomsDate ? parse(data.mandiocaSymptomsDate, 'dd/MM/yyyy', new Date()).toISOString() : undefined,
+        macaxeiraPlantingDate: data.macaxeiraPlantingDate ? parse(data.macaxeiraPlantingDate, 'dd/MM/yyyy', new Date()).toISOString() : undefined,
+        macaxeiraSymptomsDate: data.macaxeiraSymptomsDate ? parse(data.macaxeiraSymptomsDate, 'dd/MM/yyyy', new Date()).toISOString() : undefined,
 
         latitude: latitude ?? undefined, 
         longitude: longitude ?? undefined, 
@@ -240,7 +248,6 @@ export default function RequestForm() {
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
       
-      // Fire-and-forget AI processing
       if (newRequest.id) {
           console.log(`[RequestForm] Starting background AI processing for request ${newRequest.id}`);
           const aiInput = {
@@ -286,7 +293,6 @@ export default function RequestForm() {
               }
           }).catch(aiError => {
               console.error(`[RequestForm] Background AI processing failed for request ${newRequest.id}:`, aiError);
-              // Don't show toast, user has already navigated away.
           });
       }
 
@@ -430,51 +436,16 @@ export default function RequestForm() {
                     <Controller name="mandiocaInfectedArea" control={control} render={({ field }) => <Input id="mandiocaInfectedArea" type="number" step="any" min="0" placeholder="Ex: 1.2" {...field} />} />
                     {errors.mandiocaInfectedArea && <p className="text-sm text-destructive">{errors.mandiocaInfectedArea.message}</p>}
                   </div>
-                   <div className="space-y-2">
-                        <Label htmlFor="mandiocaPlantingDate">Início do Plantio (Obrigatório)</Label>
-                        <Controller name="mandiocaPlantingDate" control={control} render={({ field }) => (
-                           <Popover>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={ptBR} />
-                                </PopoverContent>
-                            </Popover>
-                        )} />
-                        {errors.mandiocaPlantingDate && <p className="text-sm text-destructive">{errors.mandiocaPlantingDate.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="mandiocaSymptomsDate">Início dos Sintomas (Opcional)</Label>
-                        <Controller name="mandiocaSymptomsDate" control={control} render={({ field }) => (
-                           <Popover>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} locale={ptBR} />
-                                </PopoverContent>
-                            </Popover>
-                        )} />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mandiocaPlantingDate">Início do Plantio (Obrigatório)</Label>
+                    <Controller name="mandiocaPlantingDate" control={control} render={({ field }) => <Input id="mandiocaPlantingDate" placeholder="dd/mm/aaaa" {...field} onChange={(e) => handleDateInputChange(e, field.onChange)} maxLength={10} />} />
+                    {errors.mandiocaPlantingDate && <p className="text-sm text-destructive">{errors.mandiocaPlantingDate.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mandiocaSymptomsDate">Início dos Sintomas (Opcional)</Label>
+                    <Controller name="mandiocaSymptomsDate" control={control} render={({ field }) => <Input id="mandiocaSymptomsDate" placeholder="dd/mm/aaaa" {...field} onChange={(e) => handleDateInputChange(e, field.onChange)} maxLength={10} />} />
+                    {errors.mandiocaSymptomsDate && <p className="text-sm text-destructive">{errors.mandiocaSymptomsDate.message}</p>}
+                  </div>
                 </div>
               </div>
             )}
@@ -499,50 +470,15 @@ export default function RequestForm() {
                     {errors.macaxeiraInfectedArea && <p className="text-sm text-destructive">{errors.macaxeiraInfectedArea.message}</p>}
                   </div>
                   <div className="space-y-2">
-                        <Label htmlFor="macaxeiraPlantingDate">Início do Plantio (Obrigatório)</Label>
-                        <Controller name="macaxeiraPlantingDate" control={control} render={({ field }) => (
-                           <Popover>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus locale={ptBR} />
-                                </PopoverContent>
-                            </Popover>
-                        )} />
-                        {errors.macaxeiraPlantingDate && <p className="text-sm text-destructive">{errors.macaxeiraPlantingDate.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="macaxeiraSymptomsDate">Início dos Sintomas (Opcional)</Label>
-                        <Controller name="macaxeiraSymptomsDate" control={control} render={({ field }) => (
-                           <Popover>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} locale={ptBR} />
-                                </PopoverContent>
-                            </Popover>
-                        )} />
-                    </div>
+                    <Label htmlFor="macaxeiraPlantingDate">Início do Plantio (Obrigatório)</Label>
+                    <Controller name="macaxeiraPlantingDate" control={control} render={({ field }) => <Input id="macaxeiraPlantingDate" placeholder="dd/mm/aaaa" {...field} onChange={(e) => handleDateInputChange(e, field.onChange)} maxLength={10} />} />
+                    {errors.macaxeiraPlantingDate && <p className="text-sm text-destructive">{errors.macaxeiraPlantingDate.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="macaxeiraSymptomsDate">Início dos Sintomas (Opcional)</Label>
+                    <Controller name="macaxeiraSymptomsDate" control={control} render={({ field }) => <Input id="macaxeiraSymptomsDate" placeholder="dd/mm/aaaa" {...field} onChange={(e) => handleDateInputChange(e, field.onChange)} maxLength={10} />} />
+                    {errors.macaxeiraSymptomsDate && <p className="text-sm text-destructive">{errors.macaxeiraSymptomsDate.message}</p>}
+                  </div>
                 </div>
               </div>
             )}
