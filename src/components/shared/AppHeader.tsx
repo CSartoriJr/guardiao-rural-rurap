@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { CacaBruxaLogo } from './Logo';
 import { APP_ROUTES } from '@/config/routes';
-import { LogOut, UserCircle, LayoutDashboard, BarChart3, Users, KeyRound } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, BarChart3, Users, KeyRound, TractorIcon } from 'lucide-react';
 import ChangePasswordDialog from './ChangePasswordDialog';
 
 export default function AppHeader() {
@@ -64,10 +64,10 @@ export default function AppHeader() {
                   <span className="hidden md:inline">Painel</span>
                 </Button>
               </Link>
-              <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
+               <Link href={APP_ROUTES.TECHNICIAN_FARMERS_LIST}>
                 <Button variant="ghost" size="sm">
-                  <BarChart3 className="h-5 w-5 md:mr-2" />
-                  <span className="hidden md:inline">Análise</span>
+                  <TractorIcon className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Agricultores</span>
                 </Button>
               </Link>
             </>
