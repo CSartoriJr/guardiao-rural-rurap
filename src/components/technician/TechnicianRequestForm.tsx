@@ -140,6 +140,10 @@ export default function TechnicianRequestForm() {
       mandiocaInfectedArea: '',
       macaxeiraPlantedArea: '',
       macaxeiraInfectedArea: '',
+      mandiocaPlantingDate: '',
+      mandiocaSymptomsDate: '',
+      macaxeiraPlantingDate: '',
+      macaxeiraSymptomsDate: '',
     },
   });
   
