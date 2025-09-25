@@ -168,8 +168,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
-    // This is for a farmer self-registering.
-    return createAuthAndFirestoreUser({ ...userData, role: 'farmer' });
+    // This is for a farmer self-registering. They always start as Pending.
+    return createAuthAndFirestoreUser({ 
+      ...userData, 
+      role: 'farmer',
+      registrationStatus: 'Pendente' 
+    });
   };
 
   const registerFarmerByTechnician = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }, technician: AppUser): Promise<AppUser | null> => {
@@ -178,6 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: 'farmer' as const,
         registeredByTechnicianId: technician.id,
         registeredByTechnicianName: technician.name,
+        registrationStatus: 'Confirmado' as const, // Technicians register confirmed farmers
     };
     return createAuthAndFirestoreUser(userDataWithTechnician);
   };

@@ -14,7 +14,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import type { User as AppUser } from '@/types';
+import type { User as AppUser, RegistrationStatus } from '@/types';
 
 const USERS_COLLECTION = 'users';
 
@@ -35,6 +35,7 @@ const CreateUserDocumentInputSchema = z.object({
     caf: z.string().optional(),
     registeredByTechnicianId: z.string().optional(),
     registeredByTechnicianName: z.string().optional(),
+    registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto']).optional(),
   }).describe('The data to be stored in the Firestore user document.'),
 });
 

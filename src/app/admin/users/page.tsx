@@ -1,9 +1,8 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
-import type { User as AppUserType } from '@/types'; // Renamed to avoid conflict
+import type { User as AppUserType, RegistrationStatus } from '@/types'; // Renamed to avoid conflict
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';

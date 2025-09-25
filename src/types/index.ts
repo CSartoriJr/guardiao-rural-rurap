@@ -1,3 +1,5 @@
+export type RegistrationStatus = 'Pendente' | 'Confirmado' | 'Inapto';
+
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
@@ -8,6 +10,7 @@ export interface User {
   caf?: string;
   registeredByTechnicianId?: string; // ID of the technician who registered the farmer
   registeredByTechnicianName?: string; // Name of the technician who registered the farmer
+  registrationStatus?: RegistrationStatus; // Status of the farmer's registration
 
   // Fields specific to farmer role, stored in Firestore document
   phone?: string;

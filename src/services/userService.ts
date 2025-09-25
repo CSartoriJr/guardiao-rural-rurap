@@ -1,9 +1,8 @@
-
 // src/services/userService.ts
 import { db, firebaseInitializedCorrectly, auth as firebaseAuth } from '@/lib/firebase';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch, deleteField } from 'firebase/firestore';
 import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
-import type { User as AppUser } from '@/types'; // Your application's user type
+import type { User as AppUser, RegistrationStatus } from '@/types'; // Your application's user type
 
 const USERS_COLLECTION = 'users';
 
@@ -31,10 +30,12 @@ export const createUserDocument = async (
     role: additionalData.role || 'farmer', // Default to farmer if not specified
     phone: additionalData.phone,
     address: additionalData.address,
+    organizationalUnit: additionalData.organizationalUnit,
     municipality: additionalData.municipality,
     familyMembers: additionalData.familyMembers,
     assignedMunicipalities: additionalData.assignedMunicipalities,
     caf: additionalData.caf,
+    registrationStatus: additionalData.registrationStatus,
     // Password is not stored in Firestore document
   };
 
@@ -67,10 +68,12 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
       email: typeof data.email === 'string' ? data.email : undefined,
       phone: typeof data.phone === 'string' ? data.phone : undefined,
       address: typeof data.address === 'string' ? data.address : undefined,
+      organizationalUnit: typeof data.organizationalUnit === 'string' ? data.organizationalUnit : undefined,
       municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
       familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
       assignedMunicipalities: Array.isArray(data.assignedMunicipalities) ? data.assignedMunicipalities : undefined,
       caf: typeof data.caf === 'string' ? data.caf : undefined,
+      registrationStatus: ['Pendente', 'Confirmado', 'Inapto'].includes(data.registrationStatus) ? data.registrationStatus : undefined,
     };
     return safeUser;
   }
@@ -120,9 +123,11 @@ export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> 
               email: typeof data.email === 'string' ? data.email : undefined,
               phone: typeof data.phone === 'string' ? data.phone : undefined,
               address: typeof data.address === 'string' ? data.address : undefined,
+              organizationalUnit: typeof data.organizationalUnit === 'string' ? data.organizationalUnit : undefined,
               municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
               familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
               caf: typeof data.caf === 'string' ? data.caf : undefined,
+              registrationStatus: ['Pendente', 'Confirmado', 'Inapto'].includes(data.registrationStatus) ? data.registrationStatus : undefined,
             };
             acc.push(safeUser);
         } else {

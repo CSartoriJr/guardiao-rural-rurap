@@ -1,7 +1,6 @@
-
 'use client';
 import React, { useState } from 'react';
-import type { User as AppUserType } from '@/types'; // Use AppUserType
+import type { User as AppUserType, RegistrationStatus } from '@/types'; // Use AppUserType
 import type { UserWithActivityCount } from '@/app/admin/users/page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +19,7 @@ import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
 import { Separator } from '../ui/separator';
+import { Badge } from '../ui/badge';
 
 
 interface UserListProps {
@@ -47,6 +47,7 @@ const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
   role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
+  registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto']).optional(),
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
   address: z.string().optional(),
@@ -98,6 +99,16 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
+const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
+    if (!status) return null;
+    let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
+    if (status === 'Confirmado') variant = 'default';
+    if (status === 'Pendente') variant = 'secondary';
+    if (status === 'Inapto') variant = 'destructive';
+
+    return <Badge variant={variant} className="ml-2">{status}</Badge>;
+}
+
 export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
@@ -110,6 +121,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       name: '',
       cpf: '',
       role: 'farmer',
+      registrationStatus: 'Pendente',
       phone: '',
       email: '',
       address: '',
@@ -133,6 +145,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       name: user.name,
       cpf: user.cpf,
       role: user.role,
+      registrationStatus: user.registrationStatus || 'Pendente',
       phone: user.phone || '',
       email: user.email || '',
       address: user.address || '',
@@ -223,6 +236,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       userDataToUpdate.municipality = data.municipality;
       userDataToUpdate.familyMembers = data.familyMembers;
       userDataToUpdate.caf = data.caf;
+      userDataToUpdate.registrationStatus = data.registrationStatus;
       userDataToUpdate.assignedMunicipalities = undefined;
     } else if (data.role === 'technician') {
         userDataToUpdate.assignedMunicipalities = data.assignedMunicipalities;
@@ -232,6 +246,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         userDataToUpdate.municipality = undefined;
         userDataToUpdate.familyMembers = undefined;
         userDataToUpdate.caf = undefined;
+        userDataToUpdate.registrationStatus = undefined;
     } else { // Admin
       userDataToUpdate.phone = undefined;
       userDataToUpdate.address = undefined;
@@ -240,6 +255,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       userDataToUpdate.familyMembers = undefined;
       userDataToUpdate.assignedMunicipalities = undefined;
       userDataToUpdate.caf = undefined;
+      userDataToUpdate.registrationStatus = undefined;
     }
 
     await onUserUpdate(editingUser.id, userDataToUpdate);
@@ -276,6 +292,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead>Nome</TableHead>
               <TableHead>CPF (Login)</TableHead>
               <TableHead>Função</TableHead>
+              <TableHead className="text-center">Status do Cadastro</TableHead>
               <TableHead className="text-center">
                 <div className="flex items-center justify-center">
                   <ListChecks className="inline-block mr-1 h-4 w-4" /> Levantamentos / <MessageSquareText className="inline-block ml-1 mr-1 h-4 w-4" /> Respostas
@@ -290,6 +307,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
+                <TableCell className="text-center">
+                  {user.role === 'farmer' ? <RegistrationStatusBadge status={user.registrationStatus} /> : 'N/A'}
+                </TableCell>
                 <TableCell className="text-center">
                   {user.role === 'farmer'
                     ? (user.requestCount !== undefined ? user.requestCount : '-')
@@ -419,6 +439,25 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
                 {watchedRole === 'farmer' && (
                   <>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-registrationStatus">Status do Cadastro</Label>
+                       <Controller
+                        name="registrationStatus"
+                        control={control}
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger id="edit-registrationStatus">
+                              <SelectValue placeholder="Selecione um status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pendente">Pendente</SelectItem>
+                              <SelectItem value="Confirmado">Confirmado</SelectItem>
+                              <SelectItem value="Inapto">Inapto</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
                     <div className="space-y-1">
                       <Label htmlFor="edit-caf" className="flex items-center"><FileText className="mr-1.5 h-3.5 w-3.5" />CAF (Opcional)</Label>
                       <Controller
@@ -551,5 +590,3 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   )
 );
 Card.displayName = "Card";
-
-    
