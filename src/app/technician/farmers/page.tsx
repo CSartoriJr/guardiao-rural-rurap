@@ -169,52 +169,51 @@ export default function TechnicianFarmersPage() {
             </Button>
         </div>
         
-        <Card className="mb-6">
-            <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <TractorIcon className="h-6 w-6 text-muted-foreground" />
-                    <div>
-                        <span className="text-sm font-medium">Total de Agricultores</span>
-                         <p className="text-xs text-muted-foreground">
-                            {assignedMunicipalities.length > 0
-                                ? `Visíveis para seus municípios`
-                                : "Visíveis para todos os municípios"
-                            }
-                        </p>
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <TractorIcon className="h-6 w-6 text-muted-foreground" />
+                        <div>
+                            <span className="text-sm font-medium">Total de Agricultores</span>
+                             <p className="text-xs text-muted-foreground">
+                                {assignedMunicipalities.length > 0
+                                    ? `Visíveis para seus municípios`
+                                    : "Visíveis para todos os municípios"
+                                }
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div className="text-2xl font-bold">{totalFarmerCount}</div>
-            </CardContent>
-        </Card>
-
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <UserCheck className="h-6 w-6 text-green-600" />
-                <span className="text-sm font-medium">Agricultores Confirmados</span>
-              </div>
-              <div className="text-2xl font-bold">{statusCounts.confirmed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="h-6 w-6 text-yellow-600" />
-                <span className="text-sm font-medium">Cadastros Pendentes</span>
-              </div>
-              <div className="text-2xl font-bold">{statusCounts.pending}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <UserX className="h-6 w-6 text-red-600" />
-                <span className="text-sm font-medium">Cadastros Inaptos</span>
-              </div>
-              <div className="text-2xl font-bold">{statusCounts.unfit}</div>
-            </CardContent>
-          </Card>
+                    <div className="text-2xl font-bold">{totalFarmerCount}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                    <UserCheck className="h-6 w-6 text-green-600" />
+                    <span className="text-sm font-medium">Confirmados</span>
+                    </div>
+                    <div className="text-2xl font-bold">{statusCounts.confirmed}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                    <Clock className="h-6 w-6 text-yellow-600" />
+                    <span className="text-sm font-medium">Pendentes</span>
+                    </div>
+                    <div className="text-2xl font-bold">{statusCounts.pending}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                    <UserX className="h-6 w-6 text-red-600" />
+                    <span className="text-sm font-medium">Inaptos</span>
+                    </div>
+                    <div className="text-2xl font-bold">{statusCounts.unfit}</div>
+                </CardContent>
+            </Card>
         </div>
 
         <FarmerList farmers={farmers} assignedMunicipalities={assignedMunicipalities} onSelect={setSelectedFarmer} />
