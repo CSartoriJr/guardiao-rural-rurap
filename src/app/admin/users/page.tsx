@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -183,10 +183,14 @@ export default function ManageUsersPage() {
   }, [users, roleFilter]);
 
   const totalCounts = useMemo(() => {
+    const farmers = users.filter(u => u.role === 'farmer');
     return {
-      farmers: users.filter(u => u.role === 'farmer').length,
+      farmers: farmers.length,
       technicians: users.filter(u => u.role === 'technician').length,
       admins: users.filter(u => u.role === 'admin').length,
+      confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
+      pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
+      unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
     };
   }, [users]);
 
@@ -257,6 +261,36 @@ export default function ManageUsersPage() {
               <span className="text-sm font-medium">Total de Administradores</span>
             </div>
             <div className="text-2xl font-bold">{totalCounts.admins}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserCheck className="h-6 w-6 text-green-600" />
+              <span className="text-sm font-medium">Agricultores Confirmados</span>
+            </div>
+            <div className="text-2xl font-bold">{totalCounts.confirmedFarmers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="h-6 w-6 text-yellow-600" />
+              <span className="text-sm font-medium">Cadastros Pendentes</span>
+            </div>
+            <div className="text-2xl font-bold">{totalCounts.pendingFarmers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserX className="h-6 w-6 text-red-600" />
+              <span className="text-sm font-medium">Cadastros Inaptos</span>
+            </div>
+            <div className="text-2xl font-bold">{totalCounts.unfitFarmers}</div>
           </CardContent>
         </Card>
       </div>
