@@ -98,10 +98,25 @@ export default function TechnicianDashboard() {
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <div className="w-full sm:w-auto sm:max-w-[180px]">
+            <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
+                <ListFilter className="mr-1.5 h-3.5 w-3.5" />
+                <SelectValue placeholder="Filtrar status..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Confirmado">Confirmado</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Inapto">Inapto</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm shrink-0">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>{isLoading ? 'Carregando...' : `${technicianVisibleRequests.length} Levantamentos Visíveis`}</span>
+            <span>{isLoading ? '...' : `${technicianVisibleRequests.length} Visíveis`}</span>
           </div>
            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
@@ -116,24 +131,6 @@ export default function TechnicianDashboard() {
         </div>
       </div>
       
-      <div className="mb-6 bg-card p-4 rounded-lg shadow-sm">
-        <div className="w-full sm:max-w-xs">
-            <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status do Cadastro</Label>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
-                <SelectTrigger id="status-filter" className="w-full mt-1">
-                <ListFilter className="mr-2 h-4 w-4 text-primary" />
-                <SelectValue placeholder="Filtrar por status..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos os Status</SelectItem>
-                    <SelectItem value="Confirmado">Confirmado</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Inapto">Inapto</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-      </div>
-
       {isLoading ? (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
