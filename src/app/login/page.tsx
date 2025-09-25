@@ -20,11 +20,11 @@ export default function LoginPage() {
           <Image
             src="/icon-512x512.svg"
             alt="Logo do Guardião Rural"
-            width={80}
-            height={80}
+            width={112}
+            height={112}
             className="mb-4"
           />
-          <CardDescription>Por favor, faça login para continuar.</CardDescription>
+          <CardDescription>Faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
