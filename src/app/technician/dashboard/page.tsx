@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
-import type { AgriRequest } from '@/types';
+import type { AgriRequest, User as AppUser } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
 import { ClipboardList, Frown, PlusCircle, UserPlus } from 'lucide-react';
@@ -11,26 +11,38 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
+import { collection, getDocs, query } from 'firebase/firestore';
+import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
+
+const fetchAllUsers = async (): Promise<AppUser[]> => {
+  if (!firebaseInitializedCorrectly || !db) return [];
+  const usersCollectionRef = collection(db, 'users');
+  const userSnapshot = await getDocs(query(usersCollectionRef));
+  return userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+};
 
 export default function TechnicianDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       setIsLoading(true);
       
-      getAllRequestsSystemWide() // Always fetch all requests
-        .then(data => {
-          setAllRequests(data);
-        })
-        .catch(error => {
-          console.error("Falha ao buscar levantamentos para técnico:", error);
+      Promise.all([
+        getAllRequestsSystemWide(),
+        fetchAllUsers()
+      ]).then(([requestsData, usersData]) => {
+          setAllRequests(requestsData);
+          setAllUsers(usersData);
+      }).catch(error => {
+          console.error("Falha ao buscar dados para o painel do técnico:", error);
           toast({
-            title: "Erro ao Carregar Levantamentos",
-            description: "Não foi possível buscar os Levantamentos. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Dados",
+            description: "Não foi possível buscar os levantamentos ou usuários. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -43,20 +55,34 @@ export default function TechnicianDashboard() {
   }, [user, toast]);
 
   const technicianVisibleRequests = useMemo(() => {
-    if (!user) return [];
+    if (!user || allRequests.length === 0) return [];
     
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
 
+    let visibleRequests = allRequests;
+
     if (hasAssignedMunicipalities) {
-      // Filter client-side if technician has assigned municipalities
-      return allRequests.filter(req => 
+      visibleRequests = allRequests.filter(req => 
         user.assignedMunicipalities!.includes(req.municipality || '')
       );
     }
+
+    if (allUsers.length === 0) {
+      return visibleRequests; // Return requests without status if users haven't loaded
+    }
     
-    // Admins and technicians without specific municipalities see all
-    return allRequests;
-  }, [allRequests, user]);
+    // Enrich requests with farmer registration status
+    const usersMap = new Map(allUsers.map(u => [u.id, u]));
+    
+    return visibleRequests.map(req => {
+      const farmer = usersMap.get(req.farmerId);
+      return {
+        ...req,
+        farmerRegistrationStatus: farmer?.registrationStatus,
+      };
+    });
+
+  }, [allRequests, allUsers, user]);
 
 
   return (

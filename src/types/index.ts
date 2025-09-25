@@ -60,4 +60,5 @@ export interface AgriRequest {
   soilTexture?: SoilTexture;
   vegetationType?: VegetationType;
   laudoPdfUrl?: string; // URL for the uploaded PDF report
+  farmerRegistrationStatus?: RegistrationStatus; // Not stored in DB, but used for UI
 }

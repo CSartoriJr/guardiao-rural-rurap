@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { AgriRequest } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import type { AgriRequest, RegistrationStatus } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { APP_ROUTES } from '@/config/routes';
@@ -27,6 +27,16 @@ const StatusBadge = ({ status }: { status: AgriRequest['status'] }) => {
       return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />Pendente</Badge>;
   }
 };
+
+const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
+  if (!status) return null;
+  
+  let variant: 'default' | 'secondary' | 'destructive' = 'secondary';
+  if (status === 'Confirmado') variant = 'default';
+  if (status === 'Inapto') variant = 'destructive';
+
+  return <Badge variant={variant} className="text-xs font-medium">{status}</Badge>;
+}
 
 const getPlantAndVarietyDisplay = (req: AgriRequest): string => {
     const plantTypes = [];
@@ -97,6 +107,9 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           ))}
         </div>
       </CardContent>
+      <CardFooter className="pt-2 flex justify-end">
+        <RegistrationStatusBadge status={request.farmerRegistrationStatus} />
+      </CardFooter>
     </Card>
   );
 }
