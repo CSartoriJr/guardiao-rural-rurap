@@ -2,6 +2,7 @@
 'use client'; 
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { CacaBruxaLogo } from '@/components/shared/Logo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
@@ -16,7 +17,14 @@ export default function LoginPage() {
         <CacaBruxaLogo />
       </div>
       <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center items-center">
+          <Image
+            src="/icon-512x512.svg"
+            alt="Logo do Guardião Rural"
+            width={80}
+            height={80}
+            className="mb-4"
+          />
           <CardTitle className="text-2xl font-headline text-accent">Guardião Rural</CardTitle>
           <CardDescription>Por favor, faça login para continuar.</CardDescription>
         </CardHeader>
@@ -43,4 +51,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
