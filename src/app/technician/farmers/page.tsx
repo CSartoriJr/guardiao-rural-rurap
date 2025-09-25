@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
-import FarmerList from '@/components/technician/FarmerList'; // Renomeei para um nome mais genérico
+import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
