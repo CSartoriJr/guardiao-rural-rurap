@@ -107,7 +107,8 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
           ))}
         </div>
       </CardContent>
-      <CardFooter className="pt-2 flex justify-end">
+      <CardFooter className="pt-2 flex justify-end items-center gap-2">
+        <span className="text-xs text-muted-foreground">Cadastro:</span>
         <RegistrationStatusBadge status={request.farmerRegistrationStatus} />
       </CardFooter>
     </Card>
