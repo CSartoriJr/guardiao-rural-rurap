@@ -20,7 +20,7 @@ export default function HomePage() {
         } else if (user.role === 'admin') {
           router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         } else if (['GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
-          router.replace(APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL); // Redirect external users to analytics
+          router.replace(APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL); // Redireciona usuários externos para a análise
         } else {
           router.replace(APP_ROUTES.LOGIN); 
         }
