@@ -294,8 +294,13 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead>Função</TableHead>
               <TableHead className="text-center">Status do Cadastro</TableHead>
               <TableHead className="text-center">
-                <div className="flex items-center justify-center">
-                  <ListChecks className="inline-block mr-1 h-4 w-4" /> Levantamentos / <MessageSquareText className="inline-block ml-1 mr-1 h-4 w-4" /> Respostas
+                <div className="flex items-center justify-center gap-1">
+                  <ListChecks className="inline-block h-4 w-4" /> Levantamentos
+                </div>
+              </TableHead>
+              <TableHead className="text-center">
+                <div className="flex items-center justify-center gap-1">
+                  <MessageSquareText className="inline-block h-4 w-4" /> Respostas
                 </div>
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -311,9 +316,12 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   {user.role === 'farmer' ? <RegistrationStatusBadge status={user.registrationStatus} /> : 'N/A'}
                 </TableCell>
                 <TableCell className="text-center">
-                  {user.role === 'farmer'
+                  {user.role === 'farmer' || user.role === 'technician'
                     ? (user.requestCount !== undefined ? user.requestCount : '-')
-                    : user.role === 'technician'
+                    : 'N/A'}
+                </TableCell>
+                 <TableCell className="text-center">
+                  {user.role === 'technician'
                     ? (user.responseCount !== undefined ? user.responseCount : '-')
                     : 'N/A'}
                 </TableCell>

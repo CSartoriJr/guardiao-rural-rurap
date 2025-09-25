@@ -55,16 +55,27 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
     }
   } else if (user.role === 'technician') {
     try {
-      const q = firestoreQuery(
+      const responsesQuery = firestoreQuery(
         collection(db, 'requests'),
         where('technicianId', '==', user.id),
         where('status', '!=', 'Pending')
       );
-      const snapshot = await getDocs(q);
-      activityCount = { responseCount: snapshot.size };
+      const responsesSnapshot = await getDocs(responsesQuery);
+      
+      const requestsQuery = firestoreQuery(
+        collection(db, 'requests'),
+        where('technicianId', '==', user.id),
+      );
+      const requestsSnapshot = await getDocs(requestsQuery);
+
+      activityCount = { 
+          responseCount: responsesSnapshot.size,
+          requestCount: requestsSnapshot.size 
+      };
+
     } catch (e) {
-      console.error(`Erro ao buscar respostas para técnico ${user.id}:`, e);
-      activityCount = { responseCount: 0 };
+      console.error(`Erro ao buscar atividades para técnico ${user.id}:`, e);
+      activityCount = { responseCount: 0, requestCount: 0 };
     }
   }
   return activityCount;
