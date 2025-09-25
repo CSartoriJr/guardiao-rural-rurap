@@ -1,4 +1,3 @@
-
 'use client'; 
 
 import Link from 'next/link';
@@ -25,7 +24,6 @@ export default function LoginPage() {
             height={80}
             className="mb-4"
           />
-          <CardTitle className="text-2xl font-headline text-accent">Guardião Rural</CardTitle>
           <CardDescription>Por favor, faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
