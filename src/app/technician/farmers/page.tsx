@@ -141,7 +141,7 @@ export default function TechnicianFarmersPage() {
                 <h1 className="text-3xl font-headline text-gray-800">Meus Agricultores</h1>
                 <p className="text-muted-foreground">Visualize e cadastre os agricultores sob sua responsabilidade.</p>
             </div>
-            <Button asChild>
+            <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
                 <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Cadastrar Agricultor
