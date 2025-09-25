@@ -5,13 +5,15 @@ import PageWrapper from '@/components/shared/PageWrapper';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { AgriRequest } from '@/types';
+import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle, Users, UserCheck, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
+import { collection, getDocs, query } from 'firebase/firestore';
+import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 
 
 // Fetch all requests from Firestore
@@ -23,9 +25,15 @@ const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
     return requests;
   } catch (error) {
     console.error("[TechnicianAnalyticsPage] Error fetching requests from Firestore for analytics:", error);
-    // Error will be handled in the useEffect hook that calls this function.
-    throw error; // Re-throw to be caught by the caller
+    throw error;
   }
+};
+
+const fetchAllUsers = async (): Promise<AppUser[]> => {
+  if (!firebaseInitializedCorrectly || !db) return [];
+  const usersCollectionRef = collection(db, 'users');
+  const userSnapshot = await getDocs(query(usersCollectionRef));
+  return userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
 };
 
 interface ChartDataItem {
@@ -35,16 +43,20 @@ interface ChartDataItem {
 
 export default function TechnicianAnalyticsPage() {
   const [requests, setRequests] = useState<AgriRequest[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     setIsLoading(true);
-    fetchAllTechnicianRequests()
-      .then(data => {
-        setRequests(data);
-        if (data.length === 0) {
+    Promise.all([
+        fetchAllTechnicianRequests(),
+        fetchAllUsers(),
+    ]).then(([requestData, userData]) => {
+        setRequests(requestData);
+        setUsers(userData);
+        if (requestData.length === 0) {
           toast({
             title: "Nenhum Dado de Levantamento",
             description: "Não foram encontrados Levantamentos no sistema para exibir nas análises.",
@@ -53,13 +65,14 @@ export default function TechnicianAnalyticsPage() {
         }
       })
       .catch(error => {
-        console.error("Falha ao buscar Levantamentos para análise:", error);
+        console.error("Falha ao buscar dados para análise:", error);
         toast({
           title: "Erro ao Carregar Dados",
-          description: "Não foi possível buscar os dados dos Levantamentos para análise. Tente novamente mais tarde.",
+          description: "Não foi possível buscar os dados para análise. Tente novamente mais tarde.",
           variant: "destructive",
         });
-        setRequests([]); // Define como vazio em caso de erro
+        setRequests([]);
+        setUsers([]);
       })
       .finally(() => {
         setIsLoading(false);
@@ -81,6 +94,12 @@ export default function TechnicianAnalyticsPage() {
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
     const suspected = filteredRequests.filter(r => r.status === 'Suspeita de Infecção').length;
     
+    const farmers = users.filter(u => u.role === 'farmer');
+    const totalFarmers = farmers.length;
+    const confirmedFarmers = farmers.filter(f => f.registrationStatus === 'Confirmado').length;
+    const pendingFarmers = farmers.filter(f => f.registrationStatus === 'Pendente').length;
+    const unfitFarmers = farmers.filter(f => f.registrationStatus === 'Inapto').length;
+    
     const cassavaVarieties: { [key: string]: number } = {};
     filteredRequests.forEach(req => {
       if (req.mandiocaVariety) {
@@ -95,7 +114,6 @@ export default function TechnicianAnalyticsPage() {
       .sort((a, b) => b.count - a.count);
 
     const requestsByMunGeneral: { [key: string]: number } = {};
-    // Use 'requests' (all data) for the municipality chart unless a municipality is already selected for filtering the whole page
     const sourceForMunChart = selectedMunicipality ? filteredRequests : requests;
     sourceForMunChart.forEach(req => {
       if (req.municipality) {
@@ -107,8 +125,12 @@ export default function TechnicianAnalyticsPage() {
       .sort((a,b) => b.count - a.count);
 
 
-    return { total, pending, positive, negative, inconclusive, suspected, cassavaVarietiesArray, requestsByMunicipalityArray };
-  }, [filteredRequests, requests, selectedMunicipality]);
+    return { 
+        total, pending, positive, negative, inconclusive, suspected, 
+        cassavaVarietiesArray, requestsByMunicipalityArray,
+        totalFarmers, confirmedFarmers, pendingFarmers, unfitFarmers
+    };
+  }, [filteredRequests, requests, selectedMunicipality, users]);
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
@@ -133,7 +155,6 @@ export default function TechnicianAnalyticsPage() {
         <div className="space-y-8">
           <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-10 w-1/4" />
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
@@ -155,6 +176,11 @@ export default function TechnicianAnalyticsPage() {
                     <Skeleton className="w-32 h-32 rounded-lg" />
                     <Skeleton className="w-32 h-32 rounded-lg" />
                     <Skeleton className="w-32 h-32 rounded-lg" />
+                </div>
+                 <div className="grid grid-cols-1 gap-4">
+                    <Skeleton className="w-full h-24 rounded-lg" />
+                    <Skeleton className="w-full h-24 rounded-lg" />
+                    <Skeleton className="w-full h-24 rounded-lg" />
                 </div>
                 <Skeleton className="h-80 rounded-lg" /> {/* For Status Chart */}
             </div>
@@ -252,6 +278,36 @@ export default function TechnicianAnalyticsPage() {
                         </CardContent>
                     </Card>
                 </div>
+                 <div className="grid grid-cols-1 gap-4">
+                    <Card>
+                        <CardContent className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Users className="h-5 w-5 text-muted-foreground" />
+                                <span className="text-sm font-medium">Total de Cadastros</span>
+                            </div>
+                            <div className="text-xl font-bold">{stats.totalFarmers}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <UserCheck className="h-5 w-5 text-green-600" />
+                                <span className="text-sm font-medium">Cadastros Confirmados</span>
+                            </div>
+                            <div className="text-xl font-bold">{stats.confirmedFarmers}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Clock className="h-5 w-5 text-yellow-600" />
+                                <span className="text-sm font-medium">Cadastros Pendentes</span>
+                            </div>
+                            <div className="text-xl font-bold">{stats.pendingFarmers}</div>
+                        </CardContent>
+                    </Card>
+                 </div>
+
                 <Card className="shadow-md">
                     <CardHeader>
                     <CardTitle className="font-headline text-xl flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Distribuição por Status</CardTitle>
