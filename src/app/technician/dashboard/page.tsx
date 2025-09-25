@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
-import type { AgriRequest, User as AppUser } from '@/types';
+import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, PlusCircle, UserPlus } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -13,6 +13,8 @@ import { APP_ROUTES } from '@/config/routes';
 import { Button } from '@/components/ui/button';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 const fetchAllUsers = async (): Promise<AppUser[]> => {
   if (!firebaseInitializedCorrectly || !db) return [];
@@ -27,6 +29,7 @@ export default function TechnicianDashboard() {
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
 
   useEffect(() => {
     if (user) {
@@ -74,7 +77,7 @@ export default function TechnicianDashboard() {
     // Enrich requests with farmer registration status
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
-    return visibleRequests.map(req => {
+    const enrichedRequests = visibleRequests.map(req => {
       const farmer = usersMap.get(req.farmerId);
       return {
         ...req,
@@ -82,7 +85,13 @@ export default function TechnicianDashboard() {
       };
     });
 
-  }, [allRequests, allUsers, user]);
+    // Apply status filter
+    if (statusFilter === 'all') {
+      return enrichedRequests;
+    }
+    return enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+
+  }, [allRequests, allUsers, user, statusFilter]);
 
 
   return (
@@ -106,6 +115,24 @@ export default function TechnicianDashboard() {
           </Link>
         </div>
       </div>
+      
+      <div className="mb-6 bg-card p-4 rounded-lg shadow-sm">
+        <div className="w-full sm:max-w-xs">
+            <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status do Cadastro</Label>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                <SelectTrigger id="status-filter" className="w-full mt-1">
+                <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Filtrar por status..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Confirmado">Confirmado</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Inapto">Inapto</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+      </div>
 
       {isLoading ? (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -126,7 +153,9 @@ export default function TechnicianDashboard() {
             Nenhum Levantamento Encontrado
           </h2>
           <p className="text-muted-foreground">
-            Não há Levantamentos designados a você no momento.
+            {statusFilter !== 'all' 
+              ? `Não há levantamentos com o status de cadastro "${statusFilter}".` 
+              : 'Não há Levantamentos designados a você no momento.'}
           </p>
         </div>
       )}
