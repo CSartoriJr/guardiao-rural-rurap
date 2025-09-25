@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -32,9 +33,13 @@ export default function TechnicianFarmersPage() {
 
   useEffect(() => {
     if (initializing) return;
-    if (user && (user.role === 'technician' || user.role === 'admin')) {
+    if (user && ['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
       setIsLoading(true);
-      getFarmersList(user.assignedMunicipalities)
+      
+      // Determine if municipalities should be passed based on user role
+      const municipalitiesToFetch = user.role === 'technician' ? user.assignedMunicipalities : undefined;
+
+      getFarmersList(municipalitiesToFetch)
         .then(data => {
           setFarmers(data);
         })
