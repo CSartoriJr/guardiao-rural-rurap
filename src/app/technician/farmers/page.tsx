@@ -6,15 +6,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus } from 'lucide-react';
+import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getFarmersList } from '@/app/actions/farmerActions';
-import type { User } from '@/types';
+import type { User, RegistrationStatus } from '@/types';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
+import { Badge } from '@/components/ui/badge';
+
 
 interface FarmerListProps {
   farmers: User[];
@@ -22,12 +24,24 @@ interface FarmerListProps {
   onSelect: (farmer: User) => void;
 }
 
+const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
+    if (!status) return <Badge variant="secondary">Pendente</Badge>;
+    
+    let variant: 'default' | 'secondary' | 'destructive' = 'secondary';
+    let text = status;
+
+    if (status === 'Confirmado') variant = 'default';
+    if (status === 'Inapto') variant = 'destructive';
+
+    return <Badge variant={variant} className="text-xs font-medium">{text}</Badge>;
+}
+
 const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredFarmers = farmers.filter(farmer =>
     farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.cpf.includes(searchTerm)
+    (farmer.cpf && farmer.cpf.includes(searchTerm))
   );
 
   if (farmers.length === 0) {
@@ -201,6 +215,10 @@ export default function TechnicianFarmersPage() {
                 <div className="grid grid-cols-[100px_1fr] items-center gap-4">
                     <Label className="text-right">Nº Familiares</Label>
                     <p>{selectedFarmer.familyMembers !== undefined ? selectedFarmer.familyMembers : 'Não informado'}</p>
+                </div>
+                <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+                    <Label className="text-right">Status</Label>
+                    <p><RegistrationStatusBadge status={selectedFarmer.registrationStatus} /></p>
                 </div>
                  {selectedFarmer.registeredByTechnicianName && (
                     <div className="grid grid-cols-[100px_1fr] items-center gap-4 border-t pt-4 mt-2">
