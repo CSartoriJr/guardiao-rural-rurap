@@ -86,7 +86,18 @@ export default function TechnicianAnalyticsPage() {
     return requests.filter(req => req.municipality === selectedMunicipality);
   }, [requests, selectedMunicipality]);
 
+  // Filter farmers based on the selected municipality
+  const filteredFarmers = useMemo(() => {
+    const allFarmers = users.filter(u => u.role === 'farmer');
+    if (!selectedMunicipality) {
+        return allFarmers;
+    }
+    return allFarmers.filter(farmer => farmer.municipality === selectedMunicipality);
+  }, [users, selectedMunicipality]);
+
+
   const stats = useMemo(() => {
+    // Request stats based on filtered requests
     const total = filteredRequests.length;
     const pending = filteredRequests.filter(r => r.status === 'Pending').length;
     const positive = filteredRequests.filter(r => r.status === 'Positive').length;
@@ -94,12 +105,12 @@ export default function TechnicianAnalyticsPage() {
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
     const suspected = filteredRequests.filter(r => r.status === 'Suspeita de Infecção').length;
     
-    const farmers = users.filter(u => u.role === 'farmer');
-    const totalFarmers = farmers.length;
-    const confirmedFarmers = farmers.filter(f => f.registrationStatus === 'Confirmado').length;
-    const pendingFarmers = farmers.filter(f => f.registrationStatus === 'Pendente').length;
-    const unfitFarmers = farmers.filter(f => f.registrationStatus === 'Inapto').length;
+    // Farmer stats based on filtered farmers
+    const totalFarmers = filteredFarmers.length;
+    const confirmedFarmers = filteredFarmers.filter(f => f.registrationStatus === 'Confirmado').length;
+    const pendingFarmers = filteredFarmers.filter(f => f.registrationStatus === 'Pendente').length;
     
+    // Chart data based on filtered requests
     const cassavaVarieties: { [key: string]: number } = {};
     filteredRequests.forEach(req => {
       if (req.mandiocaVariety) {
@@ -128,9 +139,9 @@ export default function TechnicianAnalyticsPage() {
     return { 
         total, pending, positive, negative, inconclusive, suspected, 
         cassavaVarietiesArray, requestsByMunicipalityArray,
-        totalFarmers, confirmedFarmers, pendingFarmers, unfitFarmers
+        totalFarmers, confirmedFarmers, pendingFarmers
     };
-  }, [filteredRequests, requests, selectedMunicipality, users]);
+  }, [filteredRequests, requests, selectedMunicipality, filteredFarmers]);
 
   const statusChartData: ChartDataItem[] = [
     { name: 'Pendente', count: stats.pending },
@@ -283,7 +294,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Users className="h-5 w-5 text-muted-foreground" />
-                                <span className="text-sm font-medium">Total de Cadastros</span>
+                                <span className="text-sm font-medium">Total de Cadastros de Agricultores</span>
                             </div>
                             <div className="text-xl font-bold">{stats.totalFarmers}</div>
                         </CardContent>
@@ -292,7 +303,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <UserCheck className="h-5 w-5 text-green-600" />
-                                <span className="text-sm font-medium">Cadastros Confirmados</span>
+                                <span className="text-sm font-medium">Cadastros de Agricultores Confirmados</span>
                             </div>
                             <div className="text-xl font-bold">{stats.confirmedFarmers}</div>
                         </CardContent>
@@ -301,7 +312,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Clock className="h-5 w-5 text-yellow-600" />
-                                <span className="text-sm font-medium">Cadastros Pendentes</span>
+                                <span className="text-sm font-medium">Cadastros de Agricultores Pendentes</span>
                             </div>
                             <div className="text-xl font-bold">{stats.pendingFarmers}</div>
                         </CardContent>
