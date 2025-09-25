@@ -56,14 +56,14 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
   } else if (user.role === 'technician') {
     try {
       const responsesQuery = firestoreQuery(
-        collection(db, 'requests'),
+        collection(db, 'levantamentos'),
         where('technicianId', '==', user.id),
         where('status', '!=', 'Pending')
       );
       const responsesSnapshot = await getDocs(responsesQuery);
       
       const requestsQuery = firestoreQuery(
-        collection(db, 'requests'),
+        collection(db, 'levantamentos'),
         where('technicianId', '==', user.id),
       );
       const requestsSnapshot = await getDocs(requestsQuery);
@@ -233,29 +233,29 @@ export default function ManageUsersPage() {
 
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Agricultores</CardTitle>
-            <TractorIcon className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <TractorIcon className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">Total de Agricultores</span>
+            </div>
             <div className="text-2xl font-bold">{totalCounts.farmers}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Técnicos</CardTitle>
-            <UserCheck className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserCheck className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">Total de Técnicos</span>
+            </div>
             <div className="text-2xl font-bold">{totalCounts.technicians}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Administradores</CardTitle>
-            <UsersIcon className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UsersIcon className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">Total de Administradores</span>
+            </div>
             <div className="text-2xl font-bold">{totalCounts.admins}</div>
           </CardContent>
         </Card>
