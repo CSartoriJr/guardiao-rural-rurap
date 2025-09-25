@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -55,22 +56,21 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
     }
   } else if (user.role === 'technician') {
     try {
-      const responsesQuery = firestoreQuery(
-        collection(db, 'levantamentos'),
-        where('technicianId', '==', user.id),
-        where('status', '!=', 'Pending')
-      );
-      const responsesSnapshot = await getDocs(responsesQuery);
-      
+      // First, query for all requests associated with the technician.
+      // This is a simple query and does not require a composite index.
       const requestsQuery = firestoreQuery(
         collection(db, 'levantamentos'),
         where('technicianId', '==', user.id),
       );
       const requestsSnapshot = await getDocs(requestsQuery);
 
+      // Now, process the results in-memory.
+      const allRequests = requestsSnapshot.docs.map(doc => doc.data());
+      const respondedRequests = allRequests.filter(req => req.status !== 'Pending');
+      
       activityCount = { 
-          responseCount: responsesSnapshot.size,
-          requestCount: requestsSnapshot.size 
+          responseCount: respondedRequests.length,
+          requestCount: allRequests.length 
       };
 
     } catch (e) {
@@ -325,3 +325,5 @@ export default function ManageUsersPage() {
     </PageWrapper>
   );
 }
+
+    
