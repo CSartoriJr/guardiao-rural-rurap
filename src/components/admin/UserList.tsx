@@ -46,7 +46,7 @@ const cafValidation = z.string().refine(val => {
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
-  role: z.enum(['farmer', 'technician', 'admin'], { required_error: "A função é obrigatória." }),
+  role: z.enum(['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'], { required_error: "A função é obrigatória." }),
   registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto']).optional(),
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
@@ -247,7 +247,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         userDataToUpdate.familyMembers = undefined;
         userDataToUpdate.caf = undefined;
         userDataToUpdate.registrationStatus = undefined;
-    } else { // Admin
+    } else { // Admin or External Users
       userDataToUpdate.phone = undefined;
       userDataToUpdate.address = undefined;
       userDataToUpdate.organizationalUnit = undefined;
@@ -406,6 +406,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                           <SelectItem value="farmer">Agricultor</SelectItem>
                           <SelectItem value="technician">Técnico</SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="GabineteGov">Gabinete Gov.</SelectItem>
+                          <SelectItem value="Diagro">Diagro</SelectItem>
+                          <SelectItem value="SDR">SDR</SelectItem>
                         </SelectContent>
                       </Select>
                     )}

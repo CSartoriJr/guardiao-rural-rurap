@@ -17,5 +17,6 @@ export const APP_ROUTES = {
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_CREATE_TECHNICIAN: '/admin/create-technician',
   ADMIN_CREATE_ADMIN: '/admin/create-admin',
+  ADMIN_CREATE_EXTERNAL_USER: '/admin/create-external-user',
   ADMIN_MANAGE_USERS: '/admin/users',
 };

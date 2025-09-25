@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,12 +21,24 @@ export default function AppHeader() {
 
   if (!user) return null;
 
-  const userRoleDisplay = user.role === 'farmer' ? 'Agricultor' : user.role === 'technician' ? 'Técnico' : 'Administrador';
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'farmer': return 'Agricultor';
+      case 'technician': return 'Técnico';
+      case 'admin': return 'Administrador';
+      case 'GabineteGov': return 'Gabinete Gov.';
+      case 'Diagro': return 'Diagro';
+      case 'SDR': return 'SDR';
+      default: return 'Usuário';
+    }
+  }
+  const userRoleDisplay = getRoleDisplayName(user.role);
   
   let homeDashboardLink = APP_ROUTES.LOGIN;
   if (user.role === 'farmer') homeDashboardLink = APP_ROUTES.FARMER_DASHBOARD;
   else if (user.role === 'technician') homeDashboardLink = APP_ROUTES.TECHNICIAN_DASHBOARD;
   else if (user.role === 'admin') homeDashboardLink = APP_ROUTES.ADMIN_DASHBOARD;
+  else if (['GabineteGov', 'Diagro', 'SDR'].includes(user.role)) homeDashboardLink = APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL;
 
 
   return (
@@ -92,6 +103,24 @@ export default function AppHeader() {
                 <Button variant="ghost" size="sm">
                   <BarChart3 className="h-5 w-5 md:mr-2" />
                   <span className="hidden md:inline">Análise</span>
+                </Button>
+              </Link>
+            </>
+          )}
+
+          {/* External User Links */}
+          {['GabineteGov', 'Diagro', 'SDR'].includes(user.role) && (
+             <>
+              <Link href={APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL}>
+                <Button variant="ghost" size="sm">
+                  <BarChart3 className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Painel de Análise</span>
+                </Button>
+              </Link>
+              <Link href={APP_ROUTES.TECHNICIAN_FARMERS_LIST}>
+                <Button variant="ghost" size="sm">
+                  <Users className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Agricultores</span>
                 </Button>
               </Link>
             </>

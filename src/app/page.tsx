@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,6 +19,8 @@ export default function HomePage() {
           router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
         } else if (user.role === 'admin') {
           router.replace(APP_ROUTES.ADMIN_DASHBOARD);
+        } else if (['GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
+          router.replace(APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL); // Redirect external users to analytics
         } else {
           router.replace(APP_ROUTES.LOGIN); 
         }

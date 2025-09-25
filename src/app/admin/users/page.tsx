@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -8,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -171,6 +170,9 @@ export default function ManageUsersPage() {
       case 'admin': return 'Administrador';
       case 'technician': return 'Técnico';
       case 'farmer': return 'Agricultor';
+      case 'GabineteGov': return 'Gabinete Gov.';
+      case 'Diagro': return 'Diagro';
+      case 'SDR': return 'SDR';
       default: return role;
     }
   };
@@ -188,6 +190,7 @@ export default function ManageUsersPage() {
       farmers: farmers.length,
       technicians: users.filter(u => u.role === 'technician').length,
       admins: users.filter(u => u.role === 'admin').length,
+      external: users.filter(u => ['GabineteGov', 'Diagro', 'SDR'].includes(u.role)).length,
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
@@ -215,6 +218,9 @@ export default function ManageUsersPage() {
                   <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
                   <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
                   <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
+                  <SelectItem value="GabineteGov">Gabinete Gov. ({users.filter(u => u.role === 'GabineteGov').length})</SelectItem>
+                  <SelectItem value="Diagro">Diagro ({users.filter(u => u.role === 'Diagro').length})</SelectItem>
+                  <SelectItem value="SDR">SDR ({users.filter(u => u.role === 'SDR').length})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -222,6 +228,12 @@ export default function ManageUsersPage() {
                 <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Criar Técnico
+                </Link>
+            </Button>
+            <Button asChild className="w-full sm:w-auto" variant="outline">
+                <Link href={APP_ROUTES.ADMIN_CREATE_EXTERNAL_USER}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Cadastro Externo
                 </Link>
             </Button>
             {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (

@@ -32,7 +32,7 @@ export default function TechnicianFarmersPage() {
 
   useEffect(() => {
     if (initializing) return;
-    if (user && user.role === 'technician') {
+    if (user && (user.role === 'technician' || user.role === 'admin')) {
       setIsLoading(true);
       getFarmersList(user.assignedMunicipalities)
         .then(data => {
@@ -80,7 +80,7 @@ export default function TechnicianFarmersPage() {
 
   if (isLoading || initializing) {
     return (
-      <PageWrapper allowedRoles={['technician']}>
+      <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
         <div className="space-y-6">
           <Skeleton className="h-10 w-1/3" />
           <Skeleton className="h-8 w-2/5" />
@@ -99,19 +99,21 @@ export default function TechnicianFarmersPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician']}>
+    <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
        <Dialog open={!!selectedFarmer} onOpenChange={(open) => !open && setSelectedFarmer(null)}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
                 <h1 className="text-3xl font-headline text-gray-800">Agricultores</h1>
                 <p className="text-muted-foreground">Visualize e cadastre agricultores.</p>
             </div>
-            <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Cadastrar Agricultor
-                </Link>
-            </Button>
+            {user?.role === 'technician' && (
+              <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Cadastrar Agricultor
+                  </Link>
+              </Button>
+            )}
         </div>
         
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
