@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase, Building } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -190,7 +190,9 @@ export default function ManageUsersPage() {
       farmers: farmers.length,
       technicians: users.filter(u => u.role === 'technician').length,
       admins: users.filter(u => u.role === 'admin').length,
-      external: users.filter(u => ['GabineteGov', 'Diagro', 'SDR'].includes(u.role)).length,
+      gabineteGov: users.filter(u => u.role === 'GabineteGov').length,
+      diagro: users.filter(u => u.role === 'Diagro').length,
+      sdr: users.filter(u => u.role === 'SDR').length,
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
@@ -218,9 +220,9 @@ export default function ManageUsersPage() {
                   <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
                   <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
                   <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
-                  <SelectItem value="GabineteGov">Gabinete Gov. ({users.filter(u => u.role === 'GabineteGov').length})</SelectItem>
-                  <SelectItem value="Diagro">Diagro ({users.filter(u => u.role === 'Diagro').length})</SelectItem>
-                  <SelectItem value="SDR">SDR ({users.filter(u => u.role === 'SDR').length})</SelectItem>
+                  <SelectItem value="GabineteGov">Gabinete Gov. ({totalCounts.gabineteGov})</SelectItem>
+                  <SelectItem value="Diagro">Diagro ({totalCounts.diagro})</SelectItem>
+                  <SelectItem value="SDR">SDR ({totalCounts.sdr})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -276,7 +278,7 @@ export default function ManageUsersPage() {
           </CardContent>
         </Card>
       </div>
-
+      
        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
@@ -304,6 +306,36 @@ export default function ManageUsersPage() {
             </div>
             <div className="text-2xl font-bold">{totalCounts.unfitFarmers}</div>
           </CardContent>
+        </Card>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                <Building className="h-6 w-6 text-muted-foreground" />
+                <span className="text-sm font-medium">Gabinete Gov.</span>
+                </div>
+                <div className="text-2xl font-bold">{totalCounts.gabineteGov}</div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                <Building className="h-6 w-6 text-muted-foreground" />
+                <span className="text-sm font-medium">Diagro</span>
+                </div>
+                <div className="text-2xl font-bold">{totalCounts.diagro}</div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                <Building className="h-6 w-6 text-muted-foreground" />
+                <span className="text-sm font-medium">SDR</span>
+                </div>
+                <div className="text-2xl font-bold">{totalCounts.sdr}</div>
+            </CardContent>
         </Card>
       </div>
 
