@@ -4,13 +4,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PageWrapper from '@/components/shared/PageWrapper';
 import ResponseForm from '@/components/technician/ResponseForm';
-import type { AgriRequest, DeviceLocationStatus } from '@/types';
+import type { AgriRequest, DeviceLocationStatus, User as AppUser, RegistrationStatus } from '@/types';
 import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; // Use Firestore
+import { getUserDocument } from '@/services/userService'; // Import service to get user data
+import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin'; // Import server action to update user
 import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, not for request data itself
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, UserCheck, UserX, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -23,6 +25,59 @@ import { useToast } from '@/hooks/use-toast';
 import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-image';
 import Link from 'next/link';
 
+// New component for managing registration status
+const RegistrationStatusCard = ({
+  farmer,
+  onStatusChange,
+}: {
+  farmer: AppUser;
+  onStatusChange: (newStatus: RegistrationStatus) => void;
+}) => {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  if (farmer.registrationStatus !== 'Pendente') {
+    return null;
+  }
+
+  const handleStatusUpdate = async (newStatus: RegistrationStatus) => {
+    setIsUpdating(true);
+    await onStatusChange(newStatus);
+    setIsUpdating(false);
+  };
+
+  return (
+    <Card className="mb-6 border-yellow-400 bg-yellow-50">
+      <CardHeader>
+        <CardTitle className="flex items-center text-lg text-yellow-800">
+          <AlertCircle className="h-5 w-5 mr-2" />
+          Cadastro do Agricultor Pendente
+        </CardTitle>
+        <CardDescription className="text-yellow-700">
+          O cadastro de <strong>{farmer.name}</strong> precisa de validação.
+        </CardDescription>
+      </CardHeader>
+      <CardFooter className="flex gap-4">
+        <Button
+          onClick={() => handleStatusUpdate('Confirmado')}
+          disabled={isUpdating}
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+          Confirmar Cadastro
+        </Button>
+        <Button
+          onClick={() => handleStatusUpdate('Inapto')}
+          disabled={isUpdating}
+          variant="destructive"
+        >
+          {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserX className="mr-2 h-4 w-4" />}
+          Marcar como Inapto
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
 
 export default function TechnicianViewRequestPage() {
   const params = useParams();
@@ -31,6 +86,7 @@ export default function TechnicianViewRequestPage() {
   const { toast } = useToast();
 
   const [request, setRequest] = useState<AgriRequest | null>(null);
+  const [farmer, setFarmer] = useState<AppUser | null>(null); // State for farmer data
   const [isLoading, setIsLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null);
   const [expandedImageUri, setExpandedImageUri] = useState<string | null>(null);
@@ -43,10 +99,8 @@ export default function TechnicianViewRequestPage() {
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
   useEffect(() => { // Effect for initial data loading
-    if (authInitializing) return;
-
-    if (!user) {
-      setIsLoading(false);
+    if (authInitializing || !user) {
+      if(!authInitializing && !user) setIsLoading(false);
       return;
     }
 
@@ -60,24 +114,59 @@ export default function TechnicianViewRequestPage() {
     setError(null);
     
     getRequestById(requestId)
-        .then(data => {
+        .then(async (data) => {
             if (data) {
                 setRequest(data);
+                // After getting the request, fetch the farmer's full document
+                if (data.farmerId) {
+                  const farmerDoc = await getUserDocument(data.farmerId);
+                  if (farmerDoc) {
+                    setFarmer(farmerDoc);
+                  } else {
+                    toast({ title: "Erro", description: "Não foi possível encontrar os dados do agricultor.", variant: "destructive" });
+                  }
+                }
             } else {
                 setError("Levantamento não encontrado.");
                 toast({title: "Erro", description: "Levantamento não encontrado no Firestore.", variant: "destructive"});
             }
         })
         .catch(err => {
-            console.error("[TechnicianViewRequestPage] Falha ao buscar Levantamento do Firestore:", err);
+            console.error("[TechnicianViewRequestPage] Falha ao buscar dados:", err);
             setError("Falha ao carregar detalhes do Levantamento.");
-            toast({title: "Erro ao Carregar", description: "Falha ao carregar detalhes do Levantamento do Firestore.", variant: "destructive"});
+            toast({title: "Erro ao Carregar", description: "Falha ao carregar detalhes. Tente novamente.", variant: "destructive"});
         })
         .finally(() => {
             setIsLoading(false);
         });
     
   }, [requestId, user, authInitializing, router, toast]);
+
+  const handleFarmerStatusChange = async (newStatus: RegistrationStatus) => {
+    if (!farmer) return;
+    
+    try {
+      const result = await updateUserAsAdmin({
+        userId: farmer.id,
+        updatedData: { registrationStatus: newStatus },
+      });
+
+      if (!result.success) {
+        throw new Error(result.message || 'Falha ao atualizar o status do agricultor.');
+      }
+      
+      // Update local state to reflect the change immediately
+      setFarmer(prevFarmer => prevFarmer ? { ...prevFarmer, registrationStatus: newStatus } : null);
+      
+      toast({
+        title: 'Status do Agricultor Atualizado',
+        description: `O cadastro de ${farmer.name} foi atualizado para "${newStatus}".`,
+      });
+    } catch (error: any) {
+      console.error("Falha ao atualizar status do agricultor:", error);
+      toast({ title: "Falha na Atualização", description: error.message, variant: "destructive" });
+    }
+  };
 
 
   const getPlantTypeDisplay = (req: AgriRequest | null): string => {
@@ -394,6 +483,10 @@ export default function TechnicianViewRequestPage() {
             </AlertDialog>
             )}
         </div>
+        
+        {user?.role === 'technician' && farmer && farmer.registrationStatus === 'Pendente' && (
+            <RegistrationStatusCard farmer={farmer} onStatusChange={handleFarmerStatusChange} />
+        )}
 
         <Card className="shadow-lg">
           <CardHeader>
