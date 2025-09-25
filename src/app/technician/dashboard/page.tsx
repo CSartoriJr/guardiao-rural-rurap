@@ -57,39 +57,43 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
-  const technicianVisibleRequests = useMemo(() => {
-    if (!user || allRequests.length === 0) return [];
+  const { technicianVisibleRequests, statusCounts } = useMemo(() => {
+    if (!user || allRequests.length === 0 || allUsers.length === 0) {
+      return { technicianVisibleRequests: [], statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 } };
+    }
     
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
 
-    let visibleRequests = allRequests;
-
+    let visibleRequestsBase = allRequests;
     if (hasAssignedMunicipalities) {
-      visibleRequests = allRequests.filter(req => 
+      visibleRequestsBase = allRequests.filter(req => 
         user.assignedMunicipalities!.includes(req.municipality || '')
       );
     }
-
-    if (allUsers.length === 0) {
-      return visibleRequests; // Return requests without status if users haven't loaded
-    }
     
-    // Enrich requests with farmer registration status
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
-    const enrichedRequests = visibleRequests.map(req => {
+    const enrichedRequests = visibleRequestsBase.map(req => {
       const farmer = usersMap.get(req.farmerId);
       return {
         ...req,
         farmerRegistrationStatus: farmer?.registrationStatus,
       };
     });
+    
+    const calculatedCounts = {
+      all: enrichedRequests.length,
+      Confirmed: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
+      Pending: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
+      Unfit: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
+    };
 
-    // Apply status filter
     if (statusFilter === 'all') {
-      return enrichedRequests;
+      return { technicianVisibleRequests: enrichedRequests, statusCounts: calculatedCounts };
     }
-    return enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+    
+    const filteredRequests = enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+    return { technicianVisibleRequests: filteredRequests, statusCounts: calculatedCounts };
 
   }, [allRequests, allUsers, user, statusFilter]);
 
@@ -99,7 +103,7 @@ export default function TechnicianDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <div className="w-full sm:w-auto sm:max-w-[180px]">
+          <div className="w-full sm:w-auto sm:max-w-[220px]">
             <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
                 <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
@@ -107,10 +111,10 @@ export default function TechnicianDashboard() {
                 <SelectValue placeholder="Filtrar status..." />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">Todos os Status</SelectItem>
-                    <SelectItem value="Confirmado">Confirmado</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Inapto">Inapto</SelectItem>
+                    <SelectItem value="all">Todos os Status ({statusCounts.all})</SelectItem>
+                    <SelectItem value="Confirmado">Confirmado ({statusCounts.Confirmed})</SelectItem>
+                    <SelectItem value="Pendente">Pendente ({statusCounts.Pending})</SelectItem>
+                    <SelectItem value="Inapto">Inapto ({statusCounts.Unfit})</SelectItem>
                 </SelectContent>
             </Select>
           </div>
