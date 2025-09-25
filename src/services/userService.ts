@@ -60,10 +60,11 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
   if (docSnap.exists()) {
     // Apply defensive transformation to handle potential data inconsistencies
     const data = docSnap.data();
+    const validRoles: AppUser['role'][] = ['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'];
     const safeUser: AppUser = {
       id: docSnap.id,
       cpf: typeof data.cpf === 'string' ? data.cpf : '',
-      role: ['farmer', 'technician', 'admin'].includes(data.role) ? data.role : 'farmer',
+      role: validRoles.includes(data.role) ? data.role : 'farmer', // Fix: Include new roles
       name: typeof data.name === 'string' ? data.name : 'Nome Inválido',
       email: typeof data.email === 'string' ? data.email : undefined,
       phone: typeof data.phone === 'string' ? data.phone : undefined,
