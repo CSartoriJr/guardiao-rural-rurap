@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -28,8 +27,6 @@ const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) =>
     if (!status) return <Badge variant="secondary">Pendente</Badge>;
     
     let variant: 'default' | 'secondary' | 'destructive' = 'secondary';
-    let text = status;
-
     if (status === 'Confirmado') variant = 'default';
     if (status === 'Inapto') variant = 'destructive';
 
@@ -164,19 +161,21 @@ export default function TechnicianFarmersPage() {
         </div>
         
         <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Agricultores Visíveis</CardTitle>
-            <TractorIcon className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalFarmerCount}</div>
-            <p className="text-xs text-muted-foreground">
-              {assignedMunicipalities.length > 0
-                ? `Visíveis para seus municípios: ${assignedMunicipalities.join(', ')}`
-                : "Visíveis para todos os municípios"
-              }
-            </p>
-          </CardContent>
+            <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <TractorIcon className="h-6 w-6 text-muted-foreground" />
+                    <div>
+                        <span className="text-sm font-medium">Total de Agricultores</span>
+                         <p className="text-xs text-muted-foreground">
+                            {assignedMunicipalities.length > 0
+                                ? `Visíveis para seus municípios`
+                                : "Visíveis para todos os municípios"
+                            }
+                        </p>
+                    </div>
+                </div>
+                <div className="text-2xl font-bold">{totalFarmerCount}</div>
+            </CardContent>
         </Card>
 
         <FarmerList farmers={farmers} assignedMunicipalities={assignedMunicipalities} onSelect={setSelectedFarmer} />
