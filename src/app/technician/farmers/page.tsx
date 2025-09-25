@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -5,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info } from 'lucide-react';
+import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info, UserCheck, Clock, UserX } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) =>
     if (!status) return <Badge variant="secondary">Pendente</Badge>;
     
     let variant: 'default' | 'secondary' | 'destructive' = 'secondary';
+    let text = status;
     if (status === 'Confirmado') variant = 'default';
     if (status === 'Inapto') variant = 'destructive';
 
@@ -121,6 +123,13 @@ export default function TechnicianFarmersPage() {
     }
   }, [user, initializing, toast]);
   
+  const statusCounts = useMemo(() => {
+    return {
+      confirmed: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
+      pending: farmers.filter(f => f.registrationStatus === 'Pendente').length,
+      unfit: farmers.filter(f => f.registrationStatus === 'Inapto').length,
+    };
+  }, [farmers]);
 
   const totalFarmerCount = useMemo(() => farmers.length, [farmers]);
 
@@ -178,6 +187,36 @@ export default function TechnicianFarmersPage() {
             </CardContent>
         </Card>
 
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <UserCheck className="h-6 w-6 text-green-600" />
+                <span className="text-sm font-medium">Agricultores Confirmados</span>
+              </div>
+              <div className="text-2xl font-bold">{statusCounts.confirmed}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Clock className="h-6 w-6 text-yellow-600" />
+                <span className="text-sm font-medium">Cadastros Pendentes</span>
+              </div>
+              <div className="text-2xl font-bold">{statusCounts.pending}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <UserX className="h-6 w-6 text-red-600" />
+                <span className="text-sm font-medium">Cadastros Inaptos</span>
+              </div>
+              <div className="text-2xl font-bold">{statusCounts.unfit}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <FarmerList farmers={farmers} assignedMunicipalities={assignedMunicipalities} onSelect={setSelectedFarmer} />
 
         <DialogContent>
@@ -232,3 +271,4 @@ export default function TechnicianFarmersPage() {
     </PageWrapper>
   );
 }
+
