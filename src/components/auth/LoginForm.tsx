@@ -33,13 +33,8 @@ export default function LoginForm() {
     const loggedInUser = await login(numericCpf, password); 
     if (loggedInUser) {
       toast({ title: "Login bem-sucedido", description: `Bem-vindo(a) de volta, ${loggedInUser.name}!` });
-      if (loggedInUser.role === 'farmer') {
-        router.push(APP_ROUTES.FARMER_DASHBOARD);
-      } else if (loggedInUser.role === 'technician') {
-        router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
-      } else if (loggedInUser.role === 'admin') {
-        router.push(APP_ROUTES.ADMIN_DASHBOARD);
-      }
+      // Redireciona para a página inicial, que cuidará do roteamento baseado no perfil.
+      router.push(APP_ROUTES.HOME);
     } else {
       toast({
         title: 'Falha no Login',
