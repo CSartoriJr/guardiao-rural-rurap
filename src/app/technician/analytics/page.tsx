@@ -159,6 +159,11 @@ export default function TechnicianAnalyticsPage() {
   const handleMapMunicipalitySelect = (name: string | null) => {
     setSelectedMunicipality(name);
   };
+  
+  const filteredDisplayMunicipalities = amapaMunicipalities.filter(
+    muni => !["Água Branca do Cajarí", "Bailique", "Maruanum", "Pacuí"].includes(muni)
+  );
+
 
   if (isLoading) {
     return (
@@ -228,7 +233,7 @@ export default function TechnicianAnalyticsPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas as Unidades</SelectItem>
-                            {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
+                            {filteredDisplayMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
                             <SelectItem key={muni} value={muni}>{muni}</SelectItem>
                             ))}
                         </SelectContent>
