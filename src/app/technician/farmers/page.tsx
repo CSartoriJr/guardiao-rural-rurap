@@ -1,97 +1,22 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
+import FarmerList from '@/components/technician/FarmerList'; // Renomeei para um nome mais genérico
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info, UserCheck, Clock, UserX } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info, UserCheck, Clock, UserX, ListFilter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmersList } from '@/app/actions/farmerActions';
 import type { User, RegistrationStatus } from '@/types';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { Badge } from '@/components/ui/badge';
-
-
-interface FarmerListProps {
-  farmers: User[];
-  assignedMunicipalities: string[];
-  onSelect: (farmer: User) => void;
-}
-
-const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
-    if (!status) return <Badge variant="secondary">Pendente</Badge>;
-    
-    let variant: 'default' | 'secondary' | 'destructive' = 'secondary';
-    let text = status;
-    if (status === 'Confirmado') variant = 'default';
-    if (status === 'Inapto') variant = 'destructive';
-
-    return <Badge variant={variant} className="text-xs font-medium">{text}</Badge>;
-}
-
-const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities, onSelect }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredFarmers = farmers.filter(farmer =>
-    farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (farmer.cpf && farmer.cpf.includes(searchTerm))
-  );
-
-  if (farmers.length === 0) {
-    return (
-      <div className="text-center py-10 bg-card rounded-lg shadow">
-        <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-foreground">Nenhum Agricultor Encontrado</h2>
-        <p className="text-muted-foreground mt-2">
-          Não foram encontrados agricultores {assignedMunicipalities.length > 0 ? `para os seus municípios atribuídos: ${assignedMunicipalities.join(', ')}.` : 'no sistema.'}
-        </p>
-        <p className="text-muted-foreground mt-1 text-sm">Você pode cadastrar um novo agricultor ou falar com um administrador.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Buscar por nome ou CPF..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10"
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredFarmers.map(farmer => (
-          <Card key={farmer.id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle>{farmer.name}</CardTitle>
-              <CardDescription>CPF: {farmer.cpf}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p className="flex items-start"><Home className="h-4 w-4 mr-2 mt-0.5 text-primary" /> {farmer.address}</p>
-                <p className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> {farmer.municipality}</p>
-                <p className="flex items-center"><Phone className="h-4 w-4 mr-2 text-primary" /> {farmer.phone}</p>
-                <p className="flex items-center"><Mail className="h-4 w-4 mr-2 text-primary" /> {farmer.email}</p>
-              </div>
-            </CardContent>
-            <div className="p-4 pt-0">
-              <Button onClick={() => onSelect(farmer)} className="w-full">Ver Detalhes</Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 
 export default function TechnicianFarmersPage() {
@@ -100,6 +25,8 @@ export default function TechnicianFarmersPage() {
   const [farmers, setFarmers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFarmer, setSelectedFarmer] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
   
   const assignedMunicipalities = useMemo(() => user?.assignedMunicipalities || [], [user]);
 
@@ -122,6 +49,15 @@ export default function TechnicianFarmersPage() {
         setIsLoading(false);
     }
   }, [user, initializing, toast]);
+
+  const filteredFarmers = useMemo(() => {
+    return farmers.filter(farmer => {
+      const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (farmer.cpf && farmer.cpf.includes(searchTerm));
+      const matchesStatus = statusFilter === 'all' || farmer.registrationStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [farmers, searchTerm, statusFilter]);
   
   const statusCounts = useMemo(() => {
     return {
@@ -132,6 +68,15 @@ export default function TechnicianFarmersPage() {
   }, [farmers]);
 
   const totalFarmerCount = useMemo(() => farmers.length, [farmers]);
+
+  const getStatusFilterDisplayName = (status: RegistrationStatus | 'all') => {
+    switch (status) {
+        case 'Confirmado': return 'Confirmados';
+        case 'Pendente': return 'Pendentes';
+        case 'Inapto': return 'Inaptos';
+        default: return 'Todos os Status';
+    }
+  }
 
   if (isLoading || initializing) {
     return (
@@ -216,7 +161,42 @@ export default function TechnicianFarmersPage() {
             </Card>
         </div>
 
-        <FarmerList farmers={farmers} assignedMunicipalities={assignedMunicipalities} onSelect={setSelectedFarmer} />
+        <div className="mb-6 bg-card p-4 rounded-lg shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        type="text"
+                        placeholder="Buscar por nome ou CPF..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10"
+                    />
+                </div>
+                 <div className="w-full">
+                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                        <SelectTrigger id="status-filter" className="w-full">
+                        <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                        <SelectValue placeholder="Filtrar por status..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="Confirmado">Confirmados ({statusCounts.confirmed})</SelectItem>
+                        <SelectItem value="Pendente">Pendentes ({statusCounts.pending})</SelectItem>
+                        <SelectItem value="Inapto">Inaptos ({statusCounts.unfit})</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </div>
+
+        <FarmerList 
+            farmers={filteredFarmers} 
+            assignedMunicipalities={assignedMunicipalities} 
+            onSelect={setSelectedFarmer}
+            statusFilterDisplayName={getStatusFilterDisplayName(statusFilter)}
+            hasSearchTerm={searchTerm.length > 0}
+        />
 
         <DialogContent>
             <DialogHeader>
@@ -255,7 +235,7 @@ export default function TechnicianFarmersPage() {
                 </div>
                 <div className="grid grid-cols-[100px_1fr] items-center gap-4">
                     <Label className="text-right">Status</Label>
-                    <p><RegistrationStatusBadge status={selectedFarmer.registrationStatus} /></p>
+                    <p><Badge variant={selectedFarmer.registrationStatus === 'Confirmado' ? 'default' : selectedFarmer.registrationStatus === 'Inapto' ? 'destructive' : 'secondary'} className="text-xs font-medium">{selectedFarmer.registrationStatus || 'Pendente'}</Badge></p>
                 </div>
                  {selectedFarmer.registeredByTechnicianName && (
                     <div className="grid grid-cols-[100px_1fr] items-center gap-4 border-t pt-4 mt-2">
@@ -270,4 +250,3 @@ export default function TechnicianFarmersPage() {
     </PageWrapper>
   );
 }
-
