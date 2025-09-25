@@ -103,8 +103,8 @@ export default function TechnicianFarmersPage() {
        <Dialog open={!!selectedFarmer} onOpenChange={(open) => !open && setSelectedFarmer(null)}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
-                <h1 className="text-3xl font-headline text-gray-800">Meus Agricultores</h1>
-                <p className="text-muted-foreground">Visualize e cadastre os agricultores sob sua responsabilidade.</p>
+                <h1 className="text-3xl font-headline text-gray-800">Agricultores</h1>
+                <p className="text-muted-foreground">Visualize e cadastre agricultores.</p>
             </div>
             <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
                 <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>

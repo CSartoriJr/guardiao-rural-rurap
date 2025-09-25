@@ -174,28 +174,30 @@ export default function TechnicianAnalyticsPage() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-headline text-gray-800">Painel de Análise</h1>
-          <div className="w-full sm:w-auto">
-            <Select
-              value={selectedMunicipality || 'all'}
-              onValueChange={(value) => setSelectedMunicipality(value === 'all' ? null : value)}
-            >
-              <SelectTrigger className="w-full sm:w-[280px] bg-card">
-                <MapPin className="mr-2 h-4 w-4 text-primary" />
-                <SelectValue placeholder="Selecionar Unidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Unidades</SelectItem>
-                {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
-                  <SelectItem key={muni} value={muni}>{muni}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
             <Card className="lg:col-span-7"> 
-                <CardHeader><CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="font-headline text-xl">Mapa Interativo do Amapá</CardTitle>
+                    <div className="w-full sm:w-auto max-w-[280px]">
+                        <Select
+                        value={selectedMunicipality || 'all'}
+                        onValueChange={(value) => setSelectedMunicipality(value === 'all' ? null : value)}
+                        >
+                        <SelectTrigger className="w-full bg-card">
+                            <MapPin className="mr-2 h-4 w-4 text-primary" />
+                            <SelectValue placeholder="Selecionar Unidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas as Unidades</SelectItem>
+                            {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
+                            <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+                </CardHeader>
                 <CardContent className="pt-2">
                   <div className="w-[70%] mx-auto">
                     <AmapaInteractiveMap

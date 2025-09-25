@@ -120,7 +120,7 @@ export default function TechnicianDashboard() {
           </div>
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm shrink-0">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>{isLoading ? '...' : `${technicianVisibleRequests.length} Visíveis`}</span>
+            <span>{isLoading ? '...' : `Exibindo ${technicianVisibleRequests.length}`}</span>
           </div>
            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
