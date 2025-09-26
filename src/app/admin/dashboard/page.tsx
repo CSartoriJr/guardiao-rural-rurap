@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard'; // Reusing for display
-import type { AgriRequest, RequestStatus } from '@/types';
+import type { AgriRequest, User as AppUser } from '@/types';
 import { getAllRequestsForAdmin } from '@/services/requestService'; // Changed to system-wide fetch
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -11,25 +11,38 @@ import { APP_ROUTES } from '@/config/routes';
 import { ClipboardList, Frown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { collection, getDocs, query } from 'firebase/firestore';
+import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
+
+const fetchAllUsers = async (): Promise<AppUser[]> => {
+  if (!firebaseInitializedCorrectly || !db) return [];
+  const usersCollectionRef = collection(db, 'users');
+  const userSnapshot = await getDocs(query(usersCollectionRef));
+  return userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppUser));
+};
+
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<AgriRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user && user.role === 'admin') {
       setIsLoading(true);
-      getAllRequestsForAdmin() // Use the system-wide function to fetch ALL requests
-        .then(data => {
-          setRequests(data);
-        })
-        .catch(error => {
-          console.error("Falha ao buscar todos os Levantamentos para admin via Firestore:", error);
+      Promise.all([
+        getAllRequestsForAdmin(),
+        fetchAllUsers()
+      ]).then(([requestsData, usersData]) => {
+          setAllRequests(requestsData);
+          setAllUsers(usersData);
+      }).catch(error => {
+          console.error("Falha ao buscar dados para o painel de admin:", error);
           toast({
-            title: "Erro ao Carregar Levantamentos",
-            description: "Não foi possível buscar os Levantamentos do sistema. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Dados",
+            description: "Não foi possível buscar os levantamentos ou usuários. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -41,6 +54,20 @@ export default function AdminDashboard() {
     }
   }, [user, toast]);
   
+  const enrichedRequests = useMemo(() => {
+    if (allRequests.length === 0 || allUsers.length === 0) {
+      return allRequests;
+    }
+    const usersMap = new Map(allUsers.map(u => [u.id, u]));
+    return allRequests.map(req => {
+      const farmer = usersMap.get(req.farmerId);
+      return {
+        ...req,
+        farmerRegistrationStatus: farmer?.registrationStatus,
+      };
+    });
+  }, [allRequests, allUsers]);
+
   return (
     <PageWrapper allowedRoles={['admin']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -48,7 +75,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>Levantamentos Totais: {isLoading ? 'Carregando...' : requests.length}</span>
+            <span>Levantamentos Totais: {isLoading ? 'Carregando...' : enrichedRequests.length}</span>
           </div>
         </div>
       </div>
@@ -59,9 +86,9 @@ export default function AdminDashboard() {
             <CardSkeleton key={i} />
           ))}
         </div>
-      ) : requests.length > 0 ? (
+      ) : enrichedRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {requests.map(request => (
+          {enrichedRequests.map(request => (
             <TechnicianRequestCard key={request.id} request={request} />
           ))}
         </div>
@@ -80,15 +107,18 @@ export default function AdminDashboard() {
 
 const CardSkeleton = () => (
   <div className="bg-card p-4 rounded-lg shadow space-y-3">
-    <Skeleton className="h-6 w-3/4" />
-    <Skeleton className="h-4 w-1/2" />
-    <Skeleton className="h-4 w-2/3" />
-    <Skeleton className="h-4 w-1/2" />
+    <div className="flex justify-between items-start">
+      <Skeleton className="h-6 w-3/4" />
+      <Skeleton className="h-5 w-20" />
+    </div>
+     <div className="space-y-1">
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-1/2" />
+     </div>
      <div className="flex justify-center sm:justify-start -space-x-2 overflow-hidden my-2">
       <Skeleton className="h-12 w-12 rounded-full" />
       <Skeleton className="h-12 w-12 rounded-full" />
       <Skeleton className="h-12 w-12 rounded-full" />
     </div>
-    <Skeleton className="h-10 w-full" />
   </div>
 );

@@ -18,7 +18,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center items-center">
           <Image
-            src="/icon-512x512.svg"
+            src="/icon-512x512.png"
             alt="Logo do Guardião Rural"
             width={112}
             height={112}
