@@ -128,7 +128,7 @@ export default function TechnicianDashboard() {
             </Button>
           </Link>
           <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
-            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full">
+            <Button className="bg-success text-success-foreground hover:bg-success/90 w-full">
               <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
             </Button>
           </Link>
