@@ -112,7 +112,7 @@ export default function TechnicianFarmersPage() {
                 <p className="text-muted-foreground">Visualize e cadastre agricultores.</p>
             </div>
             {user?.role === 'technician' && (
-              <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button asChild className="bg-success text-success-foreground hover:bg-success/90">
                   <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
                       <UserPlus className="mr-2 h-4 w-4" />
                       Cadastrar Agricultor
