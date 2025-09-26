@@ -17,7 +17,7 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 40 10% 25%;
 
-    --primary: 120 27% 65%; /* Earthy Green */
+    --primary: 120 27% 65%; /* Earthy Green (#8ebe8e) */
     --primary-foreground: 120 25% 15%; /* Darker Green for text */
 
     --secondary: 60 30% 85%; /* Lighter beige for secondary elements */
@@ -26,8 +26,8 @@ body {
     --muted: 60 30% 88%; /* Even lighter beige for muted text/elements */
     --muted-foreground: 40 10% 45%; /* Lighter grayish brown */
 
-    --accent: 120 100% 20%; /* Dark Green */
-    --accent-foreground: 0 0% 98%; /* White/Light Gray */
+    --accent: 120 27% 65%; /* Earthy Green (#8ebe8e) */
+    --accent-foreground: 120 25% 15%; /* Darker Green for text */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -67,8 +67,8 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 120 100% 20%; /* Dark Green */
-    --accent-foreground: 0 0% 98%; /* White/Light Gray */
+    --accent: 120 27% 65%; /* Earthy Green (#8ebe8e) */
+    --accent-foreground: 120 25% 15%; /* Darker Green for text */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
