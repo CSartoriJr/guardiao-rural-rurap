@@ -5,12 +5,16 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
 import { APP_ROUTES } from '@/config/routes'; 
+import { CacaBruxaLogo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 sm:p-6">
+      <div className="mb-8">
+        <CacaBruxaLogo />
+      </div>
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center items-center">
           <Image
