@@ -33,7 +33,7 @@ export default function LoginPage() {
       <div className="mt-6 text-center w-full max-w-md">
         <p className="text-sm text-muted-foreground mb-2">Não tem uma conta de agricultor?</p>
         <Button
-          className="w-full bg-success text-success-foreground hover:bg-success/90"
+          className="w-full bg-success text-success-foreground hover:bg-success/90 text-lg font-bold"
           asChild
         >
           <Link href={APP_ROUTES.FARMER_REGISTER}>
