@@ -102,9 +102,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-@layer components {
-  .btn-success {
-    @apply bg-success text-success-foreground hover:bg-success/90;
-  }
-}
