@@ -239,7 +239,7 @@ export default function ManageUsersPage() {
                 </Link>
             </Button>
             {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
-              <Button asChild className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button asChild className="w-full sm:w-auto bg-success text-success-foreground hover:bg-success/90">
                 <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
                   <ShieldPlus className="mr-2 h-4 w-4" />
                   Adicionar Admin
@@ -370,4 +370,5 @@ export default function ManageUsersPage() {
   );
 }
 
+    
     
