@@ -28,6 +28,9 @@ body {
 
     --accent: 120 27% 65%; /* Earthy Green (#8ebe8e) */
     --accent-foreground: 120 25% 15%; /* Darker Green for text */
+    
+    --success: 120 100% 20%; /* #006600 */
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -97,5 +100,11 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .btn-success {
+    @apply bg-success text-success-foreground hover:bg-success/90;
   }
 }
