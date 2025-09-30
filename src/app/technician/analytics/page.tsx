@@ -324,7 +324,7 @@ export default function TechnicianAnalyticsPage() {
                             <div className="text-xl font-bold">{stats.pendingFarmers}</div>
                         </CardContent>
                     </Card>
-                    <Card className="border-2 border-primary bg-primary/10">
+                    <Card className="border-2 border-[#000080] bg-primary/10">
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <MessagesSquare className="h-5 w-5 text-primary" />
