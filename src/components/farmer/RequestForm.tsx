@@ -202,7 +202,7 @@ export default function RequestForm() {
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user || !user.id || !user.name || !user.cpf) {
-      toast({ title: "Erro", description: "Você deve estar logado para enviar um Levantamento.", variant: "destructive" });
+      toast({ title: "Erro", description: "Você deve estar logado para enviar uma Solicitação.", variant: "destructive" });
       return;
     }
     if (!data.photoUrl1 || !data.photoUrl2 || !data.photoUrl3) {
@@ -247,8 +247,8 @@ export default function RequestForm() {
       const plantTypeDisplay = plantTypes.join(' e ');
 
       toast({
-        title: 'Levantamento Enviado!',
-        description: `Seu Levantamento para ${plantTypeDisplay} foi enviado com sucesso. A IA está processando a localização. ID: ${newRequest.id}.`,
+        title: 'Solicitação Enviada!',
+        description: `Sua Solicitação para ${plantTypeDisplay} foi enviado com sucesso. A IA está processando a localização. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.FARMER_DASHBOARD);
       
@@ -301,8 +301,8 @@ export default function RequestForm() {
       }
 
     } catch (error: any) {
-      console.error("Falha ao enviar Levantamento:", error);
-      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar seu Levantamento. Por favor, tente novamente.", variant: "destructive" });
+      console.error("Falha ao enviar Solicitação:", error);
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar sua Solicitação. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -367,7 +367,7 @@ export default function RequestForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Enviar Novo Levantamento</CardTitle>
+        <CardTitle className="font-headline text-2xl">Enviar Nova Solicitação</CardTitle>
         <CardDescription>Forneça detalhes sobre sua planta e envie três fotos nítidas. Sua localização GPS será capturada automaticamente, se permitida.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -583,7 +583,7 @@ export default function RequestForm() {
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Enviar Levantamento
+            Enviar Solicitação
           </Button>
           <Button
             type="button"

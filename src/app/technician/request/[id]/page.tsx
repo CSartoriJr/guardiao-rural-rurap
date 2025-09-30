@@ -105,7 +105,7 @@ export default function TechnicianViewRequestPage() {
     }
 
     if (!requestId) {
-      setError("ID do Levantamento inválido.");
+      setError("ID da Solicitação inválido.");
       setIsLoading(false);
       return;
     }
@@ -127,13 +127,13 @@ export default function TechnicianViewRequestPage() {
                   }
                 }
             } else {
-                setError("Levantamento não encontrado.");
-                toast({title: "Erro", description: "Levantamento não encontrado no Firestore.", variant: "destructive"});
+                setError("Solicitação não encontrada.");
+                toast({title: "Erro", description: "Solicitação não encontrada no Firestore.", variant: "destructive"});
             }
         })
         .catch(err => {
             console.error("[TechnicianViewRequestPage] Falha ao buscar dados:", err);
-            setError("Falha ao carregar detalhes do Levantamento.");
+            setError("Falha ao carregar detalhes da Solicitação.");
             toast({title: "Erro ao Carregar", description: "Falha ao carregar detalhes. Tente novamente.", variant: "destructive"});
         })
         .finally(() => {
@@ -199,10 +199,10 @@ export default function TechnicianViewRequestPage() {
     if (adminPassword === "23jr02cs") {
       try {
         await deleteRequestFromFirestore(requestId); 
-        toast({ title: 'Levantamento Removido', description: `O Levantamento ID ${requestId} foi removido.` });
+        toast({ title: 'Solicitação Removida', description: `A Solicitação ID ${requestId} foi removido.` });
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       } catch (e: any) {
-        toast({ title: 'Erro na Remoção', description: e.message || 'Ocorreu um erro ao tentar remover o Levantamento.', variant: 'destructive' });
+        toast({ title: 'Erro na Remoção', description: e.message || 'Ocorreu um erro ao tentar remover a Solicitação.', variant: 'destructive' });
       }
     } else {
       toast({ title: 'Senha Incorreta', description: 'A senha de administrador está incorreta.', variant: 'destructive' });
@@ -415,8 +415,8 @@ export default function TechnicianViewRequestPage() {
       <PageWrapper allowedRoles={['technician', 'admin']}>
          <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground">Levantamento Não Encontrado</h2>
-          <p className="text-muted-foreground">Não foi possível carregar os detalhes do Levantamento. Verifique se o ID é válido.</p>
+          <h2 className="text-xl font-semibold text-foreground">Solicitação Não Encontrada</h2>
+          <p className="text-muted-foreground">Não foi possível carregar os detalhes da Solicitação. Verifique se o ID é válido.</p>
           <Button onClick={() => router.push(user?.role === 'admin' ? APP_ROUTES.ADMIN_DASHBOARD : APP_ROUTES.TECHNICIAN_DASHBOARD)} className="mt-6">
             <ArrowLeft className="mr-2 h-4 w-4" /> Ir para o Painel
           </Button>
@@ -436,14 +436,14 @@ export default function TechnicianViewRequestPage() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" onClick={handleOpenDeleteDialog}>
-                        <Trash2 className="mr-2 h-4 w-4" /> Remover Levantamento
+                        <Trash2 className="mr-2 h-4 w-4" /> Remover Solicitação
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar Remoção do Levantamento</AlertDialogTitle>
+                    <AlertDialogTitle>Confirmar Remoção da Solicitação</AlertDialogTitle>
                     <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Para confirmar a remoção do Levantamento ID <span className="font-semibold">{request.id}</span>, por favor, digite sua senha de administrador. (Senha de demonstração: 23jr02cs)
+                    Esta ação não pode ser desfeita. Para confirmar a remoção da Solicitação ID <span className="font-semibold">{request.id}</span>, por favor, digite sua senha de administrador. (Senha de demonstração: 23jr02cs)
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2 my-4">
@@ -490,7 +490,7 @@ export default function TechnicianViewRequestPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Detalhes do Levantamento do Agricultor</CardTitle>
+            <CardTitle className="font-headline text-2xl">Detalhes da Solicitação do Agricultor</CardTitle>
             <CardDescription>ID: {request.id}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -590,7 +590,7 @@ export default function TechnicianViewRequestPage() {
             <div className="relative w-full h-[85vh]">
                 <Image
                     src={expandedImageUri}
-                    alt="Imagem expandida do Levantamento"
+                    alt="Imagem expandida da Solicitação"
                     fill
                     style={{ objectFit: 'contain' }}
                     unoptimized={expandedImageUri.startsWith('https://placehold.co')}

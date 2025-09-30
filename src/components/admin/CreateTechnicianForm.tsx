@@ -189,7 +189,7 @@ export default function CreateTechnicianForm() {
 
             <div className="space-y-2">
                 <Label htmlFor="assignedMunicipalities">Municípios Atribuídos (Opcional)</Label>
-                <p className="text-xs text-muted-foreground">O técnico só verá os levantamentos dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
+                <p className="text-xs text-muted-foreground">O técnico só verá as solicitações dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
                 <Controller
                 name="assignedMunicipalities"
                 control={control}

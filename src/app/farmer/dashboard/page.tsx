@@ -30,8 +30,8 @@ export default function FarmerDashboard() {
         .catch(error => {
           console.error("Failed to fetch requests from Firestore:", error);
           toast({
-            title: "Erro ao Carregar Levantamentos",
-            description: "Não foi possível buscar seus Levantamentos. Verifique sua conexão ou tente mais tarde.",
+            title: "Erro ao Carregar Solicitações",
+            description: "Não foi possível buscar suas solicitações. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -46,10 +46,10 @@ export default function FarmerDashboard() {
   return (
     <PageWrapper allowedRoles={['farmer']}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-headline text-gray-800 shrink-0">Meus Levantamentos</h1>
+        <h1 className="text-3xl font-headline text-gray-800 shrink-0">Minhas Solicitações</h1>
         <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
           <Button className="bg-primary hover:bg-primary/90 w-full">
-            <PlusCircle className="mr-2 h-5 w-5" /> Criar Novo Levantamento
+            <PlusCircle className="mr-2 h-5 w-5" /> Criar Nova Solicitação
           </Button>
         </Link>
       </div>
@@ -69,11 +69,11 @@ export default function FarmerDashboard() {
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Levantamento Ainda</h2>
-          <p className="text-muted-foreground mb-6">Você ainda não enviou nenhum Levantamento. Comece criando um!</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhuma Solicitação Ainda</h2>
+          <p className="text-muted-foreground mb-6">Você ainda não enviou nenhuma Solicitação. Comece criando um!</p>
           <Link href={APP_ROUTES.FARMER_SUBMIT_REQUEST} passHref>
             <Button className="bg-primary hover:bg-primary/90">
-              <PlusCircle className="mr-2 h-5 w-5" /> Criar Primeiro Levantamento
+              <PlusCircle className="mr-2 h-5 w-5" /> Criar Primeira Solicitação
             </Button>
           </Link>
         </div>

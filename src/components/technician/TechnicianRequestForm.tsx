@@ -221,7 +221,7 @@ export default function TechnicianRequestForm() {
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
     if (!user || user.role !== 'technician') {
-      toast({ title: "Erro", description: "Apenas técnicos logados podem enviar levantamentos.", variant: "destructive" });
+      toast({ title: "Erro", description: "Apenas técnicos logados podem enviar solicitações.", variant: "destructive" });
       return;
     }
     const selectedFarmer = farmers.find(f => f.id === data.farmerId);
@@ -268,8 +268,8 @@ export default function TechnicianRequestForm() {
       const newRequest = await addRequestToFirestore(requestDataForFirestore); 
       
       toast({
-        title: 'Levantamento Enviado!',
-        description: `Levantamento para ${selectedFarmer.name} enviado. A IA está processando a localização. ID: ${newRequest.id}.`,
+        title: 'Solicitação Enviada!',
+        description: `Solicitação para ${selectedFarmer.name} enviado. A IA está processando a localização. ID: ${newRequest.id}.`,
       });
       router.push(APP_ROUTES.TECHNICIAN_DASHBOARD);
       
@@ -322,8 +322,8 @@ export default function TechnicianRequestForm() {
       }
 
     } catch (error: any) {
-      console.error("Falha ao enviar Levantamento:", error);
-      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar o Levantamento. Por favor, tente novamente.", variant: "destructive" });
+      console.error("Falha ao enviar Solicitação:", error);
+      toast({ title: "Falha no Envio", description: error.message || "Não foi possível enviar a Solicitação. Por favor, tente novamente.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -388,7 +388,7 @@ export default function TechnicianRequestForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Criar Novo Levantamento</CardTitle>
+        <CardTitle className="font-headline text-2xl">Criar Nova Solicitação</CardTitle>
         <CardDescription>Preencha os dados em nome de um agricultor. Sua localização GPS será capturada automaticamente, se permitida.</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -641,7 +641,7 @@ export default function TechnicianRequestForm() {
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Enviar Levantamento
+            Enviar Solicitação
           </Button>
           <Button
             type="button"

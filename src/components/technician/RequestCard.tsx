@@ -67,7 +67,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start mb-1">
-          <CardTitle className="font-headline text-lg">Levantamento #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
+          <CardTitle className="font-headline text-lg">Solicitação #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <div className="flex justify-between items-center">

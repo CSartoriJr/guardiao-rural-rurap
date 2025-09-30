@@ -42,7 +42,7 @@ export default function AdminDashboard() {
           console.error("Falha ao buscar dados para o painel de admin:", error);
           toast({
             title: "Erro ao Carregar Dados",
-            description: "Não foi possível buscar os levantamentos ou usuários. Verifique sua conexão ou tente mais tarde.",
+            description: "Não foi possível buscar as solicitações ou usuários. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm">
             <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>Levantamentos Totais: {isLoading ? 'Carregando...' : enrichedRequests.length}</span>
+            <span>Solicitações Totais: {isLoading ? 'Carregando...' : enrichedRequests.length}</span>
           </div>
         </div>
       </div>
@@ -95,9 +95,9 @@ export default function AdminDashboard() {
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum Levantamento Encontrado</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Nenhuma Solicitação Encontrado</h2>
           <p className="text-muted-foreground">
-            Ainda não há Levantamentos registrados no sistema.
+            Ainda não há Solicitações registrados no sistema.
           </p>
         </div>
       )}

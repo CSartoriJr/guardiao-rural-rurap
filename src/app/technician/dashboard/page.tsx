@@ -45,7 +45,7 @@ export default function TechnicianDashboard() {
           console.error("Falha ao buscar dados para o painel do técnico:", error);
           toast({
             title: "Erro ao Carregar Dados",
-            description: "Não foi possível buscar os levantamentos ou usuários. Verifique sua conexão ou tente mais tarde.",
+            description: "Não foi possível buscar as solicitações ou usuários. Verifique sua conexão ou tente mais tarde.",
             variant: "destructive",
           });
         })
@@ -124,7 +124,7 @@ export default function TechnicianDashboard() {
           </div>
            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
             <Button className="bg-primary hover:bg-primary/90 w-full">
-              <PlusCircle className="mr-2 h-5 w-5" /> Novo Levantamento
+              <PlusCircle className="mr-2 h-5 w-5" /> Nova Solicitação
             </Button>
           </Link>
           <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
@@ -151,12 +151,12 @@ export default function TechnicianDashboard() {
         <div className="text-center py-12 bg-card rounded-lg shadow">
           <Frown className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Nenhum Levantamento Encontrado
+            Nenhuma Solicitação Encontrada
           </h2>
           <p className="text-muted-foreground">
             {statusFilter !== 'all' 
-              ? `Não há levantamentos com o status de cadastro "${statusFilter}".` 
-              : 'Não há Levantamentos designados a você no momento.'}
+              ? `Não há solicitações com o status de cadastro "${statusFilter}".` 
+              : 'Não há solicitações designadas a você no momento.'}
           </p>
         </div>
       )}

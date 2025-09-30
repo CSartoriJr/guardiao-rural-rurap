@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle, Users, UserCheck, Clock } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle, Users, UserCheck, Clock, MessagesSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
@@ -58,8 +58,8 @@ export default function TechnicianAnalyticsPage() {
         setUsers(userData);
         if (requestData.length === 0) {
           toast({
-            title: "Nenhum Dado de Levantamento",
-            description: "Não foram encontrados Levantamentos no sistema para exibir nas análises.",
+            title: "Nenhum Dado de Solicitação",
+            description: "Não foram encontradas Solicitações no sistema para exibir nas análises.",
             variant: "default"
           });
         }
@@ -100,6 +100,7 @@ export default function TechnicianAnalyticsPage() {
     // Request stats based on filtered requests
     const total = filteredRequests.length;
     const pending = filteredRequests.filter(r => r.status === 'Pending').length;
+    const responded = total - pending;
     const positive = filteredRequests.filter(r => r.status === 'Positive').length;
     const negative = filteredRequests.filter(r => r.status === 'Negative').length;
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
@@ -137,7 +138,7 @@ export default function TechnicianAnalyticsPage() {
 
 
     return { 
-        total, pending, positive, negative, inconclusive, suspected, 
+        total, pending, responded, positive, negative, inconclusive, suspected, 
         cassavaVarietiesArray, requestsByMunicipalityArray,
         totalFarmers, confirmedFarmers, pendingFarmers
     };
@@ -257,7 +258,7 @@ export default function TechnicianAnalyticsPage() {
                 <div className="grid grid-cols-2 gap-4">
                     <Card className="w-32 h-32 shadow-md flex flex-col justify-center items-center">
                         <CardHeader className="pb-2 text-center">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total de Levantamentos</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total de Solicitações</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
                         <div className="text-2xl font-bold">{stats.total}</div>
@@ -322,6 +323,15 @@ export default function TechnicianAnalyticsPage() {
                             <div className="text-xl font-bold">{stats.pendingFarmers}</div>
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardContent className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <MessagesSquare className="h-5 w-5 text-blue-600" />
+                                <span className="text-sm font-medium">Agricultores Atendidos</span>
+                            </div>
+                            <div className="text-xl font-bold">{stats.responded}</div>
+                        </CardContent>
+                    </Card>
                  </div>
 
                 <Card className="shadow-md">
@@ -337,7 +347,7 @@ export default function TechnicianAnalyticsPage() {
                             <YAxis allowDecimals={false} fontSize={12}/>
                             <Tooltip wrapperStyle={{ fontSize: '12px' }}/>
                             <Legend wrapperStyle={{ fontSize: '12px' }} />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Levantamentos"/>
+                            <Bar dataKey="count" fill="hsl(var(--primary))" name="Nº de Solicitações"/>
                         </BarChart>
                         </ResponsiveContainer>
                     ) : (
@@ -364,7 +374,7 @@ export default function TechnicianAnalyticsPage() {
                         <YAxis dataKey="name" type="category" width={100} fontSize={12} />
                         <Tooltip wrapperStyle={{ fontSize: '12px' }} />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="count" fill="hsl(var(--accent))" name="Nº de Levantamentos"/>
+                        <Bar dataKey="count" fill="hsl(var(--accent))" name="Nº de Solicitações"/>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -374,7 +384,7 @@ export default function TechnicianAnalyticsPage() {
               </Card>
               <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Levantamentos por Unidade</CardTitle>
+                  <CardTitle className="font-headline text-xl flex items-center"><ListChecks className="mr-2 h-5 w-5 text-primary"/>Solicitaçõs por Unidade</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {municipalityChartData.length > 0 ? (
@@ -385,11 +395,11 @@ export default function TechnicianAnalyticsPage() {
                         <YAxis allowDecimals={false} fontSize={12} />
                         <Tooltip wrapperStyle={{ fontSize: '12px' }} />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Levantamentos"/>
+                        <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Nº de Solicitações"/>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                     <p className="text-muted-foreground text-center py-10">Não há dados de Levantamentos por unidade para exibir o gráfico.</p>
+                     <p className="text-muted-foreground text-center py-10">Não há dados de Solicitações por unidade para exibir o gráfico.</p>
                   )}
                 </CardContent>
               </Card>
@@ -398,12 +408,12 @@ export default function TechnicianAnalyticsPage() {
            <Card className="shadow-md mt-6">
             <CardContent className="pt-6 text-center">
               <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-semibold text-foreground">Nenhum Levantamento Encontrado</p>
+              <p className="text-lg font-semibold text-foreground">Nenhuma Solicitação Encontrada</p>
               <p className="text-muted-foreground">
                 {isLoading ? "Carregando dados..." : 
                   selectedMunicipality 
-                  ? `Não há Levantamentos registrados para ${selectedMunicipality}.` 
-                  : requests.length === 0 ? "Não há Levantamentos registrados no sistema para exibir análises." : "Ajuste os filtros ou aguarde novos Levantamentos."}
+                  ? `Não há Solicitações registradas para ${selectedMunicipality}.` 
+                  : requests.length === 0 ? "Não há Solicitações registradas no sistema para exibir análises." : "Ajuste os filtros ou aguarde novas Solicitações."}
               </p>
             </CardContent>
           </Card>

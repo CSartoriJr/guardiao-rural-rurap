@@ -23,7 +23,7 @@ export default function RegistrationSuccessPage() {
             <Button asChild size="lg">
               <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST}>
                 <PlusCircle className="mr-2 h-5 w-5" />
-                Criar Novo Levantamento
+                Criar Nova Solicitação
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">

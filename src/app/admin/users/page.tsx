@@ -50,7 +50,7 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
       const requests = await getRequestsForFarmer(user.cpf);
       activityCount = { requestCount: requests.length };
     } catch (e) {
-      console.error(`Erro ao buscar Levantamentos para agricultor ${user.id} (CPF: ${user.cpf}):`, e);
+      console.error(`Erro ao buscar Solicitações para agricultor ${user.id} (CPF: ${user.cpf}):`, e);
       activityCount = { requestCount: 0 };
     }
   } else if (user.role === 'technician') {
@@ -58,7 +58,7 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
       // First, query for all requests associated with the technician.
       // This is a simple query and does not require a composite index.
       const requestsQuery = firestoreQuery(
-        collection(db, 'levantamentos'),
+        collection(db, 'requests'),
         where('technicianId', '==', user.id),
       );
       const requestsSnapshot = await getDocs(requestsQuery);

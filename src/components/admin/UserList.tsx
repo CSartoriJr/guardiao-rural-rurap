@@ -274,7 +274,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       return "Não é possível remover o único administrador.";
     }
     if (user.role === 'farmer' && (user.requestCount ?? 0) > 0) {
-      return "Este agricultor possui Levantamentos e não pode ser removido.";
+      return "Este agricultor possui Solicitações e não pode ser removido.";
     }
     if (user.role === 'technician' && (user.responseCount ?? 0) > 0) {
       return "Este técnico possui respostas e não pode ser removido.";
@@ -295,7 +295,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               <TableHead className="text-center">Status do Cadastro</TableHead>
               <TableHead className="text-center">
                 <div className="flex items-center justify-center gap-1">
-                  <ListChecks className="inline-block h-4 w-4" /> Levantamentos
+                  <ListChecks className="inline-block h-4 w-4" /> Solicitações
                 </div>
               </TableHead>
               <TableHead className="text-center">
@@ -429,7 +429,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 {watchedRole === 'technician' && (
                   <div className="space-y-1">
                     <Label htmlFor="edit-assignedMunicipalities">Municípios Atribuídos</Label>
-                     <p className="text-xs text-muted-foreground">O técnico só verá os levantamentos dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
+                     <p className="text-xs text-muted-foreground">O técnico só verá as solicitações dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
                     <Controller
                       name="assignedMunicipalities"
                       control={control}

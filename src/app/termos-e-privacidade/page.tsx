@@ -72,7 +72,7 @@ export default function TermsAndPrivacyPage() {
           
           <section>
             <h2 className="text-lg font-semibold mb-2 text-primary">4. Geolocalização</h2>
-            <p>Ao enviar um Levantamento de análise, o Aplicativo solicitará acesso à sua localização GPS. Se concedido, as coordenadas de latitude e longitude serão coletadas e associadas ao seu Levantamento. A IA também poderá tentar extrair informações de localização das fotos enviadas se o GPS do dispositivo não estiver disponível ou não for fornecido. Essas informações são usadas para determinar o município e podem auxiliar no diagnóstico e nas recomendações agronômicas.</p>
+            <p>Ao enviar uma Solicitação de análise, o Aplicativo solicitará acesso à sua localização GPS. Se concedido, as coordenadas de latitude e longitude serão coletadas e associadas ao sua Solicitação. A IA também poderá tentar extrair informações de localização das fotos enviadas se o GPS do dispositivo não estiver disponível ou não for fornecido. Essas informações são usadas para determinar o município e podem auxiliar no diagnóstico e nas recomendações agronômicas.</p>
           </section>
 
           <section>

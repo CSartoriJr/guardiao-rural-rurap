@@ -58,7 +58,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
     <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="font-headline text-lg leading-tight">Levantamento #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
+          <CardTitle className="font-headline text-lg leading-tight">Solicitação #{request.id.substring(0, 6).toUpperCase()}</CardTitle>
           <StatusBadge status={request.status} />
         </div>
         <CardDescription className="text-xs">

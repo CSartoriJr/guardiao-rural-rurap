@@ -197,13 +197,13 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
     const requestQuery = query(collection(db!, 'requests'), where('farmerCpf', '==', currentUserDoc.cpf));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
-      throw new Error('Este agricultor possui Levantamentos e não pode ser removido. Remova os Levantamentos primeiro.');
+      throw new Error('Este agricultor possui Solicitações e não pode ser removido. Remova as Solicitações primeiro.');
     }
   } else if (currentUserDoc.role === 'technician') {
     const requestQuery = query(collection(db!, 'requests'), where('technicianId', '==', userId), where('status', '!=', 'Pending'));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
-      throw new Error('Este técnico possui respostas associadas a Levantamentos e não pode ser removido.');
+      throw new Error('Este técnico possui respostas associadas a Solicitações e não pode ser removido.');
     }
   }
 
