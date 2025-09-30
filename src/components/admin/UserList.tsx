@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText } from 'lucide-react';
+import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText, KeyRound, Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +20,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
+import { resetUserPasswordByAdmin } from '@/ai/flows/reset-user-password-by-admin';
 
 
 interface UserListProps {
@@ -99,6 +100,17 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
+const passwordFormSchema = z.object({
+  password: z.string().min(6, { message: "A nova senha deve ter pelo menos 6 caracteres." }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
+});
+
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
+
+
 const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
     if (!status) return null;
     let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
@@ -111,8 +123,10 @@ const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) =>
 
 export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const { toast } = useToast();
 
   const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
@@ -130,6 +144,14 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
       familyMembers: 0,
       assignedMunicipalities: [],
       caf: '',
+    }
+  });
+
+  const passwordForm = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+      password: '',
+      confirmPassword: ''
     }
   });
 
@@ -205,10 +227,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     if (digits.length > 8) formatted += `.${digits.substring(8, 17)}`;
     if (digits.length === 17) formatted += `CAF`;
     
-    // Visually update the input
     e.target.value = formatted;
-    // Update the form state with the full string for validation
-    fieldOnChange(digits.length === 17 ? formatted : digits); // Store full value only when complete
+    fieldOnChange(digits.length === 17 ? formatted : digits);
   };
 
   const onSubmitEdit = async (data: EditUserFormValues) => {
@@ -261,6 +281,32 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     await onUserUpdate(editingUser.id, userDataToUpdate);
     setIsEditDialogOpen(false);
     setEditingUser(null);
+  };
+
+  const handlePasswordReset = async (data: PasswordFormValues) => {
+    if (!editingUser) return;
+    setIsUpdatingPassword(true);
+    try {
+        const result = await resetUserPasswordByAdmin({ userId: editingUser.id, newPassword: data.password });
+        if (result.success) {
+            toast({
+                title: "Senha Alterada",
+                description: `A senha de ${editingUser.name} foi alterada com sucesso.`,
+            });
+            setIsPasswordDialogOpen(false);
+        } else {
+            throw new Error(result.message || 'Falha ao alterar a senha no servidor.');
+        }
+    } catch (error: any) {
+        toast({
+            title: "Erro ao Alterar Senha",
+            description: error.message,
+            variant: "destructive",
+        });
+    } finally {
+        setIsUpdatingPassword(false);
+        passwordForm.reset();
+    }
   };
 
   const getDeleteButtonTitle = (user: UserWithActivityCount): string => {
@@ -359,7 +405,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
             <DialogHeader>
               <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário. Se precisar redefinir o acesso, remova e crie o usuário novamente.
+                Modifique os dados do usuário.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -556,7 +602,11 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   </>
                 )}
               </div>
-              <DialogFooter className="pt-4">
+              <DialogFooter className="pt-4 items-center">
+                 <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
+                    <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                </Button>
+                <div className="flex-grow"></div>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
                 </DialogClose>
@@ -566,6 +616,62 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
               </DialogFooter>
             </form>
           </DialogContent>
+        </Dialog>
+      )}
+
+       {editingUser && (
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Alterar Senha para {editingUser.name}</DialogTitle>
+                    <DialogDescription>
+                        Digite a nova senha para o usuário. Esta ação não pode ser desfeita.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={passwordForm.handleSubmit(handlePasswordReset)}>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-1">
+                            <Label htmlFor="password">Nova Senha</Label>
+                            <Controller
+                                name="password"
+                                control={passwordForm.control}
+                                render={({ field }) => (
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        placeholder="Mínimo 6 caracteres"
+                                        {...field}
+                                    />
+                                )}
+                            />
+                            {passwordForm.formState.errors.password && <p className="text-xs text-destructive pt-1">{passwordForm.formState.errors.password.message}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                            <Controller
+                                name="confirmPassword"
+                                control={passwordForm.control}
+                                render={({ field }) => (
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        placeholder="Repita a nova senha"
+                                        {...field}
+                                    />
+                                )}
+                            />
+                            {passwordForm.formState.errors.confirmPassword && <p className="text-xs text-destructive pt-1">{passwordForm.formState.errors.confirmPassword.message}</p>}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancelar</Button>
+                        <Button type="submit" disabled={isUpdatingPassword}>
+                            {isUpdatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
+                            Confirmar Alteração
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
       )}
 

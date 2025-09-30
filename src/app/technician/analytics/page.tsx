@@ -301,7 +301,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Users className="h-5 w-5 text-muted-foreground" />
-                                <span className="text-sm font-medium">Total de Cadastros de Agricultores</span>
+                                <span className="text-sm font-medium">Total de Agricultores</span>
                             </div>
                             <div className="text-xl font-bold">{stats.totalFarmers}</div>
                         </CardContent>
@@ -310,7 +310,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <UserCheck className="h-5 w-5 text-green-600" />
-                                <span className="text-sm font-medium">Cadastros de Agricultores Confirmados</span>
+                                <span className="text-sm font-medium">Agricultores Confirmados</span>
                             </div>
                             <div className="text-xl font-bold">{stats.confirmedFarmers}</div>
                         </CardContent>
@@ -319,7 +319,7 @@ export default function TechnicianAnalyticsPage() {
                         <CardContent className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Clock className="h-5 w-5 text-yellow-600" />
-                                <span className="text-sm font-medium">Cadastros de Agricultores Pendentes</span>
+                                <span className="text-sm font-medium">Agricultores Pendentes</span>
                             </div>
                             <div className="text-xl font-bold">{stats.pendingFarmers}</div>
                         </CardContent>
