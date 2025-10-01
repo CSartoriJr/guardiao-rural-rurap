@@ -128,6 +128,7 @@ export default function TechnicianRequestForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<DeviceLocationStatus>('idle');
+  const [searchValue, setSearchValue] = useState("");
 
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -168,6 +169,14 @@ export default function TechnicianRequestForm() {
         .finally(() => setIsFarmerListLoading(false));
     }
   }, [user, toast]);
+
+  const filteredFarmers = React.useMemo(() => {
+    if (!searchValue) return farmers;
+    return farmers.filter(farmer => 
+      farmer.name.toLowerCase().includes(searchValue.toLowerCase()) || 
+      farmer.cpf.includes(searchValue)
+    );
+  }, [farmers, searchValue]);
 
 
   const fetchDeviceLocation = useCallback(() => {
@@ -421,10 +430,14 @@ export default function TechnicianRequestForm() {
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command>
-                      <CommandInput placeholder="Buscar agricultor..." />
+                      <CommandInput 
+                        placeholder="Buscar agricultor por nome ou CPF..." 
+                        value={searchValue}
+                        onValueChange={setSearchValue}
+                      />
                       <CommandEmpty>Nenhum agricultor encontrado.</CommandEmpty>
                       <CommandGroup>
-                        {farmers.map((farmer) => (
+                        {filteredFarmers.map((farmer) => (
                           <CommandItem
                             key={farmer.id}
                             value={`${farmer.name} ${farmer.cpf}`}
