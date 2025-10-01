@@ -14,13 +14,13 @@ export default function LoginPage() {
     <div
       className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6"
       style={{
-        backgroundImage: "url('/login-background.png')",
+        backgroundImage: "url('/login-background.jpeg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <Card className="w-full max-w-md shadow-xl bg-card/80 backdrop-blur-sm">
+      <Card className="w-full max-w-md shadow-xl bg-card">
         <CardHeader className="text-center items-center">
           <Image
             src="/icon-512x512.png"
@@ -49,6 +49,10 @@ export default function LoginPage() {
           </Button>
         </div>
 
+        <div className="my-8 bg-black/50 p-2 rounded-md">
+          <CacaBruxaLogo />
+        </div>
+
         <div>
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold"
@@ -61,10 +65,7 @@ export default function LoginPage() {
           </Button>
         </div>
       </div>
-      <div className="my-8 bg-black/50 p-2 rounded-md">
-        <CacaBruxaLogo />
-      </div>
-       <p className="text-center text-sm text-white font-bold bg-black/50 p-1 rounded">
+       <p className="mt-8 text-center text-sm text-white font-bold bg-black/50 p-1 rounded">
         Desenvolvido por Claudemir Sartori Junior
       </p>
     </div>
