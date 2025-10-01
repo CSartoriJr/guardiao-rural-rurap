@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgriRequest, DeviceLocationStatus, User, SoilTexture, VegetationType } from '@/types';
 import { addRequest as addRequestToFirestore, updateRequest } from '@/services/requestService';
-import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users, CalendarIcon, WholeWord, Leaf } from 'lucide-react';
+import { Loader2, Send, LandPlot, AlertTriangle, MapPin, LocateFixed, WifiOff, RefreshCw, XCircle, Users, CalendarIcon, WholeWord, Leaf, Check, ChevronsUpDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
 import { Separator } from '../ui/separator';
@@ -22,6 +22,9 @@ import { generateRecommendation } from '@/ai/flows/generate-recommendation-from-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { getFarmersList } from '@/app/actions/farmerActions';
 import { parse, isValid, isFuture, format, parseISO } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
+import { cn } from '@/lib/utils';
 
 const dateSchema = z.string().refine((val) => {
   const parsedDate = parse(val, 'dd/MM/yyyy', new Date());
@@ -121,6 +124,7 @@ export default function TechnicianRequestForm() {
   
   const [farmers, setFarmers] = useState<User[]>([]);
   const [isFarmerListLoading, setIsFarmerListLoading] = useState(true);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<DeviceLocationStatus>('idle');
@@ -399,27 +403,49 @@ export default function TechnicianRequestForm() {
               name="farmerId"
               control={control}
               render={({ field }) => (
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isFarmerListLoading}
-                >
-                  <SelectTrigger id="farmerId">
-                    <SelectValue placeholder={isFarmerListLoading ? "Carregando agricultores..." : "Selecione um agricultor"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!isFarmerListLoading && farmers.length === 0 && (
-                      <SelectItem value="none" disabled>
-                        Nenhum agricultor encontrado para seus municípios.
-                      </SelectItem>
-                    )}
-                    {farmers.map((farmer) => (
-                      <SelectItem key={farmer.id} value={farmer.id}>
-                        {farmer.name} ({farmer.cpf})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={popoverOpen}
+                      className="w-full justify-between"
+                      disabled={isFarmerListLoading}
+                    >
+                      {isFarmerListLoading ? 'Carregando...' :
+                        field.value
+                          ? farmers.find((farmer) => farmer.id === field.value)?.name
+                          : "Selecione um agricultor..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar agricultor..." />
+                      <CommandEmpty>Nenhum agricultor encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {farmers.map((farmer) => (
+                          <CommandItem
+                            key={farmer.id}
+                            value={`${farmer.name} ${farmer.cpf}`}
+                            onSelect={() => {
+                              setValue("farmerId", farmer.id, { shouldValidate: true });
+                              setPopoverOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === farmer.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {farmer.name} ({farmer.cpf})
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             />
             {errors.farmerId && <p className="text-sm text-destructive">{errors.farmerId.message}</p>}
