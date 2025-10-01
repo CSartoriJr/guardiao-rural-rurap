@@ -1,3 +1,4 @@
+
 'use client'; 
 
 import Link from 'next/link';
@@ -11,9 +12,16 @@ import { UserPlus, Info } from 'lucide-react';
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 sm:p-6">
-      
-      <Card className="w-full max-w-md shadow-xl mt-8">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6"
+      style={{
+        backgroundImage: "url('/login-background.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <Card className="w-full max-w-md shadow-xl bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center items-center">
           <Image
             src="/icon-512x512.png"
@@ -22,7 +30,7 @@ export default function LoginPage() {
             height={179}
             className="mb-4"
           />
-          <CardDescription>Faça login para continuar.</CardDescription>
+          <CardDescription className="text-card-foreground font-semibold">Faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
@@ -30,7 +38,7 @@ export default function LoginPage() {
       </Card>
       <div className="mt-6 text-center w-full max-w-md space-y-4">
         <div>
-          <p className="text-sm text-muted-foreground mb-2">Não tem uma conta de agricultor?</p>
+          <p className="text-sm text-white mb-2 font-bold">Não tem uma conta de agricultor?</p>
           <Button
             className="w-full bg-success text-success-foreground hover:bg-success/90 text-lg font-bold"
             asChild
@@ -54,10 +62,10 @@ export default function LoginPage() {
           </Button>
         </div>
       </div>
-      <div className="my-8">
+      <div className="my-8 bg-black/50 p-2 rounded-md">
         <CacaBruxaLogo />
       </div>
-       <p className="text-center text-sm text-muted-foreground">
+       <p className="text-center text-sm text-white font-bold bg-black/50 p-1 rounded">
         Desenvolvido por Claudemir Sartori Junior
       </p>
     </div>
