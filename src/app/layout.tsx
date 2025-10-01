@@ -8,7 +8,7 @@ import ServiceWorkerRegistrar from '@/components/shared/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
   title: 'Guardião Rural',
-  description: 'Um aplicativo misterioso para caçar bruxas.',
+  description: 'Guardião Rural no combate a crise fitossanitária.',
   manifest: '/manifest.json', // Adiciona referência ao manifest
 };
 

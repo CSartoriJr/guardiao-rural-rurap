@@ -12,10 +12,8 @@ import { UserPlus } from 'lucide-react';
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 sm:p-6">
-      <div className="mb-8">
-        <CacaBruxaLogo />
-      </div>
-      <Card className="w-full max-w-md shadow-xl">
+      
+      <Card className="w-full max-w-md shadow-xl mt-8">
         <CardHeader className="text-center items-center">
           <Image
             src="/icon-512x512.png"
@@ -42,7 +40,10 @@ export default function LoginPage() {
           </Link>
         </Button>
       </div>
-       <p className="mt-8 text-center text-sm text-muted-foreground">
+      <div className="my-8">
+        <CacaBruxaLogo />
+      </div>
+       <p className="text-center text-sm text-muted-foreground">
         Desenvolvido por Claudemir Sartori Junior
       </p>
     </div>
