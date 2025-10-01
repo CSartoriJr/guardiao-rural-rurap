@@ -1,3 +1,4 @@
+
 'use client'; 
 
 import Link from 'next/link';
@@ -49,10 +50,6 @@ export default function LoginPage() {
           </Button>
         </div>
 
-        <div className="my-8 bg-white/80 p-2 rounded-md">
-          <CacaBruxaLogo />
-        </div>
-
         <div>
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold"
@@ -63,6 +60,10 @@ export default function LoginPage() {
               Saiba Mais Sobre a Vassoura de Bruxa!
             </Link>
           </Button>
+        </div>
+
+        <div className="my-8 bg-white/80 p-2 rounded-md">
+          <CacaBruxaLogo />
         </div>
       </div>
        <div className="mt-8 bg-white/80 p-2 rounded-md">
