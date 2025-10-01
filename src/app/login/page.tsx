@@ -65,9 +65,11 @@ export default function LoginPage() {
           </Button>
         </div>
       </div>
-       <p className="mt-8 text-center text-sm text-white font-bold bg-black/50 p-1 rounded">
-        Desenvolvido por Claudemir Sartori Junior
-      </p>
+       <div className="mt-8 bg-white/80 p-2 rounded-md">
+        <p className="text-center text-sm text-foreground">
+          Desenvolvido por Claudemir Sartori Junior
+        </p>
+      </div>
     </div>
   );
 }
