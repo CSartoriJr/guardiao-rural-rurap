@@ -18,8 +18,8 @@ export default function LoginPage() {
           <Image
             src="/icon-512x512.png"
             alt="Logo do Guardião Rural"
-            width={112}
-            height={112}
+            width={179}
+            height={179}
             className="mb-4"
           />
           <CardDescription>Faça login para continuar.</CardDescription>
@@ -49,7 +49,7 @@ export default function LoginPage() {
           >
             <Link href="https://folder-vassoura-de-bruxa-rurap-1.my.canva.site/" target="_blank" rel="noopener noreferrer">
               <Info className="mr-2 h-4 w-4" />
-              Saiba Mais !
+              Saiba Mais Sobre a Vassoura de Bruxa!
             </Link>
           </Button>
         </div>
