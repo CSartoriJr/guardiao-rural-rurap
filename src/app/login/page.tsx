@@ -49,7 +49,7 @@ export default function LoginPage() {
           </Button>
         </div>
 
-        <div className="my-8 bg-black/50 p-2 rounded-md">
+        <div className="my-8 bg-white/80 p-2 rounded-md">
           <CacaBruxaLogo />
         </div>
 
