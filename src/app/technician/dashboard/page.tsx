@@ -5,7 +5,7 @@ import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin, Search } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin, Search, Building } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -32,6 +32,7 @@ export default function TechnicianDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
   const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
+  const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -60,11 +61,12 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
-  const { technicianVisibleRequests, statusCounts, availableMunicipalities } = useMemo(() => {
+  const { technicianVisibleRequests, statusCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = { 
         technicianVisibleRequests: [], 
         statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 },
-        availableMunicipalities: [] as string[]
+        availableMunicipalities: [] as string[],
+        availableOrganizationalUnits: [] as string[]
     };
 
     if (!user || allRequests.length === 0 || allUsers.length === 0) {
@@ -75,20 +77,26 @@ export default function TechnicianDashboard() {
 
     let baseRequests = allRequests;
     let availableMuniSet = new Set<string>();
+    let availableOrgUnitSet = new Set<string>();
 
     if (hasAssignedMunicipalities) {
       baseRequests = allRequests.filter(req => {
         const isInAssigned = req.municipality && user.assignedMunicipalities!.includes(req.municipality);
-        if(isInAssigned) availableMuniSet.add(req.municipality!);
+        if(isInAssigned) {
+            if(req.municipality) availableMuniSet.add(req.municipality);
+            if(req.organizationalUnit) availableOrgUnitSet.add(req.organizationalUnit);
+        }
         return isInAssigned;
       });
-      initialResult.availableMunicipalities = user.assignedMunicipalities!.sort();
+      initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
     } else {
         allRequests.forEach(req => {
             if(req.municipality) availableMuniSet.add(req.municipality);
+            if(req.organizationalUnit) availableOrgUnitSet.add(req.organizationalUnit);
         });
         initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
     }
+    initialResult.availableOrganizationalUnits = Array.from(availableOrgUnitSet).sort();
     
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
@@ -102,6 +110,10 @@ export default function TechnicianDashboard() {
 
     if (municipalityFilter !== 'all') {
       enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
+    }
+    
+    if (organizationalUnitFilter !== 'all') {
+      enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
     }
     
     initialResult.statusCounts = {
@@ -127,7 +139,7 @@ export default function TechnicianDashboard() {
 
     return initialResult;
 
-  }, [allRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery]);
+  }, [allRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter]);
 
 
   return (
@@ -144,6 +156,21 @@ export default function TechnicianDashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 h-9 text-xs"
             />
+          </div>
+          <div className="w-full sm:w-auto sm:max-w-[220px]">
+            <Label htmlFor="organizational-unit-filter" className="sr-only">Filtrar por Unidade</Label>
+            <Select value={organizationalUnitFilter} onValueChange={(value) => setOrganizationalUnitFilter(value)}>
+                <SelectTrigger id="organizational-unit-filter" className="w-full h-9 text-xs">
+                <Building className="mr-1.5 h-3.5 w-3.5" />
+                <SelectValue placeholder="Filtrar unidade..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todas as Unidades</SelectItem>
+                    {availableOrganizationalUnits.map(unit => (
+                      <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
           </div>
           <div className="w-full sm:w-auto sm:max-w-[220px]">
             <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
