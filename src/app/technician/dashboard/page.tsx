@@ -144,8 +144,20 @@ export default function TechnicianDashboard() {
 
   return (
     <PageWrapper allowedRoles={['technician']}>
-      <div className="mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
+            <Button className="bg-primary hover:bg-primary/90 w-full">
+              <PlusCircle className="mr-2 h-5 w-5" /> Nova Solicitação
+            </Button>
+          </Link>
+          <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
+            <Button className="bg-success text-success-foreground hover:bg-success/90 w-full">
+              <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
+            </Button>
+          </Link>
+        </div>
       </div>
       
       <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-8">
@@ -212,16 +224,6 @@ export default function TechnicianDashboard() {
                 <ClipboardList className="h-5 w-5 mr-2"/>
                 <span>{isLoading ? '...' : `Exibindo ${technicianVisibleRequests.length}`}</span>
             </div>
-            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
-                <Button className="bg-primary hover:bg-primary/90 w-full">
-                <PlusCircle className="mr-2 h-5 w-5" /> Nova Solicitação
-                </Button>
-            </Link>
-            <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
-                <Button className="bg-success text-success-foreground hover:bg-success/90 w-full">
-                <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
-                </Button>
-            </Link>
         </div>
       </div>
       
