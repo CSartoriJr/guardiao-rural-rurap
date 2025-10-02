@@ -92,6 +92,7 @@ export default function ManageUsersPage() {
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<AppUserType['role'] | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
 
   useEffect(() => {
     if (authInitializing) return;
@@ -177,13 +178,31 @@ export default function ManageUsersPage() {
       default: return role;
     }
   };
+  
+  const getStatusDisplayName = (status: RegistrationStatus | 'all') => {
+    switch (status) {
+        case 'Confirmado': return 'Confirmado';
+        case 'Pendente': return 'Pendente';
+        case 'Inapto': return 'Inapto';
+        default: return 'Todos os Status';
+    }
+  }
+
 
   const filteredUsers = useMemo(() => {
-    if (roleFilter === 'all') {
-      return users;
+    let usersToFilter = users;
+    
+    if (roleFilter !== 'all') {
+      usersToFilter = usersToFilter.filter(user => user.role === roleFilter);
     }
-    return users.filter(user => user.role === roleFilter);
-  }, [users, roleFilter]);
+    
+    // The status filter only applies if a user is a farmer
+    if (statusFilter !== 'all') {
+      usersToFilter = usersToFilter.filter(user => user.role === 'farmer' && user.registrationStatus === statusFilter);
+    }
+
+    return usersToFilter;
+  }, [users, roleFilter, statusFilter]);
 
   const totalCounts = useMemo(() => {
     const farmers = users.filter(u => u.role === 'farmer');
@@ -224,6 +243,21 @@ export default function ManageUsersPage() {
                   <SelectItem value="GabineteGov">Gabinete Gov. ({totalCounts.gabineteGov})</SelectItem>
                   <SelectItem value="Diagro">Diagro ({totalCounts.diagro})</SelectItem>
                   <SelectItem value="SDR">SDR ({totalCounts.sdr})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:w-auto sm:min-w-[200px]">
+              <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status (Agricultores)</Label>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                <SelectTrigger id="status-filter" className="w-full mt-1 bg-card" disabled={roleFilter !== 'farmer' && roleFilter !== 'all'}>
+                  <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Filtrar por status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Confirmado">Confirmados ({totalCounts.confirmedFarmers})</SelectItem>
+                  <SelectItem value="Pendente">Pendentes ({totalCounts.pendingFarmers})</SelectItem>
+                  <SelectItem value="Inapto">Inaptos ({totalCounts.unfitFarmers})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -372,4 +406,6 @@ export default function ManageUsersPage() {
 }
 
     
+    
+
     
