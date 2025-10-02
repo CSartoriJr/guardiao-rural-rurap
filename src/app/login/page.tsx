@@ -40,7 +40,7 @@ export default function LoginPage() {
         <div>
           <p className="text-sm text-white mb-2 font-bold">Não tem uma conta de agricultor?</p>
           <Button
-            className="w-full bg-success text-success-foreground hover:bg-success/90 text-lg font-bold"
+            className="w-full bg-success text-success-foreground hover:bg-success/90 text-lg font-bold border-[3px] border-white"
             asChild
           >
             <Link href={APP_ROUTES.FARMER_REGISTER}>
@@ -52,7 +52,7 @@ export default function LoginPage() {
 
         <div>
           <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold border-[3px] border-white"
             asChild
           >
             <Link href="https://folder-vassoura-de-bruxa-rurap-1.my.canva.site/" target="_blank" rel="noopener noreferrer">
