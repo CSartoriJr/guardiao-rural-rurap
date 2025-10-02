@@ -144,78 +144,84 @@ export default function TechnicianDashboard() {
 
   return (
     <PageWrapper allowedRoles={['technician']}>
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+      <div className="mb-8">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-auto sm:min-w-[150px]">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-                type="text"
-                placeholder="Buscar por agricultor..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 h-9 text-xs"
-            />
-          </div>
-          <div className="w-full sm:w-auto sm:max-w-[220px]">
-            <Label htmlFor="organizational-unit-filter" className="sr-only">Filtrar por Unidade</Label>
-            <Select value={organizationalUnitFilter} onValueChange={(value) => setOrganizationalUnitFilter(value)}>
-                <SelectTrigger id="organizational-unit-filter" className="w-full h-9 text-xs">
-                <Building className="mr-1.5 h-3.5 w-3.5" />
-                <SelectValue placeholder="Filtrar unidade..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todas as Unidades</SelectItem>
-                    {availableOrganizationalUnits.map(unit => (
-                      <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-auto sm:max-w-[220px]">
-            <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
-            <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
-                <SelectTrigger id="municipality-filter" className="w-full h-9 text-xs">
-                <MapPin className="mr-1.5 h-3.5 w-3.5" />
-                <SelectValue placeholder="Filtrar município..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos os Municípios</SelectItem>
-                    {availableMunicipalities.map(muni => (
-                      <SelectItem key={muni} value={muni}>{muni}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-auto sm:max-w-[220px]">
-            <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
-                <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
-                <ListFilter className="mr-1.5 h-3.5 w-3.5" />
-                <SelectValue placeholder="Filtrar status..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos os Status ({statusCounts.all})</SelectItem>
-                    <SelectItem value="Confirmado">Confirmado ({statusCounts.Confirmed})</SelectItem>
-                    <SelectItem value="Pendente">Pendente ({statusCounts.Pending})</SelectItem>
-                    <SelectItem value="Inapto">Inapto ({statusCounts.Unfit})</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm shrink-0">
-            <ClipboardList className="h-5 w-5 mr-2"/>
-            <span>{isLoading ? '...' : `Exibindo ${technicianVisibleRequests.length}`}</span>
-          </div>
-           <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
-            <Button className="bg-primary hover:bg-primary/90 w-full">
-              <PlusCircle className="mr-2 h-5 w-5" /> Nova Solicitação
-            </Button>
-          </Link>
-          <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
-            <Button className="bg-success text-success-foreground hover:bg-success/90 w-full">
-              <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
-            </Button>
-          </Link>
+      </div>
+      
+      <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-8">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+            <div className="relative w-full sm:w-auto sm:min-w-[150px]">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                    type="text"
+                    placeholder="Buscar por agricultor..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-8 h-9 text-xs"
+                />
+            </div>
+            <div className="w-full sm:w-auto sm:max-w-[220px]">
+                <Label htmlFor="organizational-unit-filter" className="sr-only">Filtrar por Unidade</Label>
+                <Select value={organizationalUnitFilter} onValueChange={(value) => setOrganizationalUnitFilter(value)}>
+                    <SelectTrigger id="organizational-unit-filter" className="w-full h-9 text-xs">
+                    <Building className="mr-1.5 h-3.5 w-3.5" />
+                    <SelectValue placeholder="Filtrar unidade..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todas as Unidades</SelectItem>
+                        {availableOrganizationalUnits.map(unit => (
+                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="w-full sm:w-auto sm:max-w-[220px]">
+                <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
+                <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
+                    <SelectTrigger id="municipality-filter" className="w-full h-9 text-xs">
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                    <SelectValue placeholder="Filtrar município..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Municípios</SelectItem>
+                        {availableMunicipalities.map(muni => (
+                        <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="w-full sm:w-auto sm:max-w-[220px]">
+                <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                    <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
+                    <ListFilter className="mr-1.5 h-3.5 w-3.5" />
+                    <SelectValue placeholder="Filtrar status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Status ({statusCounts.all})</SelectItem>
+                        <SelectItem value="Confirmado">Confirmado ({statusCounts.Confirmed})</SelectItem>
+                        <SelectItem value="Pendente">Pendente ({statusCounts.Pending})</SelectItem>
+                        <SelectItem value="Inapto">Inapto ({statusCounts.Unfit})</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto justify-end mt-2 md:mt-0">
+             <div className="flex items-center text-primary bg-primary/10 px-3 py-2 rounded-md text-sm shrink-0">
+                <ClipboardList className="h-5 w-5 mr-2"/>
+                <span>{isLoading ? '...' : `Exibindo ${technicianVisibleRequests.length}`}</span>
+            </div>
+            <Link href={APP_ROUTES.TECHNICIAN_SUBMIT_REQUEST} passHref className="w-full sm:w-auto">
+                <Button className="bg-primary hover:bg-primary/90 w-full">
+                <PlusCircle className="mr-2 h-5 w-5" /> Nova Solicitação
+                </Button>
+            </Link>
+            <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER} passHref className="w-full sm:w-auto">
+                <Button className="bg-success text-success-foreground hover:bg-success/90 w-full">
+                <UserPlus className="mr-2 h-5 w-5" /> Cadastrar Agricultor
+                </Button>
+            </Link>
         </div>
       </div>
       
