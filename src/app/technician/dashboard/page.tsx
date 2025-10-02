@@ -61,10 +61,12 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
-  const { technicianVisibleRequests, statusCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
+  const { technicianVisibleRequests, statusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = { 
         technicianVisibleRequests: [], 
         statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 },
+        municipalityCounts: {} as Record<string, number>,
+        orgUnitCounts: {} as Record<string, number>,
         availableMunicipalities: [] as string[],
         availableOrganizationalUnits: [] as string[]
     };
@@ -76,26 +78,27 @@ export default function TechnicianDashboard() {
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
 
     let baseRequests = allRequests;
-    let availableMuniSet = new Set<string>();
-    let availableOrgUnitSet = new Set<string>();
 
     if (hasAssignedMunicipalities) {
-      baseRequests = allRequests.filter(req => {
-        const isInAssigned = req.municipality && user.assignedMunicipalities!.includes(req.municipality);
-        if(isInAssigned) {
-            if(req.municipality) availableMuniSet.add(req.municipality);
-            if(req.organizationalUnit) availableOrgUnitSet.add(req.organizationalUnit);
-        }
-        return isInAssigned;
-      });
-      initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
-    } else {
-        allRequests.forEach(req => {
-            if(req.municipality) availableMuniSet.add(req.municipality);
-            if(req.organizationalUnit) availableOrgUnitSet.add(req.organizationalUnit);
-        });
-        initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
+      baseRequests = allRequests.filter(req => 
+        req.municipality && user.assignedMunicipalities!.includes(req.municipality)
+      );
     }
+
+    const availableMuniSet = new Set<string>();
+    const availableOrgUnitSet = new Set<string>();
+    baseRequests.forEach(req => {
+      if(req.municipality) {
+        availableMuniSet.add(req.municipality);
+        initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
+      }
+      if(req.organizationalUnit) {
+        availableOrgUnitSet.add(req.organizationalUnit);
+        initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
+      }
+    });
+
+    initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
     initialResult.availableOrganizationalUnits = Array.from(availableOrgUnitSet).sort();
     
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
@@ -180,9 +183,9 @@ export default function TechnicianDashboard() {
                     <SelectValue placeholder="Filtrar unidade..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todas as Unidades</SelectItem>
+                        <SelectItem value="all">Todas as Unidades ({baseRequests.length})</SelectItem>
                         {availableOrganizationalUnits.map(unit => (
-                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        <SelectItem key={unit} value={unit}>{unit} ({orgUnitCounts[unit] || 0})</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -195,9 +198,9 @@ export default function TechnicianDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({baseRequests.length})</SelectItem>
                         {availableMunicipalities.map(muni => (
-                        <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                        <SelectItem key={muni} value={muni}>{muni} ({municipalityCounts[muni] || 0})</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
