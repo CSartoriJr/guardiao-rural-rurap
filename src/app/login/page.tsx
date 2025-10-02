@@ -38,7 +38,9 @@ export default function LoginPage() {
       </Card>
       <div className="mt-6 text-center w-full max-w-md space-y-4">
         <div>
-          <p className="text-sm text-white mb-2 font-bold">Não tem uma conta de agricultor?</p>
+          <div className="bg-white/80 p-2 rounded-md mb-2">
+            <p className="text-sm text-foreground font-bold">Não tem uma conta de agricultor?</p>
+          </div>
           <Button
             className="w-full bg-success text-success-foreground hover:bg-success/90 text-lg font-bold border-[3px] border-white"
             asChild
