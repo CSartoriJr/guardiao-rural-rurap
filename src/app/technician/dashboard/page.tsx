@@ -5,7 +5,7 @@ import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import { collection, getDocs, query } from 'firebase/firestore';
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const fetchAllUsers = async (): Promise<AppUser[]> => {
   if (!firebaseInitializedCorrectly || !db) return [];
@@ -31,6 +32,7 @@ export default function TechnicianDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
   const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -87,20 +89,20 @@ export default function TechnicianDashboard() {
         });
         initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
     }
-
-    if (municipalityFilter !== 'all') {
-      baseRequests = baseRequests.filter(req => req.municipality === municipalityFilter);
-    }
     
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
-    const enrichedRequests = baseRequests.map(req => {
+    let enrichedRequests = baseRequests.map(req => {
       const farmer = usersMap.get(req.farmerId);
       return {
         ...req,
         farmerRegistrationStatus: farmer?.registrationStatus,
       };
     });
+
+    if (municipalityFilter !== 'all') {
+      enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
+    }
     
     initialResult.statusCounts = {
       all: enrichedRequests.length,
@@ -109,15 +111,23 @@ export default function TechnicianDashboard() {
       Unfit: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
     };
 
-    if (statusFilter === 'all') {
-      initialResult.technicianVisibleRequests = enrichedRequests;
-    } else {
-      initialResult.technicianVisibleRequests = enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+    let filteredRequests = enrichedRequests;
+
+    if (statusFilter !== 'all') {
+      filteredRequests = filteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
     }
+    
+    if (searchQuery) {
+        filteredRequests = filteredRequests.filter(req => 
+            req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+
+    initialResult.technicianVisibleRequests = filteredRequests;
 
     return initialResult;
 
-  }, [allRequests, allUsers, user, statusFilter, municipalityFilter]);
+  }, [allRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery]);
 
 
   return (
@@ -125,6 +135,16 @@ export default function TechnicianDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto sm:min-w-[150px]">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+                type="text"
+                placeholder="Buscar por agricultor..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 h-9 text-xs"
+            />
+          </div>
           <div className="w-full sm:w-auto sm:max-w-[220px]">
             <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
             <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
@@ -191,9 +211,12 @@ export default function TechnicianDashboard() {
             Nenhuma Solicitação Encontrada
           </h2>
           <p className="text-muted-foreground">
-            {statusFilter !== 'all' 
-              ? `Não há solicitações com o status de cadastro "${statusFilter}".` 
-              : 'Não há solicitações designadas a você com os filtros atuais.'}
+            {searchQuery 
+                ? `Nenhuma solicitação encontrada para "${searchQuery}".`
+                : statusFilter !== 'all' 
+                    ? `Não há solicitações com o status de cadastro "${statusFilter}".` 
+                    : 'Não há solicitações designadas a você com os filtros atuais.'
+            }
           </p>
         </div>
       )}
