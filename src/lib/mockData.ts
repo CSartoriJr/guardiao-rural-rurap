@@ -20,6 +20,12 @@ export const amapaMunicipalities: string[] = [
   "Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"
 ];
 
+export const organizationalUnits: string[] = [
+  ...amapaMunicipalities,
+  "Maracá"
+].sort((a, b) => a.localeCompare(b));
+
+
 // Removido o objeto municipalitySeatCoordinates
 // export const municipalitySeatCoordinates: { [key: string]: { x: number; y: number } } = { ... };
 

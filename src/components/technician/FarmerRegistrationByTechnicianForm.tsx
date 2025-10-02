@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import type { User } from '@/types';
-import { amapaMunicipalities } from '@/lib/mockData';
+import { amapaMunicipalities, organizationalUnits } from '@/lib/mockData';
 import { Loader2, UserPlus, Phone, Mail, Home, MapPin, Users as UsersIcon, FileText, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/config/routes';
@@ -305,8 +305,8 @@ export default function FarmerRegistrationByTechnicianForm() {
                             <SelectValue placeholder="Selecione uma unidade" />
                             </SelectTrigger>
                             <SelectContent>
-                            {amapaMunicipalities.sort((a,b) => a.localeCompare(b)).map(muni => (
-                                <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                            {organizationalUnits.map(unit => (
+                                <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                             ))}
                             </SelectContent>
                         </Select>

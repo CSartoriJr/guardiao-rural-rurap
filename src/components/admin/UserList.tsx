@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import type { User as AppUserType, RegistrationStatus } from '@/types'; // Use AppUserType
@@ -13,7 +14,7 @@ import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list
+import { amapaMunicipalities, organizationalUnits } from '@/lib/mockData'; // For municipality list
 import { useToast } from '@/hooks/use-toast';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -157,7 +158,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
 
   const watchedRole = watch('role', editingUser?.role);
   const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
-  const organizationalUnitOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+  const organizationalUnitOptionsList = organizationalUnits.map(u => ({ value: u, label: u }));
   const filteredMunicipalities = amapaMunicipalities.filter(m => !["Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"].includes(m));
 
 
@@ -581,7 +582,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                                 <SelectValue placeholder="Selecione uma unidade" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                {organizationalUnitOptions.sort((a,b) => a.label.localeCompare(b.label)).map(opt => (
+                                {organizationalUnitOptionsList.map(opt => (
                                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                 ))}
                                 </SelectContent>
