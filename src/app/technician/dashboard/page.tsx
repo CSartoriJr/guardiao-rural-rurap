@@ -5,7 +5,7 @@ import TechnicianRequestCard from '@/components/technician/RequestCard';
 import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -30,6 +30,7 @@ export default function TechnicianDashboard() {
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+  const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
 
   useEffect(() => {
     if (user) {
@@ -57,23 +58,43 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
-  const { technicianVisibleRequests, statusCounts } = useMemo(() => {
+  const { technicianVisibleRequests, statusCounts, availableMunicipalities } = useMemo(() => {
+    const initialResult = { 
+        technicianVisibleRequests: [], 
+        statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 },
+        availableMunicipalities: [] as string[]
+    };
+
     if (!user || allRequests.length === 0 || allUsers.length === 0) {
-      return { technicianVisibleRequests: [], statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 } };
+      return initialResult;
     }
     
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
 
-    let visibleRequestsBase = allRequests;
+    let baseRequests = allRequests;
+    let availableMuniSet = new Set<string>();
+
     if (hasAssignedMunicipalities) {
-      visibleRequestsBase = allRequests.filter(req => 
-        user.assignedMunicipalities!.includes(req.municipality || '')
-      );
+      baseRequests = allRequests.filter(req => {
+        const isInAssigned = req.municipality && user.assignedMunicipalities!.includes(req.municipality);
+        if(isInAssigned) availableMuniSet.add(req.municipality!);
+        return isInAssigned;
+      });
+      initialResult.availableMunicipalities = user.assignedMunicipalities!.sort();
+    } else {
+        allRequests.forEach(req => {
+            if(req.municipality) availableMuniSet.add(req.municipality);
+        });
+        initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
+    }
+
+    if (municipalityFilter !== 'all') {
+      baseRequests = baseRequests.filter(req => req.municipality === municipalityFilter);
     }
     
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
-    const enrichedRequests = visibleRequestsBase.map(req => {
+    const enrichedRequests = baseRequests.map(req => {
       const farmer = usersMap.get(req.farmerId);
       return {
         ...req,
@@ -81,7 +102,7 @@ export default function TechnicianDashboard() {
       };
     });
     
-    const calculatedCounts = {
+    initialResult.statusCounts = {
       all: enrichedRequests.length,
       Confirmed: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
       Pending: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
@@ -89,20 +110,36 @@ export default function TechnicianDashboard() {
     };
 
     if (statusFilter === 'all') {
-      return { technicianVisibleRequests: enrichedRequests, statusCounts: calculatedCounts };
+      initialResult.technicianVisibleRequests = enrichedRequests;
+    } else {
+      initialResult.technicianVisibleRequests = enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
     }
-    
-    const filteredRequests = enrichedRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
-    return { technicianVisibleRequests: filteredRequests, statusCounts: calculatedCounts };
 
-  }, [allRequests, allUsers, user, statusFilter]);
+    return initialResult;
+
+  }, [allRequests, allUsers, user, statusFilter, municipalityFilter]);
 
 
   return (
     <PageWrapper allowedRoles={['technician']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Técnico</h1>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div className="w-full sm:w-auto sm:max-w-[220px]">
+            <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
+            <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
+                <SelectTrigger id="municipality-filter" className="w-full h-9 text-xs">
+                <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                <SelectValue placeholder="Filtrar município..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Municípios</SelectItem>
+                    {availableMunicipalities.map(muni => (
+                      <SelectItem key={muni} value={muni}>{muni}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </div>
           <div className="w-full sm:w-auto sm:max-w-[220px]">
             <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
@@ -156,7 +193,7 @@ export default function TechnicianDashboard() {
           <p className="text-muted-foreground">
             {statusFilter !== 'all' 
               ? `Não há solicitações com o status de cadastro "${statusFilter}".` 
-              : 'Não há solicitações designadas a você no momento.'}
+              : 'Não há solicitações designadas a você com os filtros atuais.'}
           </p>
         </div>
       )}
