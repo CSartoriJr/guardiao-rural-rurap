@@ -12,7 +12,7 @@ import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, 
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, UserCheck, UserX, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, Microscope, Image as ImageIcon, XCircle, Loader2, Sprout, LandPlot, AlertTriangle, MapPin, Trash2, EyeOff, Eye as EyeIcon, Sparkles, LocateFixed, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, UserCheck, UserX, AlertCircle, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
@@ -492,6 +492,12 @@ export default function TechnicianViewRequestPage() {
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Detalhes da Solicitação do Agricultor</CardTitle>
             <CardDescription>ID: {request.id}</CardDescription>
+            {request.technicianName && (
+              <CardDescription className="flex items-center pt-1">
+                <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
+                Registrado por: {request.technicianName}
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
