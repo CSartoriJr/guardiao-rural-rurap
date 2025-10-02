@@ -51,6 +51,7 @@ export const addRequest = async (
       technicianId: requestData.technicianId || null, // Include technician info if available
       technicianName: requestData.technicianName || null,
       responseDate: null,
+      organizationalUnit: requestData.organizationalUnit ?? null,
       mandiocaPlantedArea: requestData.mandiocaPlantedArea ?? null,
       mandiocaInfectedArea: requestData.mandiocaInfectedArea ?? null,
       macaxeiraPlantedArea: requestData.macaxeiraPlantedArea ?? null,
@@ -65,9 +66,6 @@ export const addRequest = async (
       municipality: requestData.municipality ?? null,
       soilTexture: requestData.soilTexture ?? null,
       vegetationType: requestData.vegetationType ?? null,
-      hasSecondaryActivity: requestData.hasSecondaryActivity ?? null,
-      secondaryActivityYes: requestData.secondaryActivityYes ?? null,
-      secondaryActivityNo: requestData.secondaryActivityNo ?? null,
     };
 
     const docRef = await addDoc(collection(db!, REQUESTS_COLLECTION), docData);

@@ -216,6 +216,7 @@ export default function RequestForm() {
         farmerId: user.id,
         farmerCpf: user.cpf,
         farmerName: user.name,
+        organizationalUnit: user.organizationalUnit,
         mandiocaVariety: data.mandiocaVariety,
         macaxeiraVariety: data.macaxeiraVariety,
         isMandioca: data.isMandioca,

@@ -253,6 +253,7 @@ export default function TechnicianRequestForm() {
         farmerId: selectedFarmer.id,
         farmerCpf: selectedFarmer.cpf,
         farmerName: selectedFarmer.name,
+        organizationalUnit: selectedFarmer.organizationalUnit,
         technicianId: user.id,
         technicianName: user.name,
         mandiocaVariety: data.mandiocaVariety,

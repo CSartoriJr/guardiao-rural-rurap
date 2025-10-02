@@ -34,6 +34,7 @@ export interface AgriRequest {
   farmerId: string; // Firebase Auth UID of the farmer
   farmerCpf: string; // CPF of the farmer, used for stable linking
   farmerName: string;
+  organizationalUnit?: string;
   mandiocaVariety?: string;
   macaxeiraVariety?: string;
   isMandioca?: boolean;
