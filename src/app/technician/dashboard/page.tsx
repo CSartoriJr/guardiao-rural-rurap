@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -61,6 +62,15 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
+  const baseRequests = useMemo(() => {
+    if (!user) return [];
+    const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
+    if (hasAssignedMunicipalities) {
+      return allRequests.filter(req => req.municipality && user.assignedMunicipalities!.includes(req.municipality));
+    }
+    return allRequests;
+  }, [allRequests, user]);
+  
   const { technicianVisibleRequests, statusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = { 
         technicianVisibleRequests: [], 
@@ -71,20 +81,10 @@ export default function TechnicianDashboard() {
         availableOrganizationalUnits: [] as string[]
     };
 
-    if (!user || allRequests.length === 0 || allUsers.length === 0) {
+    if (!user || baseRequests.length === 0 || allUsers.length === 0) {
       return initialResult;
     }
     
-    const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
-
-    let baseRequests = allRequests;
-
-    if (hasAssignedMunicipalities) {
-      baseRequests = allRequests.filter(req => 
-        req.municipality && user.assignedMunicipalities!.includes(req.municipality)
-      );
-    }
-
     const availableMuniSet = new Set<string>();
     const availableOrgUnitSet = new Set<string>();
     baseRequests.forEach(req => {
@@ -142,7 +142,7 @@ export default function TechnicianDashboard() {
 
     return initialResult;
 
-  }, [allRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter]);
+  }, [baseRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter]);
 
 
   return (
