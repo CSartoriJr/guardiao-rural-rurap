@@ -16,7 +16,7 @@ import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase'; // For checking CPF existence
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { amapaMunicipalities } from '@/lib/mockData';
+import { organizationalUnits } from '@/lib/mockData';
 import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin';
 
 const cpfValidation = z.string().refine(cpf => {
@@ -135,7 +135,7 @@ export default function CreateTechnicianForm() {
     fieldOnChange(formattedValue);
   };
 
-  const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+  const organizationalUnitOptions = organizationalUnits.map(m => ({ value: m, label: m }));
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -195,7 +195,7 @@ export default function CreateTechnicianForm() {
                 control={control}
                 render={({ field }) => (
                     <MultiSelect
-                    options={municipalityOptions}
+                    options={organizationalUnitOptions}
                     selected={field.value || []}
                     onChange={field.onChange}
                     className="w-full"
