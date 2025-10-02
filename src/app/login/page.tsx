@@ -1,4 +1,3 @@
-
 'use client'; 
 
 import Link from 'next/link';
@@ -30,6 +29,9 @@ export default function LoginPage() {
             height={179}
             className="mb-4"
           />
+          <p className="text-sm font-bold text-primary bg-primary/20 px-3 py-1 rounded-full mb-2">
+            Versão Beta
+          </p>
           <CardDescription className="text-card-foreground font-semibold">Faça login para continuar.</CardDescription>
         </CardHeader>
         <CardContent>
