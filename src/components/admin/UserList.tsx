@@ -157,7 +157,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   });
 
   const watchedRole = watch('role', editingUser?.role);
-  const municipalityOptions = amapaMunicipalities.map(m => ({ value: m, label: m }));
+  const organizationalUnitOptions = organizationalUnits.map(m => ({ value: m, label: m }));
   const organizationalUnitOptionsList = organizationalUnits.map(u => ({ value: u, label: u }));
   const filteredMunicipalities = amapaMunicipalities.filter(m => !["Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"].includes(m));
 
@@ -482,7 +482,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       control={control}
                       render={({ field }) => (
                         <MultiSelect
-                          options={municipalityOptions}
+                          options={organizationalUnitOptions}
                           selected={field.value || []}
                           onChange={field.onChange}
                           className="w-full"
