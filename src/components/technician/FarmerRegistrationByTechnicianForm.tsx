@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -36,7 +35,7 @@ const farmerRegistrationFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
   phone: z.string().regex(phoneRegex, { message: 'Telefone inválido. Use (xx)xxxxx-xxxx ou (xx)xxxx-xxxx' }),
-  email: z.string().email({ message: 'E-mail inválido.' }),
+  email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
   caf: cafValidation.optional(),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
   organizationalUnit: z.string().min(1, { message: 'A Unidade Organizacional é obrigatória.' }),
@@ -95,6 +94,7 @@ export default function FarmerRegistrationByTechnicianForm() {
 
       const registrationData = {
         ...data,
+        email: data.email || undefined,
         passwordInput: initialPassword,
       };
 
@@ -235,7 +235,7 @@ export default function FarmerRegistrationByTechnicianForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (para contato)</Label>
+                <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (Opcional)</Label>
                 <Controller
                     name="email"
                     control={control}

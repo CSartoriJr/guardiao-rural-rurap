@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
@@ -36,7 +35,7 @@ const farmerRegistrationFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
   phone: z.string().regex(phoneRegex, { message: 'Telefone inválido. Use (xx)xxxxx-xxxx ou (xx)xxxx-xxxx' }),
-  email: z.string().email({ message: 'E-mail inválido (será usado para notificações, não para login).' }),
+  email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
   caf: cafValidation.optional(),
   address: z.string().min(5, { message: 'O endereço deve ter pelo menos 5 caracteres.' }),
   organizationalUnit: z.string().min(1, { message: 'A Unidade Organizacional é obrigatória.' }),
@@ -90,7 +89,7 @@ export default function FarmerRegistrationForm() {
         passwordInput: data.password,
         // Farmer specific details for Firestore document
         phone: data.phone,
-        email: data.email, // Actual email for communication
+        email: data.email || undefined, // Pass undefined if empty
         caf: data.caf,
         address: data.address,
         organizationalUnit: data.organizationalUnit,
@@ -233,7 +232,7 @@ export default function FarmerRegistrationForm() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (para contato)</Label>
+              <Label htmlFor="email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (Opcional)</Label>
               <Controller
                 name="email"
                 control={control}

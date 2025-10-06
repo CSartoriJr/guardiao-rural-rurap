@@ -5,7 +5,7 @@ export interface User {
   cpf: string;
   role: 'farmer' | 'technician' | 'admin' | 'GabineteGov' | 'Diagro' | 'SDR';
   name: string;
-  email?: string; // Firebase Auth uses email, so we'll store the actual email or a dummy one if CPF is used for auth.
+  email?: string; // This is now optional
   password?: string; // Only used for initial creation/reset, not stored directly in Firestore if using Firebase Auth.
   caf?: string;
   registeredByTechnicianId?: string; // ID of the technician who registered the farmer

@@ -59,7 +59,7 @@ export default function LoginPage() {
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-bold border-[3px] border-white"
             asChild
           >
-            <Link href="https://folder-vassoura-de-bruxa-rurap-1.my.canva.site/" target="_blank" rel="noopener noreferrer">
+            <Link href="https://folder-vassoura-de-bruxa-rurap-1.my.canva.site/folder-vassoura-01" target="_blank" rel="noopener noreferrer">
               <Info className="mr-2 h-4 w-4" />
               Saiba Mais Sobre a Vassoura de Bruxa!
             </Link>

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import type { User as AppUserType, RegistrationStatus } from '@/types'; // Use AppUserType
@@ -51,7 +50,7 @@ const editUserFormSchema = z.object({
   role: z.enum(['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'], { required_error: "A função é obrigatória." }),
   registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto']).optional(),
   phone: z.string().optional(),
-  email: z.string().email({ message: 'E-mail inválido. É obrigatório para todos os usuários.' }),
+  email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
   address: z.string().optional(),
   organizationalUnit: z.string().optional(),
   municipality: z.string().optional(),
@@ -247,7 +246,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     const userDataToUpdate: Partial<AppUserType> = {
       name: data.name,
       role: data.role,
-      email: data.email,
+      email: data.email || undefined,
     };
 
     if (data.role === 'farmer') {
@@ -464,7 +463,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail de Contato</Label>
+                  <Label htmlFor="edit-email" className="flex items-center"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mail (Opcional)</Label>
                   <Controller
                     name="email"
                     control={control}
