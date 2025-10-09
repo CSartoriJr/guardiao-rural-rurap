@@ -2,7 +2,6 @@
 'use server';
 import { getFarmers, getUserDocumentSafely } from '@/services/userService';
 import type { User } from '@/types';
-import { auth } from 'firebase-admin';
 import { cookies } from 'next/headers';
 import { getUserDocument } from '@/services/userService';
 
