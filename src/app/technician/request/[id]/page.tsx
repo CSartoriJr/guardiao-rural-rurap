@@ -56,11 +56,11 @@ const RegistrationStatusCard = ({
           O cadastro de <strong>{farmer.name}</strong> precisa de validação.
         </CardDescription>
       </CardHeader>
-      <CardFooter className="flex gap-4">
+      <CardFooter className="flex-col sm:flex-row gap-4">
         <Button
           onClick={() => handleStatusUpdate('Confirmado')}
           disabled={isUpdating}
-          className="bg-green-600 hover:bg-green-700 text-white"
+          className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
         >
           {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
           Confirmar Cadastro
@@ -69,6 +69,7 @@ const RegistrationStatusCard = ({
           onClick={() => handleStatusUpdate('Inapto')}
           disabled={isUpdating}
           variant="destructive"
+          className="w-full sm:w-auto"
         >
           {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserX className="mr-2 h-4 w-4" />}
           Marcar como Inapto
