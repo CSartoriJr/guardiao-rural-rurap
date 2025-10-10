@@ -549,7 +549,6 @@ export default function TechnicianViewRequestPage() {
                       width={300}
                       height={300}
                       className="object-cover h-full w-full hover:scale-105 transition-transform duration-300"
-                      unoptimized={url.startsWith('https://placehold.co')}
                     />
                   </div>
                 ))}
@@ -599,7 +598,6 @@ export default function TechnicianViewRequestPage() {
                     alt="Imagem expandida da Solicitação"
                     fill
                     style={{ objectFit: 'contain' }}
-                    unoptimized={expandedImageUri.startsWith('https://placehold.co')}
                 />
             </div>
           </DialogContent>
