@@ -5,16 +5,15 @@ let adminInitializedCorrectly = false;
 
 if (admin.apps.length === 0) {
   try {
-    // No ambiente do Google Cloud (como o Studio), a SDK Admin
-    // deve ser inicializada sem argumentos para usar as credenciais do ambiente (Application Default Credentials).
-    // O erro anterior indicava um problema na cadeia de credenciais do ambiente, não na chamada do código.
-    // A estrutura correta é simplesmente chamar initializeApp() e confiar no ambiente.
+    // Em um ambiente de servidor seguro como o do Studio/Google Cloud,
+    // a SDK Admin pode ser inicializada sem argumentos para usar as
+    // credenciais padrão do ambiente (Application Default Credentials).
+    console.log('[Firebase Admin] Attempting to initialize Admin SDK...');
     adminApp = admin.initializeApp();
     adminInitializedCorrectly = true;
     console.log('[Firebase Admin] SDK initialized successfully.');
   } catch (error: any) {
     console.error('[Firebase Admin] CRITICAL: Failed to initialize Firebase Admin SDK:', error.message);
-    // A inicialização falhou, então garantimos que `adminInitializedCorrectly` seja falso.
     adminInitializedCorrectly = false;
   }
 } else {

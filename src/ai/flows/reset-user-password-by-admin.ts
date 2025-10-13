@@ -15,8 +15,6 @@ import { adminAuth, adminInitializedCorrectly } from '@/lib/firebase-admin'; // 
 const ResetUserPasswordInputSchema = z.object({
   userId: z.string().describe("The UID of the user whose password needs to be reset."),
   newPassword: z.string().min(6).describe("The new password, must be at least 6 characters."),
-  // The admin credentials are no longer needed here, as the flow runs in a trusted server environment.
-  // The client will perform its own auth check to ensure only an admin can trigger this flow.
 });
 export type ResetUserPasswordInput = z.infer<typeof ResetUserPasswordInputSchema>;
 
