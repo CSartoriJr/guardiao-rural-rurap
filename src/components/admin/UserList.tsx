@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { amapaMunicipalities, organizationalUnits } from '@/lib/mockData'; // For municipality list
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
