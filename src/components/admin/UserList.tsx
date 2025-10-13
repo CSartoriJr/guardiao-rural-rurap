@@ -22,7 +22,6 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
-import { resetUserPasswordByAdmin } from '@/ai/flows/reset-user-password-by-admin';
 
 
 interface UserListProps {
@@ -293,30 +292,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         return;
     }
     setIsUpdatingPassword(true);
-    try {
-        const result = await resetUserPasswordByAdmin({ 
-            userId: editingUser.id, 
-            newPassword: data.password,
-        });
-        if (result.success) {
-            toast({
-                title: "Senha Alterada",
-                description: `A senha de ${editingUser.name} foi alterada com sucesso.`,
-            });
-            setIsPasswordDialogOpen(false);
-        } else {
-            throw new Error(result.message || 'Falha ao alterar a senha no servidor.');
-        }
-    } catch (error: any) {
-        toast({
-            title: "Erro ao Alterar Senha",
-            description: error.message,
-            variant: "destructive",
-        });
-    } finally {
-        setIsUpdatingPassword(false);
-        passwordForm.reset();
-    }
+    // This is now a placeholder as the backend cannot execute this securely.
+    toast({
+        title: "Função Desabilitada",
+        description: "A alteração de senha por um administrador não está disponível neste ambiente. Use o console do Firebase.",
+        variant: "destructive",
+    });
+    setIsUpdatingPassword(false);
+    setIsPasswordDialogOpen(false);
+    passwordForm.reset();
   };
 
   const getDeleteButtonTitle = (user: UserWithActivityCount): string => {
@@ -613,9 +597,20 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 )}
               </div>
               <DialogFooter className="pt-4 items-center">
-                  <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
-                      <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                  </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)} disabled>
+                            <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Esta função requer um backend seguro com a SDK Admin.<br/> Use o console do Firebase para alterar senhas.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="flex-grow"></div>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
@@ -635,7 +630,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <DialogHeader>
                     <DialogTitle>Alterar Senha para {editingUser.name}</DialogTitle>
                     <DialogDescription>
-                        Defina a nova senha para o usuário.
+                        Esta funcionalidade não está disponível. Use o console do Firebase para redefinir a senha.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={passwordForm.handleSubmit(handlePasswordReset)}>
@@ -651,6 +646,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                                         type="password"
                                         placeholder="Mínimo 6 caracteres"
                                         {...field}
+                                        disabled
                                     />
                                 )}
                             />
@@ -667,6 +663,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                                         type="password"
                                         placeholder="Repita a nova senha"
                                         {...field}
+                                        disabled
                                     />
                                 )}
                             />
@@ -675,8 +672,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancelar</Button>
-                        <Button type="submit" disabled={isUpdatingPassword}>
-                            {isUpdatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4" />}
+                        <Button type="submit" disabled={true}>
+                            <KeyRound className="mr-2 h-4" />
                             Confirmar Alteração
                         </Button>
                     </DialogFooter>
