@@ -1,9 +1,7 @@
 'use server';
 /**
- * @fileOverview Placeholder flow for resetting a user's password.
- * NOTE: This functionality is disabled in the current environment as it requires
- * the Firebase Admin SDK with proper server credentials, which is not available.
- * Password resets for users must be done via the Firebase Console.
+ * @fileOverview A secure flow for an administrator to reset a user's password
+ * using the Firebase Admin SDK.
  *
  * - resetUserPasswordByAdmin - The exported function.
  * - ResetUserPasswordInput - The input type for the function.
@@ -12,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { adminAuth, adminInitialized } from '@/lib/firebase-admin';
 
 const ResetUserPasswordInputSchema = z.object({
   userId: z.string().describe("The UID of the user whose password needs to be reset."),
@@ -36,13 +35,37 @@ const resetUserPasswordByAdminFlow = ai.defineFlow(
     outputSchema: ResetUserPasswordOutputSchema,
   },
   async ({ userId, newPassword }) => {
-    const errorMessage = 'A alteração de senha por um administrador não é suportada neste ambiente. Por favor, use o Console do Firebase.';
-    console.warn(`[resetUserPasswordByAdminFlow] Blocked attempt to reset password for user ${userId}. Reason: ${errorMessage}`);
+    if (!adminInitialized || !adminAuth) {
+      const errorMessage = "A SDK de administração do Firebase não está inicializada. A alteração de senha não pode ser concluída.";
+      console.error(`[resetUserPasswordByAdminFlow] ${errorMessage}`);
+      return { 
+        success: false, 
+        message: errorMessage 
+      };
+    }
     
-    // Return a failure message to the client to indicate the feature is disabled.
-    return { 
-      success: false, 
-      message: errorMessage 
-    };
+    try {
+      console.log(`[resetUserPasswordByAdminFlow] Attempting to update password for user ${userId} using Admin SDK.`);
+      await adminAuth.updateUser(userId, {
+        password: newPassword,
+      });
+      console.log(`[resetUserPasswordByAdminFlow] Successfully updated password for user ${userId}.`);
+      return { 
+        success: true,
+        message: "Senha alterada com sucesso."
+      };
+    } catch (error: any) {
+      console.error(`[resetUserPasswordByAdminFlow] Error updating user password for ${userId}:`, error);
+      let userFriendlyMessage = "Ocorreu um erro desconhecido no servidor ao tentar alterar a senha.";
+      if (error.code === 'auth/user-not-found') {
+        userFriendlyMessage = "O usuário não foi encontrado no sistema de autenticação.";
+      } else if (error.message) {
+        userFriendlyMessage = error.message;
+      }
+      return { 
+        success: false, 
+        message: userFriendlyMessage 
+      };
+    }
   }
 );

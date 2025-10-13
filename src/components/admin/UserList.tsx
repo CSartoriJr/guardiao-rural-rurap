@@ -613,18 +613,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 )}
               </div>
               <DialogFooter className="pt-4 items-center">
-                 <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)} disabled>
-                          <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Esta funcionalidade requer a SDK Admin e não está<br />disponível neste ambiente de desenvolvimento.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                  <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
+                      <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                  </Button>
                 <div className="flex-grow"></div>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
