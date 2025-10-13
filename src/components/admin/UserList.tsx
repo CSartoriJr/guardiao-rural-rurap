@@ -101,12 +101,14 @@ const editUserFormSchema = z.object({
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
 const passwordFormSchema = z.object({
+  adminPassword: z.string().min(1, "Sua senha de administrador é obrigatória."),
   password: z.string().min(6, { message: "A nova senha deve ter pelo menos 6 caracteres." }),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem.",
   path: ["confirmPassword"],
 });
+
 
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
@@ -128,6 +130,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const [userToDelete, setUserToDelete] = useState<UserWithActivityCount | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const { toast } = useToast();
+  const { user: currentAdmin } = useAuth(); // Get current admin user details from useAuth
 
   const { control, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
@@ -150,6 +153,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
+      adminPassword: '',
       password: '',
       confirmPassword: ''
     }
@@ -284,10 +288,18 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   };
 
   const handlePasswordReset = async (data: PasswordFormValues) => {
-    if (!editingUser) return;
+    if (!editingUser || !currentAdmin || !currentAdmin.cpf) {
+        toast({ title: "Erro", description: "Informações do administrador ou do usuário alvo estão faltando.", variant: "destructive" });
+        return;
+    }
     setIsUpdatingPassword(true);
     try {
-        const result = await resetUserPasswordByAdmin({ userId: editingUser.id, newPassword: data.password });
+        const result = await resetUserPasswordByAdmin({ 
+            userId: editingUser.id, 
+            newPassword: data.password,
+            adminCpf: currentAdmin.cpf,
+            adminPassword: data.adminPassword,
+        });
         if (result.success) {
             toast({
                 title: "Senha Alterada",
@@ -625,11 +637,27 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <DialogHeader>
                     <DialogTitle>Alterar Senha para {editingUser.name}</DialogTitle>
                     <DialogDescription>
-                        Digite a nova senha para o usuário. Esta ação não pode ser desfeita.
+                        Para confirmar, digite sua senha de administrador e a nova senha para o usuário.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={passwordForm.handleSubmit(handlePasswordReset)}>
                     <div className="grid gap-4 py-4">
+                        <div className="space-y-1">
+                            <Label htmlFor="adminPassword">Sua Senha de Administrador</Label>
+                            <Controller
+                                name="adminPassword"
+                                control={passwordForm.control}
+                                render={({ field }) => (
+                                    <Input
+                                        id="adminPassword"
+                                        type="password"
+                                        placeholder="Sua senha atual"
+                                        {...field}
+                                    />
+                                )}
+                            />
+                            {passwordForm.formState.errors.adminPassword && <p className="text-xs text-destructive pt-1">{passwordForm.formState.errors.adminPassword.message}</p>}
+                        </div>
                         <div className="space-y-1">
                             <Label htmlFor="password">Nova Senha</Label>
                             <Controller
