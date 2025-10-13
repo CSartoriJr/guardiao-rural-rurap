@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { CacaBruxaLogo } from '@/components/shared/Logo';
+import Link from 'next/link';
 
 // Fetch all requests from Firestore
 const fetchAllTechnicianRequests = async (): Promise<AgriRequest[]> => {
@@ -40,13 +42,17 @@ interface ChartDataItem {
   count: number;
 }
 
-const PublicAnalyticsHeader = () => (
-    <header className="bg-card shadow-md sticky top-0 z-50 mb-8">
-      <div className="container mx-auto px-4 py-3 flex justify-center items-center">
-        <CacaBruxaLogo />
-      </div>
-    </header>
-);
+function PublicAnalyticsHeader() {
+    return (
+        <header className="bg-card shadow-md sticky top-0 z-50 mb-8">
+            <div className="container mx-auto px-4 py-3 flex justify-center items-center">
+                <Link href="/painel-publico">
+                    <CacaBruxaLogo />
+                </Link>
+            </div>
+        </header>
+    )
+}
 
 export default function PublicAnalyticsPage() {
   const [requests, setRequests] = useState<AgriRequest[]>([]);
@@ -93,7 +99,6 @@ export default function PublicAnalyticsPage() {
     return requests.filter(req => req.municipality === selectedMunicipality);
   }, [requests, selectedMunicipality]);
 
-  // Filter farmers based on the selected municipality
   const filteredFarmers = useMemo(() => {
     const allFarmers = users.filter(u => u.role === 'farmer');
     if (!selectedMunicipality) {
@@ -104,7 +109,6 @@ export default function PublicAnalyticsPage() {
 
 
   const stats = useMemo(() => {
-    // Request stats based on filtered requests
     const total = filteredRequests.length;
     const pending = filteredRequests.filter(r => r.status === 'Pending').length;
     const responded = total - pending;
@@ -113,12 +117,10 @@ export default function PublicAnalyticsPage() {
     const inconclusive = filteredRequests.filter(r => r.status === 'Inconclusive').length;
     const suspected = filteredRequests.filter(r => r.status === 'Suspeita de Infecção').length;
     
-    // Farmer stats based on filtered farmers
     const totalFarmers = filteredFarmers.length;
     const confirmedFarmers = filteredFarmers.filter(f => f.registrationStatus === 'Confirmado').length;
     const pendingFarmers = filteredFarmers.filter(f => f.registrationStatus === 'Pendente').length;
     
-    // Chart data based on filtered requests
     const cassavaVarieties: { [key: string]: number } = {};
     filteredRequests.forEach(req => {
       if (req.mandiocaVariety) {
@@ -159,10 +161,9 @@ export default function PublicAnalyticsPage() {
     { name: 'Suspeita de Infecção', count: stats.suspected },
   ].filter(item => item.count > 0);
 
-  const cassavaVarietyChartData: ChartDataItem[] = stats.cassavaVarietiesArray.slice(0, 5); // Top 5
+  const cassavaVarietyChartData: ChartDataItem[] = stats.cassavaVarietiesArray.slice(0, 5);
   
   const municipalityChartData: ChartDataItem[] = stats.requestsByMunicipalityArray;
-
 
   const handleMapMunicipalitySelect = (name: string | null) => {
     setSelectedMunicipality(name);
@@ -175,54 +176,57 @@ export default function PublicAnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <PublicAnalyticsHeader />
-        <div className="space-y-8">
-          <div className="flex justify-between items-center">
-            <Skeleton className="h-8 w-1/3" />
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-            <div className="lg:col-span-7">
-              <Card>
-                <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
-                <CardContent className="pt-2">
-                  <div className="w-[70%] mx-auto">
-                    <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" />
-                  </div>
-                  <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
-                  <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
-                </CardContent>
-              </Card>
-            </div>
-            <div className="lg:col-span-3 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                    <Skeleton className="w-32 h-32 rounded-lg" /> 
-                    <Skeleton className="w-32 h-32 rounded-lg" />
-                    <Skeleton className="w-32 h-32 rounded-lg" />
-                    <Skeleton className="w-32 h-32 rounded-lg" />
+        <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <PublicAnalyticsHeader />
+            <main className="flex-1 container mx-auto px-4 py-8">
+                <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-8 w-1/3" />
                 </div>
-                 <div className="grid grid-cols-1 gap-4">
-                    <Skeleton className="w-full h-24 rounded-lg" />
-                    <Skeleton className="w-full h-24 rounded-lg" />
-                    <Skeleton className="w-full h-24 rounded-lg" />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+                    <div className="lg:col-span-7">
+                    <Card>
+                        <CardHeader><Skeleton className="h-6 w-3/5" /></CardHeader>
+                        <CardContent className="pt-2">
+                        <div className="w-[70%] mx-auto">
+                            <Skeleton className="h-64 sm:h-80 md:h-96 w-full rounded-lg" />
+                        </div>
+                        <Skeleton className="h-3 w-4/5 mt-3 mx-auto" />
+                        <Skeleton className="h-3 w-3/5 mt-1 mx-auto" />
+                        </CardContent>
+                    </Card>
+                    </div>
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <Skeleton className="w-32 h-32 rounded-lg" /> 
+                            <Skeleton className="w-32 h-32 rounded-lg" />
+                            <Skeleton className="w-32 h-32 rounded-lg" />
+                            <Skeleton className="w-32 h-32 rounded-lg" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            <Skeleton className="w-full h-24 rounded-lg" />
+                            <Skeleton className="w-full h-24 rounded-lg" />
+                            <Skeleton className="w-full h-24 rounded-lg" />
+                        </div>
+                        <Skeleton className="h-80 rounded-lg" />
+                    </div>
                 </div>
-                <Skeleton className="h-80 rounded-lg" /> {/* For Status Chart */}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Skeleton className="h-80 rounded-lg" /> {/* For Cassava Types Chart */}
-            <Skeleton className="h-80 rounded-lg" /> {/* For Municipality Chart */}
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <Skeleton className="h-80 rounded-lg" />
+                    <Skeleton className="h-80 rounded-lg" />
+                </div>
+                </div>
+            </main>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
         <PublicAnalyticsHeader />
+        <main className="flex-1 container mx-auto px-4 py-8">
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 className="text-3xl font-headline text-gray-800">Painel de Análise Pública</h1>
@@ -397,10 +401,10 @@ export default function PublicAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                     {municipalityChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={400}> {/* Reverted height */}
-                        <BarChart data={municipalityChartData} margin={{ top: 5, right: 20, left: 20, bottom: 60 }}> {/* Adjusted bottom margin for labels */}
+                        <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={municipalityChartData} margin={{ top: 5, right: 20, left: 20, bottom: 60 }}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" type="category" interval={0} angle={-45} textAnchor="end" height={80} fontSize={10} /> {/* Added angle, textAnchor, and height for XAxis labels */}
+                            <XAxis dataKey="name" type="category" interval={0} angle={-45} textAnchor="end" height={80} fontSize={10} />
                             <YAxis allowDecimals={false} fontSize={12} />
                             <Tooltip wrapperStyle={{ fontSize: '12px' }} />
                             <Legend wrapperStyle={{ fontSize: '12px' }} />
@@ -428,6 +432,7 @@ export default function PublicAnalyticsPage() {
             </Card>
             )}
         </div>
+        </main>
     </div>
   );
 }
