@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText, KeyRound, Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,11 +17,10 @@ import * as z from 'zod';
 import { amapaMunicipalities, organizationalUnits } from '@/lib/mockData'; // For municipality list
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '../ui/multi-select';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
+import { resetUserPasswordByAdmin } from '@/ai/flows/reset-user-password-by-admin';
 
 
 interface UserListProps {
@@ -287,20 +286,37 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
   };
 
   const handlePasswordReset = async (data: PasswordFormValues) => {
-    if (!editingUser) {
-        toast({ title: "Erro", description: "Usuário alvo não está selecionado.", variant: "destructive" });
-        return;
+    if (!editingUser || !currentAdmin) {
+      toast({ title: "Erro", description: "Usuário alvo ou administrador atual não está definido.", variant: "destructive" });
+      return;
     }
     setIsUpdatingPassword(true);
-    // This is now a placeholder as the backend cannot execute this securely.
-    toast({
-        title: "Função Desabilitada",
-        description: "A alteração de senha por um administrador não está disponível neste ambiente. Use o console do Firebase.",
-        variant: "destructive",
-    });
-    setIsUpdatingPassword(false);
-    setIsPasswordDialogOpen(false);
-    passwordForm.reset();
+    try {
+      const result = await resetUserPasswordByAdmin({
+        userId: editingUser.id,
+        newPassword: data.password,
+      });
+      
+      if (result?.success) {
+         toast({
+          title: "Alteração de Senha (Simulação)",
+          description: result.message,
+        });
+      } else {
+        throw new Error(result?.message || 'Falha na simulação de alteração de senha.');
+      }
+    } catch (error: any) {
+        console.error("Falha ao redefinir senha (simulação):", error);
+        toast({
+            title: "Falha na Operação",
+            description: error.message || "Ocorreu um erro.",
+            variant: "destructive",
+        });
+    } finally {
+      setIsUpdatingPassword(false);
+      setIsPasswordDialogOpen(false);
+      passwordForm.reset();
+    }
   };
 
   const getDeleteButtonTitle = (user: UserWithActivityCount): string => {
@@ -597,20 +613,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 )}
               </div>
               <DialogFooter className="pt-4 items-center">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0}>
-                        <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)} disabled>
-                            <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Esta função requer um backend seguro com a SDK Admin.<br/> Use o console do Firebase para alterar senhas.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
+                    <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                </Button>
                 <div className="flex-grow"></div>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
@@ -630,7 +635,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <DialogHeader>
                     <DialogTitle>Alterar Senha para {editingUser.name}</DialogTitle>
                     <DialogDescription>
-                        Esta funcionalidade não está disponível. Use o console do Firebase para redefinir a senha.
+                        A alteração de senha por um administrador não é possível neste ambiente. Use o console do Firebase para redefinir a senha.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={passwordForm.handleSubmit(handlePasswordReset)}>
@@ -646,7 +651,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                                         type="password"
                                         placeholder="Mínimo 6 caracteres"
                                         {...field}
-                                        disabled
                                     />
                                 )}
                             />
@@ -663,7 +667,6 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                                         type="password"
                                         placeholder="Repita a nova senha"
                                         {...field}
-                                        disabled
                                     />
                                 )}
                             />
@@ -672,8 +675,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancelar</Button>
-                        <Button type="submit" disabled={true}>
-                            <KeyRound className="mr-2 h-4" />
+                        <Button type="submit" disabled={isUpdatingPassword}>
+                             {isUpdatingPassword ? <Loader2 className="mr-2 h-4 animate-spin" /> : <KeyRound className="mr-2 h-4" />}
                             Confirmar Alteração
                         </Button>
                     </DialogFooter>
