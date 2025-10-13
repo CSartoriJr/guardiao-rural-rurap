@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText, KeyRound, Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -612,9 +613,18 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 )}
               </div>
               <DialogFooter className="pt-4 items-center">
-                 <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
-                    <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                </Button>
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)} disabled>
+                          <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Esta funcionalidade requer a SDK Admin e não está<br />disponível neste ambiente de desenvolvimento.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="flex-grow"></div>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancelar</Button>
@@ -675,7 +685,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancelar</Button>
                         <Button type="submit" disabled={isUpdatingPassword}>
-                            {isUpdatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4 w-4" />}
+                            {isUpdatingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <KeyRound className="mr-2 h-4" />}
                             Confirmar Alteração
                         </Button>
                     </DialogFooter>
