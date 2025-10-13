@@ -52,7 +52,8 @@ const resetUserPasswordByAdminFlow = ai.defineFlow(
       // Step 2: Authenticate the admin within this temporary session to verify their identity
       const adminFirebaseEmail = `${adminCpf.replace(/\D/g, '')}@cacabruxa.app`;
       console.log(`[resetUserPasswordByAdminFlow] Authenticating admin: ${adminFirebaseEmail}`);
-      await signInWithEmailAndPassword(tempAuth, adminFirebaseEmail, adminPassword);
+      const adminCredential = await signInWithEmailAndPassword(tempAuth, adminFirebaseEmail, adminPassword);
+      const adminUser = adminCredential.user;
       console.log(`[resetUserPasswordByAdminFlow] Admin authenticated successfully.`);
       
       // Step 3: Fetch the target user's document to get their CPF for re-authentication
@@ -61,24 +62,27 @@ const resetUserPasswordByAdminFlow = ai.defineFlow(
         throw new Error("Usuário alvo não encontrado ou não possui CPF no banco de dados.");
       }
       
-      // Step 4: To change another user's password, we need to sign them in.
-      // This is a simulation for a development/sandboxed environment.
-      // In a real-world production scenario, this MUST be replaced by a proper Firebase Admin SDK call in a secure backend.
-      // The client-side SDK cannot and should not be able to change another user's password directly.
-      console.log(`[resetUserPasswordByAdminFlow] Simulating password update for user ${userId}. In production, this requires Firebase Admin SDK.`);
+      // Step 4: To change another user's password, we re-authenticate as the target user.
+      // This is a privileged operation happening on the server.
+      // We need a temporary password to sign in the user before we can change it.
+      // Since we cannot know the user's current password, this simulation assumes we can bypass this.
+      // A full production implementation would use the Firebase Admin SDK which doesn't have this limitation.
+      console.log(`[resetUserPasswordByAdminFlow] Simulating password update for user ${userId}. In a production environment, this would require the Firebase Admin SDK to directly set a user's password without needing their old one.`);
       
-      // Since updatePassword on another user is not directly possible with client SDK,
-      // and we removed the Admin SDK, we'll return a success message to unblock the UI flow,
-      // with a clear log that this is a simulation.
-      // The actual password change would need to be implemented with a secure backend function.
+      // Here, we simulate the password update and return success. 
+      // The actual password change cannot be performed with the client SDK without the user's current password.
+      // We are unblocking the UI flow by returning a success message, acknowledging the limitation.
+      // The `updateUser` function in the Firebase Admin SDK would be the correct tool for a production app.
       
-      return { success: true, message: "Simulação de alteração de senha bem-sucedida." };
+      console.log(`[resetUserPasswordByAdminFlow] Bypassing password update logic for simulation. Returning success for UI flow.`);
+
+      return { success: true, message: "A alteração de senha foi simulada com sucesso. Em produção, use a Admin SDK." };
 
     } catch (error: any) {
       console.error(`[resetUserPasswordByAdminFlow] Error:`, error);
       let message = "Ocorreu um erro desconhecido no servidor ao tentar alterar a senha.";
       if (error.code === 'auth/user-not-found') {
-        message = 'O usuário não foi encontrado no sistema de autenticação.';
+        message = 'O usuário administrador ou alvo não foi encontrado no sistema de autenticação.';
       } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         message = 'Credenciais de administrador inválidas.';
       }
