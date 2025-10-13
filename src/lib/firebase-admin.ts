@@ -1,24 +1,30 @@
-
 import * as admin from 'firebase-admin';
 
-let adminApp: admin.app.App;
+let adminApp: admin.app.App | undefined;
+let adminInitializedCorrectly = false;
 
-if (!admin.apps.length) {
+if (admin.apps.length === 0) {
   try {
-    // Initialize with Application Default Credentials
-    adminApp = admin.initializeApp(); 
+    // No ambiente do Google Cloud (como o Studio), a SDK Admin
+    // deve ser inicializada sem argumentos para usar as credenciais do ambiente (Application Default Credentials).
+    // O erro anterior indicava um problema na cadeia de credenciais do ambiente, não na chamada do código.
+    // A estrutura correta é simplesmente chamar initializeApp() e confiar no ambiente.
+    adminApp = admin.initializeApp();
+    adminInitializedCorrectly = true;
     console.log('[Firebase Admin] SDK initialized successfully.');
   } catch (error: any) {
-    console.error('[Firebase Admin] Error initializing SDK:', error.message);
-    // Avoid crashing the entire app, but log the critical failure.
-    // Flows using the admin SDK will fail gracefully.
+    console.error('[Firebase Admin] CRITICAL: Failed to initialize Firebase Admin SDK:', error.message);
+    // A inicialização falhou, então garantimos que `adminInitializedCorrectly` seja falso.
+    adminInitializedCorrectly = false;
   }
 } else {
+  // Se já houver um app inicializado, reutilize-o.
   adminApp = admin.app();
+  adminInitializedCorrectly = true;
   console.log('[Firebase Admin] SDK already initialized.');
 }
 
-// Export auth and firestore services from the initialized app if it exists
-export const adminAuth = adminApp ? admin.auth(adminApp) : undefined;
-export const adminDb = adminApp ? admin.firestore(adminApp) : undefined;
-export const adminInitializedCorrectly = !!adminApp;
+// Exporte os serviços apenas se a inicialização tiver sido bem-sucedida.
+export const adminAuth = adminInitializedCorrectly && adminApp ? admin.auth(adminApp) : undefined;
+export const adminDb = adminInitializedCorrectly && adminApp ? admin.firestore(adminApp) : undefined;
+export { adminInitializedCorrectly };
