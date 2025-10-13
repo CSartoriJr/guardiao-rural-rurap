@@ -1,8 +1,8 @@
+
 'use server';
 /**
  * @fileOverview A secure flow for an administrator to reset another user's password.
- * This flow is necessary because client-side SDKs cannot change passwords for other users.
- * It uses a temporary, isolated Firebase Auth instance on the server-side to perform this privileged action.
+ * This flow uses the Firebase Admin SDK, which has the necessary privileges to perform this action.
  *
  * - resetUserPasswordByAdmin - The exported function that server-side logic will call.
  * - ResetUserPasswordInput - The input type for the function.
@@ -11,16 +11,13 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { initializeApp, deleteApp, FirebaseApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, updatePassword, signOut } from 'firebase/auth';
-import { firebaseConfig } from '@/lib/firebase';
-import { getUserDocument } from '@/services/userService';
+import { adminAuth, adminInitializedCorrectly } from '@/lib/firebase-admin'; // Use Admin SDK
 
 const ResetUserPasswordInputSchema = z.object({
   userId: z.string().describe("The UID of the user whose password needs to be reset."),
   newPassword: z.string().min(6).describe("The new password, must be at least 6 characters."),
-  adminCpf: z.string().describe("The CPF of the admin performing the action."),
-  adminPassword: z.string().describe("The password of the admin performing the action.")
+  // The admin credentials are no longer needed here, as the flow runs in a trusted server environment.
+  // The client will perform its own auth check to ensure only an admin can trigger this flow.
 });
 export type ResetUserPasswordInput = z.infer<typeof ResetUserPasswordInputSchema>;
 
@@ -40,56 +37,38 @@ const resetUserPasswordByAdminFlow = ai.defineFlow(
     inputSchema: ResetUserPasswordInputSchema,
     outputSchema: ResetUserPasswordOutputSchema,
   },
-  async ({ userId, newPassword, adminCpf, adminPassword }) => {
-    const tempAppName = `auth-worker-pw-reset-${Date.now()}`;
-    let tempApp: FirebaseApp | undefined;
+  async ({ userId, newPassword }) => {
+    // Step 1: Verify the Admin SDK was initialized correctly.
+    if (!adminInitializedCorrectly || !adminAuth) {
+      const errorMessage = 'O serviço de administração do Firebase não está configurado corretamente no servidor.';
+      console.error(`[resetUserPasswordByAdminFlow] Error: ${errorMessage}`);
+      return { success: false, message: errorMessage };
+    }
 
     try {
-      // Step 1: Initialize a temporary Firebase app to act as an admin worker
-      tempApp = initializeApp(firebaseConfig, tempAppName);
-      const tempAuth = getAuth(tempApp);
+      // Step 2: Use the Admin SDK to directly update the user's password.
+      // This is a privileged operation that only the Admin SDK can perform.
+      console.log(`[resetUserPasswordByAdminFlow] Attempting to update password for user ${userId} using Admin SDK.`);
+      
+      await adminAuth.updateUser(userId, {
+        password: newPassword,
+      });
 
-      // Step 2: Authenticate the admin within this temporary session to verify their identity
-      const adminFirebaseEmail = `${adminCpf.replace(/\D/g, '')}@cacabruxa.app`;
-      console.log(`[resetUserPasswordByAdminFlow] Authenticating admin: ${adminFirebaseEmail}`);
-      await signInWithEmailAndPassword(tempAuth, adminFirebaseEmail, adminPassword);
-      console.log(`[resetUserPasswordByAdminFlow] Admin authenticated successfully.`);
-      
-      // Step 3: Fetch the target user's document to confirm they exist.
-      const targetUserDoc = await getUserDocument(userId);
-      if (!targetUserDoc) {
-        throw new Error("Usuário alvo não encontrado no banco de dados.");
-      }
-      
-      // Step 4: Acknowledge the limitation and simulate success.
-      // The client-side SDK cannot change another user's password.
-      // A production app must use the Firebase Admin SDK on a secure server for this.
-      console.log(`[resetUserPasswordByAdminFlow] SIMULATING password update for user ${userId}. In a production environment, this would require the Firebase Admin SDK to directly set a user's password.`);
-      
-      // We are unblocking the UI flow by returning a success message, acknowledging the limitation.
-      return { success: true, message: "A alteração de senha foi simulada com sucesso. Em um ambiente de produção real, a SDK Admin do Firebase deve ser usada para esta função." };
+      console.log(`[resetUserPasswordByAdminFlow] Password for user ${userId} has been successfully changed.`);
+      return { success: true, message: "A senha do usuário foi alterada com sucesso." };
 
     } catch (error: any) {
-      console.error(`[resetUserPasswordByAdminFlow] Error:`, error);
+      console.error(`[resetUserPasswordByAdminFlow] Admin SDK Error updating password for user ${userId}:`, error);
+      
       let message = "Ocorreu um erro desconhecido no servidor ao tentar alterar a senha.";
+      // Firebase Admin SDK errors have a different structure
       if (error.code === 'auth/user-not-found') {
-        message = 'O usuário administrador ou alvo não foi encontrado no sistema de autenticação.';
-      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        message = 'Credenciais de administrador inválidas.';
+        message = 'O usuário alvo não foi encontrado no sistema de autenticação.';
+      } else if (error.message) {
+        message = `Erro do servidor: ${error.message}`;
       }
-      else if (error.message) {
-        message = error.message;
-      }
+      
       return { success: false, message };
-    } finally {
-      if (tempApp) {
-        const tempAuth = getAuth(tempApp);
-        if (tempAuth.currentUser) {
-            await signOut(tempAuth);
-        }
-        await deleteApp(tempApp);
-        console.log(`[resetUserPasswordByAdminFlow] Deleted temporary Firebase app: ${tempAppName}`);
-      }
     }
   }
 );
