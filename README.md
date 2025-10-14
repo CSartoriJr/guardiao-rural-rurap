@@ -1,7 +1,13 @@
-# Firebase Studio
 
-This is a NextJS starter in Firebase Studio.
+# Guardião Rural - Comandos Essenciais
 
-To get started, take a look at src/app/page.tsx.
-# guardiao-rural-rurap
-# guardiao-rural-rurap
+## Aplicar Configuração de CORS
+
+Para corrigir o erro de upload de imagens (CORS), execute o seguinte comando no seu terminal. Ele aplica as regras corretas ao seu bucket do Firebase Storage.
+
+```bash
+gsutil cors set cors.json gs://agriassist-k8tg6.appspot.com
+```
+
+---
+Este projeto foi gerado pelo Firebase Studio.
