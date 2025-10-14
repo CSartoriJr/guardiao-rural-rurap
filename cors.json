@@ -2,21 +2,12 @@
 [
   {
     "origin": [
-      "https://6000-firebase-studio-1749831716891.cluster-kc2r6y3mtba5mswcmol45orivs.cloudworkstations.dev"
+      "https://6000-firebase-studio-1749831716891.cluster-kc2r6y3mtba5mswcmol45orivs.cloudworkstations.dev",
+      "https://studio--agriassist-k8tg6.us-central1.hosted.app",
+      "http://localhost:3000"
     ],
-    "method": [
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-      "OPTIONS"
-    ],
-    "responseHeader": [
-      "Content-Type",
-      "Access-Control-Allow-Origin",
-      "x-firebase-gmpid",
-      "Authorization"
-    ],
-    "maxAgeSeconds": 3600
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "x-goog-meta-uuid", "x-goog-meta-owner"]
   }
 ]
