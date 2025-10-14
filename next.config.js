@@ -16,7 +16,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
+        hostname: 'agriassist-k8tg6.appspot.com',
         port: '',
         pathname: '/**',
       },

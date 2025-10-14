@@ -26,101 +26,82 @@ export function uploadImage(
 
 export function uploadFile(
   file: File,
-  path: string, // This is the full path e.g., `requests/${userId}` or `laudos/${requestId}`
+  path: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  // This promise is a wrapper around the upload task to make it easier to use with async/await.
+  ensureFirebaseInitialized();
+
+  if (!path) {
+    const err = new Error('O caminho de destino é obrigatório para o upload do arquivo.');
+    console.error(`[FileUploader] ${err.message}`);
+    // We need to return a structure that includes a rejected promise.
+    return {
+      uploadTask: {} as UploadTask,
+      promise: Promise.reject(err),
+    };
+  }
+
+  const fileExtension = file.name.split('.').pop() || 'dat';
+  const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+  const storagePath = `${path}/${uniqueFileName}`;
+  const storageRef = ref(storage!, storagePath);
+
+  const uploadTask = uploadBytesResumable(storageRef, file);
+
   const promise = new Promise<string>((resolve, reject) => {
-    try {
-      ensureFirebaseInitialized();
-      console.log(`[FileUploader] Initiating upload for file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-
-      if (!path) {
-        const err = new Error('O caminho de destino é obrigatório para o upload do arquivo.');
-        console.error(`[FileUploader] ${err.message}`);
-        return reject(err);
-      }
-
-      const fileExtension = file.name.split('.').pop() || 'dat';
-      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-      const storagePath = `${path}/${uniqueFileName}`;
-      const storageRef = ref(storage!, storagePath);
-
-      console.log(`[FileUploader] Attempting to upload to path: ${storagePath}`);
-      
-      const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
-
-      // This is the core Firebase upload logic with event listeners.
-      uploadTask.on('state_changed',
-        (snapshot: UploadTaskSnapshot) => {
-          // Correctly calculate the progress percentage.
-          const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-          console.log(`[FileUploader] Upload is ${progress.toFixed(2)}% done for ${file.name}`);
-          if (onProgressUpdate) {
-            onProgressUpdate(Math.round(progress));
-          }
-        },
-        (error: FirebaseStorageError) => {
-          // Handle unsuccessful uploads.
-          if (error.code === 'storage/canceled') {
-            console.log(`[FileUploader] Upload canceled by user for file: ${file.name}`);
-            const cancellationError = new Error('Upload cancelado pelo usuário.');
-            (cancellationError as any).code = 'storage/canceled';
-            reject(cancellationError);
-            return;
-          }
-          
-          console.error(`[FileUploader] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
-          
-          let userFriendlyMessage = 'Ocorreu um erro ao enviar seu arquivo. Tente novamente.';
-          switch(error.code) {
-              case 'storage/unauthorized':
-                  userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
-                  break;
-              case 'storage/unknown':
-                  userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
-                  break;
-          }
-
-          const finalError = new Error(userFriendlyMessage);
-          (finalError as any).code = error.code;
-          
-          reject(finalError);
-        },
-        async () => {
-          // Handle successful uploads on complete.
-          try {
-            console.log('[FileUploader] Upload complete. Getting download URL...');
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log(`[FileUploader] File ${file.name} uploaded successfully. URL:`, downloadURL);
-            if (onProgressUpdate) {
-              onProgressUpdate(100); 
-            }
-            resolve(downloadURL);
-          } catch (e: any) {
-            console.error(`[FileUploader] Error getting download URL for ${file.name}:`, e);
-            const getUrlError = new Error(e.message || 'Falha ao obter URL de download após o upload.');
-            (getUrlError as any).code = e.code || 'storage/get-url-failed';
-            reject(getUrlError);
-          }
+    uploadTask.on(
+      'state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log(`[FileUploader] Upload is ${progress.toFixed(2)}% done for ${file.name}`);
+        if (onProgressUpdate) {
+          onProgressUpdate(Math.round(progress));
         }
-      );
+      },
+      (error: FirebaseStorageError) => {
+        if (error.code === 'storage/canceled') {
+          console.log(`[FileUploader] Upload canceled by user for file: ${file.name}`);
+          const cancellationError = new Error('Upload cancelado pelo usuário.');
+          (cancellationError as any).code = 'storage/canceled';
+          reject(cancellationError);
+          return;
+        }
+        
+        console.error(`[FileUploader] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
+        
+        let userFriendlyMessage = 'Ocorreu um erro ao enviar seu arquivo. Tente novamente.';
+        switch(error.code) {
+            case 'storage/unauthorized':
+                userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
+                break;
+            case 'storage/unknown':
+                userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
+                break;
+        }
 
-    } catch (initialError: any) {
-        // This catches errors from ensureFirebaseInitialized or other synchronous setup issues.
-        reject(initialError);
-    }
+        const finalError = new Error(userFriendlyMessage);
+        (finalError as any).code = error.code;
+        
+        reject(finalError);
+      },
+      async () => {
+        try {
+          console.log('[FileUploader] Upload complete. Getting download URL...');
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log(`[FileUploader] File ${file.name} uploaded successfully. URL:`, downloadURL);
+          if (onProgressUpdate) {
+            onProgressUpdate(100);
+          }
+          resolve(downloadURL);
+        } catch (e: any) {
+          console.error(`[FileUploader] Error getting download URL for ${file.name}:`, e);
+          const getUrlError = new Error(e.message || 'Falha ao obter URL de download após o upload.');
+          (getUrlError as any).code = e.code || 'storage/get-url-failed';
+          reject(getUrlError);
+        }
+      }
+    );
   });
 
-  // Since the uploadTask is created inside the promise, we cannot return it directly.
-  // This part of the API is now less useful, but kept for structural compatibility.
-  // The consumer should primarily rely on the returned promise.
-  const dummyTask = {} as UploadTask;
-  (dummyTask as any).cancel = () => {
-    // This is tricky. The actual task is inside the promise.
-    // For a robust implementation, one might need an event emitter or a more complex state management.
-    console.warn("[FileUploader] Cancel called on dummy task. Cancellation might not be immediate if upload has started.");
-  };
-
-  return { uploadTask: dummyTask, promise };
+  return { uploadTask, promise };
 }
