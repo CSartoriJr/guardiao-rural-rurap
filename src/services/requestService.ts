@@ -147,11 +147,11 @@ export const updateRequest = async (requestId: string, updates: Partial<AgriRequ
   }
 };
 
-export const getRequestsForFarmer = async (farmerCpf: string): Promise<AgriRequest[]> => {
+export const getRequestsForFarmer = async (farmerId: string): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
   const q = query(
     collection(db!, REQUESTS_COLLECTION),
-    where('farmerCpf', '==', farmerCpf)
+    where('farmerId', '==', farmerId)
   );
   const querySnapshot = await getDocs(q);
   const requests = querySnapshot.docs.map(requestFromFirestore);
