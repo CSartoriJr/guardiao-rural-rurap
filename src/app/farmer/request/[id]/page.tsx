@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, AlertCircleIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -215,13 +215,13 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
                 </div>
                 )}
-                {request.mandiocaPlantingDate && typeof request.mandiocaPlantingDate === 'string' && (
+                {request.mandiocaPlantingDate && isValid(new Date(request.mandiocaPlantingDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.mandiocaPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.mandiocaSymptomsDate && typeof request.mandiocaSymptomsDate === 'string' && (
+                 {request.mandiocaSymptomsDate && isValid(new Date(request.mandiocaSymptomsDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.mandiocaSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
@@ -246,13 +246,13 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
                 </div>
                 )}
-                {request.macaxeiraPlantingDate && typeof request.macaxeiraPlantingDate === 'string' && (
+                {request.macaxeiraPlantingDate && isValid(new Date(request.macaxeiraPlantingDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.macaxeiraPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.macaxeiraSymptomsDate && typeof request.macaxeiraSymptomsDate === 'string' && (
+                 {request.macaxeiraSymptomsDate && isValid(new Date(request.macaxeiraSymptomsDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.macaxeiraSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
