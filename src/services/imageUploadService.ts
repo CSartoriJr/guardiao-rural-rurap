@@ -22,7 +22,6 @@ export function uploadImage(
   uploadPath: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  // CORREÇÃO: Passa os parâmetros na ordem correta para 'uploadFile'.
   return uploadFile(file, uploadPath, onProgressUpdate);
 }
 
