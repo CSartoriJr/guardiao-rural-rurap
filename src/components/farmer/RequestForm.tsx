@@ -498,7 +498,7 @@ export default function RequestForm() {
                 id="photoUrl1"
                 onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl1}
-                userId={user?.id}
+                uploadPath={user?.id ? `requests/${user.id}` : ''}
               />
             </div>
             <div>
@@ -507,7 +507,7 @@ export default function RequestForm() {
                 id="photoUrl2"
                 onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl2}
-                userId={user?.id}
+                uploadPath={user?.id ? `requests/${user.id}` : ''}
               />
             </div>
             <div>
@@ -516,7 +516,7 @@ export default function RequestForm() {
                 id="photoUrl3"
                 onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl3}
-                userId={user?.id}
+                uploadPath={user?.id ? `requests/${user.id}` : ''}
               />
             </div>
           </div>

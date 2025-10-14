@@ -16,12 +16,13 @@ interface UploadFileResult {
   promise: Promise<string>;
 }
 
+// This function now simply acts as a wrapper for uploadFile, specifying a path.
 export function uploadImage(
   file: File,
-  userId: string, // This is the ID of the folder owner (the farmer)
+  uploadPath: string, // Changed from userId to full uploadPath
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  return uploadFile(file, `requests/${userId}`, onProgressUpdate);
+  return uploadFile(file, uploadPath, onProgressUpdate);
 }
 
 export function uploadFile(
@@ -52,6 +53,7 @@ export function uploadFile(
   const storageRef = ref(storage!, storagePath);
 
   console.log(`[FileUploader] Attempting to upload to path: ${storagePath}`);
+  
   const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {

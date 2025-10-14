@@ -592,7 +592,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl1"
                 onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl1}
-                userId={selectedFarmerId}
+                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
               />
             </div>
             <div>
@@ -601,7 +601,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl2"
                 onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl2}
-                userId={selectedFarmerId}
+                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
               />
             </div>
             <div>
@@ -610,7 +610,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl3"
                 onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl3}
-                userId={selectedFarmerId}
+                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
               />
             </div>
           </div>

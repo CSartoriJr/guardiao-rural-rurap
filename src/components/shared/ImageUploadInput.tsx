@@ -15,10 +15,10 @@ interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
   id: string;
   currentImageUrl?: string | null;
-  userId?: string | null; // Allow passing the user ID, e.g., for technicians uploading for farmers
+  uploadPath: string; // Changed from optional userId to required uploadPath
 }
 
-export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, userId: propUserId }: ImageUploadInputProps) {
+export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, uploadPath }: ImageUploadInputProps) {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -28,10 +28,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
-  const { user: authUser } = useAuth();
   
   const displayUrl = currentImageUrl;
-  const targetUserId = propUserId || authUser?.id; // Use passed userId, fallback to authenticated user's ID
 
   useEffect(() => {
     // Cleanup function to cancel ongoing upload if the component unmounts.
@@ -55,7 +53,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setUploadProgress(0);
     setIsUploading(true);
     
-    // Basic validation
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
@@ -73,23 +70,22 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       return;
     }
 
-    if (!targetUserId) {
-      const errorMsg = 'ID do agricultor não encontrado. Você precisa estar logado e selecionar um agricultor.';
-      toast({ title: 'Erro de Autenticação/Seleção', description: errorMsg, variant: 'destructive' });
+    if (!uploadPath) {
+      const errorMsg = 'O caminho de destino para o upload não foi especificado.';
+      toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsUploading(false);
       return;
     }
 
     let fileToUpload = file;
-    // Attempt to compress the image, with a fallback to the original file.
     try {
       console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
-        fileType: 'image/jpeg', // Force JPEG for max compatibility
+        fileType: 'image/jpeg',
       };
       const compressedFile = await imageCompression(file, options);
       console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
@@ -101,15 +97,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         description: 'Enviando a imagem original. Isso pode levar mais tempo.',
         variant: 'default'
       });
-      fileToUpload = file; // Fallback to the original file
+      fileToUpload = file;
     }
 
-    // Upload the selected file (either compressed or original)
     try {
-      console.log(`[ImageUploadService] Passing file to uploadImage service for user: ${targetUserId}. File size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`[ImageUploadInput] Passing file to uploadImage service for path: ${uploadPath}. File size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       const { uploadTask, promise: uploadPromise } = uploadImage(
         fileToUpload,
-        targetUserId, // Use the correct target user ID for the upload path
+        uploadPath,
         (percentage) => {
             setUploadProgress(percentage);
         }
@@ -163,7 +158,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         className="hidden"
         accept="image/*"
         onChange={handleFileChange}
-        disabled={isUploading || !targetUserId}
+        disabled={isUploading || !uploadPath}
         aria-hidden="true"
       />
       <Input
@@ -175,7 +170,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         accept="image/*"
         capture="user"
         onChange={handleFileChange}
-        disabled={isUploading || !targetUserId}
+        disabled={isUploading || !uploadPath}
         aria-hidden="true"
       />
 
@@ -205,11 +200,11 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
            <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !targetUserId}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>
               <Camera className="mr-2 h-4 w-4" />
               Tirar Foto
             </Button>
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading || !targetUserId}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading || !uploadPath}>
               <FileImage className="mr-2 h-4 w-4" />
               Escolher da Galeria
             </Button>
