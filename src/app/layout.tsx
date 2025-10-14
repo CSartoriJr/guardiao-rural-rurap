@@ -8,7 +8,6 @@ import React from 'react';
 export const metadata: Metadata = {
   title: 'Guardião Rural',
   description: 'Guardião Rural no combate a crise fitossanitária.',
-  manifest: '/manifest.json', // Adiciona referência ao manifest
 };
 
 export default function RootLayout({
