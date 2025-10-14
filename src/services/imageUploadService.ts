@@ -60,21 +60,28 @@ export function uploadFile(
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        console.log(`[FileUploader] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
+        if (snapshot.state === 'running') {
+            console.log(`[FileUploader] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
+        }
         if (onProgressUpdate) {
           onProgressUpdate(Math.round(progress));
         }
       },
-      (error: FirebaseStorageError) => { 
+      (error: FirebaseStorageError) => {
+        if (error.code === 'storage/canceled') {
+          console.log(`[FileUploader] Upload canceled by user for file: ${file.name}`);
+          const cancellationError = new Error('Upload cancelado pelo usuário.');
+          (cancellationError as any).code = 'storage/canceled';
+          reject(cancellationError);
+          return;
+        }
+        
         console.error(`[FileUploader] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
         
         let userFriendlyMessage = 'Ocorreu um erro ao enviar seu arquivo. Tente novamente.';
         switch(error.code) {
             case 'storage/unauthorized':
                 userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
-                break;
-            case 'storage/canceled':
-                userFriendlyMessage = 'O upload foi cancelado.';
                 break;
             case 'storage/unknown':
                 userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
