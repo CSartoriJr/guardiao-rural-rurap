@@ -18,10 +18,10 @@ interface UploadFileResult {
 
 export function uploadImage(
   file: File,
-  uploadPath: string,
+  path: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  return uploadFile(file, uploadPath, onProgressUpdate);
+  return uploadFile(file, path, onProgressUpdate);
 }
 
 export function uploadFile(
@@ -29,6 +29,7 @@ export function uploadFile(
   path: string, // This is the full path e.g., `requests/${userId}` or `laudos/${requestId}`
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
+  // This promise is a wrapper around the upload task to make it easier to use with async/await.
   const promise = new Promise<string>((resolve, reject) => {
     try {
       ensureFirebaseInitialized();
@@ -49,14 +50,18 @@ export function uploadFile(
       
       const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
+      // This is the core Firebase upload logic with event listeners.
       uploadTask.on('state_changed',
         (snapshot: UploadTaskSnapshot) => {
+          // Correctly calculate the progress percentage.
           const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
+          console.log(`[FileUploader] Upload is ${progress.toFixed(2)}% done for ${file.name}`);
           if (onProgressUpdate) {
             onProgressUpdate(Math.round(progress));
           }
         },
         (error: FirebaseStorageError) => {
+          // Handle unsuccessful uploads.
           if (error.code === 'storage/canceled') {
             console.log(`[FileUploader] Upload canceled by user for file: ${file.name}`);
             const cancellationError = new Error('Upload cancelado pelo usuário.');
@@ -83,6 +88,7 @@ export function uploadFile(
           reject(finalError);
         },
         async () => {
+          // Handle successful uploads on complete.
           try {
             console.log('[FileUploader] Upload complete. Getting download URL...');
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
