@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge }   from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle2, XCircle, HelpCircle, Clock, CalendarDays, User, Microscope, Image as ImageIcon, Sprout, LandPlot, AlertTriangle, MapPin, WifiOff, Calendar as CalendarIcon, WholeWord, Leaf, Download, AlertCircleIcon } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { APP_ROUTES } from '@/config/routes';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -215,16 +215,16 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
                 </div>
                 )}
-                {request.mandiocaPlantingDate && isValid(new Date(request.mandiocaPlantingDate)) && (
+                {request.mandiocaPlantingDate && isValid(parseISO(request.mandiocaPlantingDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
-                    <p className="text-lg text-foreground">{format(new Date(request.mandiocaPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                    <p className="text-lg text-foreground">{format(parseISO(request.mandiocaPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.mandiocaSymptomsDate && isValid(new Date(request.mandiocaSymptomsDate)) && (
+                 {request.mandiocaSymptomsDate && isValid(parseISO(request.mandiocaSymptomsDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
-                    <p className="text-lg text-foreground">{format(new Date(request.mandiocaSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                    <p className="text-lg text-foreground">{format(parseISO(request.mandiocaSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
             </div>
@@ -246,16 +246,16 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
                 </div>
                 )}
-                {request.macaxeiraPlantingDate && isValid(new Date(request.macaxeiraPlantingDate)) && (
+                {request.macaxeiraPlantingDate && isValid(parseISO(request.macaxeiraPlantingDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
-                    <p className="text-lg text-foreground">{format(new Date(request.macaxeiraPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                    <p className="text-lg text-foreground">{format(parseISO(request.macaxeiraPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.macaxeiraSymptomsDate && isValid(new Date(request.macaxeiraSymptomsDate)) && (
+                 {request.macaxeiraSymptomsDate && isValid(parseISO(request.macaxeiraSymptomsDate)) && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
-                    <p className="text-lg text-foreground">{format(new Date(request.macaxeiraSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
+                    <p className="text-lg text-foreground">{format(parseISO(request.macaxeiraSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
             </div>
