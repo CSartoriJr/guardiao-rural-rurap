@@ -21,6 +21,7 @@ export function uploadImage(
   uploadPath: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
+  // CORREÇÃO: Passa o 'uploadPath' recebido para a função 'uploadFile'.
   return uploadFile(file, uploadPath, onProgressUpdate);
 }
 
@@ -35,15 +36,11 @@ export function uploadFile(
   if (!path) {
     const err = new Error('O caminho de destino é obrigatório para o upload do arquivo.');
     console.error(`[FileUploader] ${err.message}`);
-    const dummyTask = {
-      cancel: () => console.warn("[FileUploader] Dummy task cancel called."),
-      snapshot: { totalBytes: 0, bytesTransferred: 0, state: 'error', ref: {} } as any,
-      then: () => Promise.reject(err),
-      catch: () => Promise.reject(err),
-      pause: () => console.warn("[FileUploader] Dummy task pause called."),
-      resume: () => console.warn("[FileUploader] Dummy task resume called.")
-    } as unknown as UploadTask;
-    return { uploadTask: dummyTask, promise: Promise.reject(err) };
+    // Retorna uma Promise rejeitada imediatamente para que o chamador possa tratar o erro.
+    return {
+      uploadTask: {} as UploadTask, // Dummy task
+      promise: Promise.reject(err)
+    };
   }
 
   const fileExtension = file.name.split('.').pop() || 'dat';
