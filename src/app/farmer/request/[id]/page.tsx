@@ -215,13 +215,13 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.mandiocaInfectedArea} ha</p>
                 </div>
                 )}
-                {request.mandiocaPlantingDate && (
+                {request.mandiocaPlantingDate && typeof request.mandiocaPlantingDate === 'string' && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.mandiocaPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.mandiocaSymptomsDate && (
+                 {request.mandiocaSymptomsDate && typeof request.mandiocaSymptomsDate === 'string' && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.mandiocaSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
@@ -246,13 +246,13 @@ export default function FarmerViewRequestPage() {
                     <p className="text-lg text-foreground">{request.macaxeiraInfectedArea} ha</p>
                 </div>
                 )}
-                {request.macaxeiraPlantingDate && (
+                {request.macaxeiraPlantingDate && typeof request.macaxeiraPlantingDate === 'string' && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-primary" />Início do Plantio</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.macaxeiraPlantingDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>
                 </div>
                 )}
-                 {request.macaxeiraSymptomsDate && (
+                 {request.macaxeiraSymptomsDate && typeof request.macaxeiraSymptomsDate === 'string' && (
                 <div>
                     <h3 className="text-sm font-medium text-muted-foreground flex items-center"><CalendarIcon className="h-4 w-4 mr-2 text-destructive" />Início dos Sintomas</h3>
                     <p className="text-lg text-foreground">{format(new Date(request.macaxeiraSymptomsDate), "d 'de' MMM 'de' yyyy", { locale: ptBR })}</p>

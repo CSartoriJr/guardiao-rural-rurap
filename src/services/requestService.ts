@@ -25,11 +25,22 @@ const requestFromFirestore = (docSnap: any): AgriRequest => {
       photoUrls = data.photoDataUris.map((uri: any) => typeof uri === 'string' && uri ? uri : 'https://placehold.co/300x300.png') as [string, string, string];
     }
 
+    const convertDate = (dateField: any): string | undefined => {
+        if (!dateField) return undefined;
+        if (dateField instanceof Timestamp) return dateField.toDate().toISOString();
+        if (typeof dateField === 'string') return dateField; // Assume it's already an ISO string
+        return undefined;
+    }
+
     const request: AgriRequest = {
       id: docSnap.id,
       ...data,
-      submissionDate: data.submissionDate instanceof Timestamp ? data.submissionDate.toDate().toISOString() : data.submissionDate,
-      responseDate: data.responseDate instanceof Timestamp ? data.responseDate.toDate().toISOString() : (data.responseDate || undefined),
+      submissionDate: convertDate(data.submissionDate) || new Date().toISOString(),
+      responseDate: convertDate(data.responseDate),
+      mandiocaPlantingDate: convertDate(data.mandiocaPlantingDate),
+      mandiocaSymptomsDate: convertDate(data.mandiocaSymptomsDate),
+      macaxeiraPlantingDate: convertDate(data.macaxeiraPlantingDate),
+      macaxeiraSymptomsDate: convertDate(data.macaxeiraSymptomsDate),
       photoUrls: photoUrls,
     } as AgriRequest;
     
