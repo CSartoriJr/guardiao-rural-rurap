@@ -4,7 +4,6 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import React from 'react';
-import ServiceWorkerRegistrar from '@/components/shared/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
   title: 'Guardião Rural',
@@ -27,7 +26,6 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <ServiceWorkerRegistrar />
           {children}
           <Toaster />
         </AuthProvider>
