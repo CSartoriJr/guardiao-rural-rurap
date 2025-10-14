@@ -7,7 +7,6 @@ import { Camera, FileImage, X, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
-import { useAuth } from '@/hooks/useAuth';
 import type { UploadTask } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 
@@ -15,7 +14,7 @@ interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
   id: string;
   currentImageUrl?: string | null;
-  uploadPath: string; // Changed from optional userId to required uploadPath
+  uploadPath: string;
 }
 
 export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl, uploadPath }: ImageUploadInputProps) {
@@ -71,7 +70,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
 
     if (!uploadPath) {
-      const errorMsg = 'O caminho de destino para o upload não foi especificado.';
+      const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
       toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setIsUploading(false);

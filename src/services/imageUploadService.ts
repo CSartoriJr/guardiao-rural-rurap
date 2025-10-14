@@ -16,10 +16,9 @@ interface UploadFileResult {
   promise: Promise<string>;
 }
 
-// This function now simply acts as a wrapper for uploadFile, specifying a path.
 export function uploadImage(
   file: File,
-  uploadPath: string, // Changed from userId to full uploadPath
+  uploadPath: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
   return uploadFile(file, uploadPath, onProgressUpdate);
