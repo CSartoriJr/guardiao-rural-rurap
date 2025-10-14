@@ -193,9 +193,9 @@ export default function RequestForm() {
     if (value.length > 8) value = value.substring(0, 8);
     let formattedValue = value;
     if (value.length > 4) {
-      formattedValue = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
+      formattedValue = `${''}${value.substring(0, 2)}/${''}${value.substring(2, 4)}/${''}${value.substring(4)}`;
     } else if (value.length > 2) {
-      formattedValue = `${value.substring(0, 2)}/${value.substring(2)}`;
+      formattedValue = `${''}${value.substring(0, 2)}/${''}${value.substring(2)}`;
     }
     fieldOnChange(formattedValue);
   };
