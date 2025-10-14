@@ -194,7 +194,7 @@ export const deleteUserFirestoreDocument = async (userId: string): Promise<void>
 
   // Check for related requests for farmers or technicians
    if (currentUserDoc.role === 'farmer') {
-    const requestQuery = query(collection(db!, 'requests'), where('farmerCpf', '==', currentUserDoc.cpf));
+    const requestQuery = query(collection(db!, 'requests'), where('farmerId', '==', userId));
     const requestSnapshot = await getDocs(requestQuery);
     if (!requestSnapshot.empty) {
       throw new Error('Este agricultor possui Solicitações e não pode ser removido. Remova as Solicitações primeiro.');
