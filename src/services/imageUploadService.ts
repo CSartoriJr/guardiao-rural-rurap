@@ -24,7 +24,6 @@ export function uploadImage(
   return uploadFile(file, `requests/${userId}`, onProgressUpdate);
 }
 
-
 export function uploadFile(
   file: File,
   path: string, // This is the full path e.g., `requests/${userId}` or `laudos/${requestId}`
@@ -56,13 +55,9 @@ export function uploadFile(
   const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {
-    console.log('[FileUploader] Attaching event listeners to upload task.');
     uploadTask.on('state_changed',
       (snapshot: UploadTaskSnapshot) => {
         const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
-        if (snapshot.state === 'running') {
-            console.log(`[FileUploader] State changed: ${snapshot.state}, Progress: ${progress.toFixed(2)}%`);
-        }
         if (onProgressUpdate) {
           onProgressUpdate(Math.round(progress));
         }
