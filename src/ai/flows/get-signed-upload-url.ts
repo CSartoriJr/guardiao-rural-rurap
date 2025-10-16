@@ -11,16 +11,27 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getStorage, getSignedUrl } from 'firebase-admin/storage';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { firebaseConfig } from '@/lib/firebase';
+import { getStorage } from 'firebase-admin/storage';
+import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 
-// Initialize Firebase Admin SDK - this is safe to run multiple times.
+// Securely initialize Firebase Admin SDK using service account credentials from environment variables
 if (!getApps().length) {
+  const serviceAccount = {
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
+
+  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+    throw new Error("Firebase Admin SDK credentials are not configured in environment variables.");
+  }
+  
   initializeApp({
-    storageBucket: firebaseConfig.storageBucket,
+    credential: cert(serviceAccount),
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 }
+
 
 const GetSignedUploadUrlInputSchema = z.object({
   filePath: z.string().describe('The full path in Firebase Storage where the file will be uploaded. E.g., "requests/userId/fileName.jpg"'),
@@ -51,6 +62,7 @@ const getSignedUploadUrlFlow = ai.defineFlow(
       const bucket = storage.bucket();
       const file = bucket.file(filePath);
 
+      // This is a "Resumable" upload URL, which is better for larger files.
       const [signedUrl] = await file.getSignedUrl({
         version: 'v4',
         action: 'write',

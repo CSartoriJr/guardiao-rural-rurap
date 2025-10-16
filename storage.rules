@@ -2,18 +2,13 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regra para a pasta de solicitações
-    // Leitura pública, escrita é controlada por URLs assinadas (geradas no backend)
-    match /requests/{allPaths=**} {
+    
+    // Allow public read access to all files.
+    // This is generally safe if your file paths are not guessable (e.g., use UUIDs).
+    // All writes are denied by default and will only be allowed via Signed URLs.
+    match /{allPaths=**} {
       allow read: if true;
-      allow write: if false; // Uploads diretos são bloqueados por segurança
-    }
-
-    // Regra para a pasta de laudos
-    // A escrita é permitida para qualquer usuário autenticado (técnicos)
-    match /laudos/{requestId}/{allPaths=**} {
-       allow read: if request.auth != null;
-       allow write: if request.auth != null;
+      allow write: if false; // Deny all direct writes. Uploads MUST use signed URLs.
     }
   }
 }
