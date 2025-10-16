@@ -51,6 +51,9 @@ export function uploadFile(
   const storagePath = `${path}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
+  // Log a pasta exata para facilitar a depuração
+  console.log(`[FileUploader] Tentando fazer upload para a pasta: "${path}" com o nome de arquivo: "${uniqueFileName}"`);
+
   const uploadTask = uploadBytesResumable(storageRef, file);
 
   const promise = new Promise<string>((resolve, reject) => {
