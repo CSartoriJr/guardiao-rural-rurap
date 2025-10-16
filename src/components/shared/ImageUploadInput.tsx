@@ -50,14 +50,12 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     
     setError(null);
     setUploadProgress(0);
-    setIsUploading(true);
     
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setIsUploading(false);
       return;
     }
 
@@ -65,7 +63,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'Arquivo muito grande (máximo 15MB).';
       toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setIsUploading(false);
       return;
     }
 
@@ -73,22 +70,29 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
       toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setIsUploading(false);
       return;
     }
+
+    setIsUploading(true);
 
     let fileToUpload = file;
     // Comprimir imagem se for maior que 1MB
     if (file.size > 1 * 1024 * 1024) {
       try {
+        toast({ title: 'Comprimindo imagem...', description: 'A imagem é grande e será otimizada antes do envio.' });
         console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
         const options = {
           maxSizeMB: 1,
           maxWidthOrHeight: 1920,
           useWebWorker: true,
-          fileType: 'image/jpeg',
+          fileType: 'image/jpeg', // Sempre converte para JPEG para consistência e tamanho
         };
-        fileToUpload = await imageCompression(file, options);
+        const compressedBlob = await imageCompression(file, options);
+        fileToUpload = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpeg"), {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+
         console.log(`[ImageUpload] Compression successful. New size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       } catch (compressionError) {
         console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
