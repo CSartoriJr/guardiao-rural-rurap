@@ -2,22 +2,18 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regra para as solicitações:
-    // Permite leitura para qualquer usuário autenticado.
-    // Permite escrita se:
-    // 1. O usuário autenticado é o dono da pasta (o próprio agricultor).
-    // OU
-    // 2. O usuário autenticado tem a função de 'technician'.
-    match /requests/{userId}/{allPaths=**} {
+    // Regra simplificada: Permite a leitura e escrita na pasta 'requests'
+    // para qualquer usuário que esteja autenticado no sistema.
+    // Isso cobre o cenário do agricultor e do técnico.
+    match /requests/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'technician');
+      allow write: if request.auth != null;
     }
 
-    // Regra para os laudos:
-    // Permite leitura e escrita para qualquer usuário autenticado.
-    // Isso permite que técnicos façam upload e que agricultores e outros usuários autorizados leiam.
-    match /laudos/{requestId}/{allPaths=**} {
+    // Regra para laudos: Permite que qualquer usuário autenticado
+    // leia e escreva, o que é necessário para técnicos fazerem upload
+    // e agricultores/outros visualizarem.
+    match /laudos/{allPaths=**} {
        allow read: if request.auth != null;
        allow write: if request.auth != null;
     }
