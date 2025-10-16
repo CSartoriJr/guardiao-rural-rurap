@@ -447,6 +447,12 @@ export default function TechnicianRequestForm() {
                               setValue("farmerId", farmer.id, { shouldValidate: true });
                               setPopoverOpen(false);
                             }}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setValue("farmerId", farmer.id, { shouldValidate: true });
+                                setPopoverOpen(false);
+                            }}
                           >
                             <Check
                               className={cn(
