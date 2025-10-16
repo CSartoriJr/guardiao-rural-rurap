@@ -1,4 +1,3 @@
-'use client';
 
 export const APP_ROUTES = {
   HOME: '/',
