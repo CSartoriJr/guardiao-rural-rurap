@@ -79,7 +79,7 @@ export default function FarmerRequestCard({ request }: RequestCardProps) {
                 width={64}
                 height={64}
                 className="object-cover h-full w-full"
-                unoptimized={url.startsWith('https://placehold.co')} // Avoid optimization for placeholder
+                unoptimized
               />
             </div>
           ))}

@@ -28,16 +28,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   const { toast } = useToast();
   
-  // Keep displayUrl for showing the final, uploaded image URL
   const displayUrl = currentImageUrl;
   
   useEffect(() => {
-    // When the component receives a new URL from its parent, update the preview
     setPreviewUrl(currentImageUrl || null);
   }, [currentImageUrl]);
 
   useEffect(() => {
-    // Cleanup function to revoke the object URL and abort uploads
     const currentPreviewUrl = previewUrl;
     return () => {
       if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
@@ -58,7 +55,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setError(null);
     setUploadProgress(0);
 
-    // Create a local URL for immediate preview
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
@@ -67,7 +63,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setPreviewUrl(null); // Clear invalid preview
+      setPreviewUrl(null);
       return;
     }
     
@@ -107,7 +103,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             onUploadComplete(publicUrl);
-            setPreviewUrl(publicUrl); // Update preview to final URL
+            setPreviewUrl(publicUrl);
             toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
             resolve(xhr.response);
           } else {
@@ -120,6 +116,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         xhr.addEventListener('error', () => {
           console.error('Upload failed due to a network error.');
           let userFriendlyMessage = 'Falha no upload devido a um erro de rede. Verifique sua conexão e tente novamente.';
+           if (xhrRef.current?.status === 503) {
+            userFriendlyMessage = 'O serviço de armazenamento está indisponível. Por favor, tente novamente em alguns instantes.';
+          }
           setError(userFriendlyMessage);
           reject(new Error('Network error during upload.'));
         });
@@ -137,12 +136,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     } catch (uploadError: any) {
       if (uploadError.code !== 'storage/canceled' && uploadError.message !== 'Upload aborted.') {
-        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-        setError(errorMsg);
-        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+        let userFriendlyMessage = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+        if (uploadError.code === 'storage/retry-limit-exceeded') {
+          userFriendlyMessage = 'Falha de comunicação com o servidor. Por favor, verifique sua conexão e tente novamente em alguns instantes.';
+        }
+        setError(userFriendlyMessage);
+        toast({ title: 'Falha no Upload', description: userFriendlyMessage, variant: 'destructive' });
       }
       onUploadComplete(null);
-      setPreviewUrl(null); // Clear preview on failure
+      setPreviewUrl(null);
     } finally {
       setIsUploading(false);
       xhrRef.current = null;
@@ -211,7 +213,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
             </Button>
           </div>
         ) : previewUrl ? (
-           <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={previewUrl.startsWith('https://placehold.co') || previewUrl.startsWith('blob:')} />
+           <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>

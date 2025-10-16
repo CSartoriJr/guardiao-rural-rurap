@@ -101,7 +101,7 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
                     width={48}
                     height={48}
                     className="object-cover h-full w-full"
-                    unoptimized={url.startsWith('https://placehold.co')} // Avoid optimization for placeholder
+                    unoptimized
                 />
             </div>
           ))}
