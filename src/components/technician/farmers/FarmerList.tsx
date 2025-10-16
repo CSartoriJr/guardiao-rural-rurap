@@ -14,7 +14,7 @@ interface FarmerListProps {
 }
 
 const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities, onSelect, statusFilterDisplayName, hasSearchTerm }) => {
-  if (farmers.length === 0) {
+  if (!Array.isArray(farmers) || farmers.length === 0) {
     let message = `Não foram encontrados agricultores com o status "${statusFilterDisplayName}".`;
     if (statusFilterDisplayName === 'Todos os Status') {
         message = hasSearchTerm 

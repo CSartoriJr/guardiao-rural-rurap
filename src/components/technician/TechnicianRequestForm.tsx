@@ -171,6 +171,7 @@ export default function TechnicianRequestForm() {
   }, [user, toast]);
 
   const filteredFarmers = React.useMemo(() => {
+    if (!Array.isArray(farmers)) return [];
     if (!searchValue) return farmers;
     return farmers.filter(farmer => 
       farmer.name.toLowerCase().includes(searchValue.toLowerCase()) || 
@@ -424,7 +425,7 @@ export default function TechnicianRequestForm() {
                     >
                       {isFarmerListLoading ? 'Carregando...' :
                         field.value
-                          ? farmers.find((farmer) => farmer.id === field.value)?.name
+                          ? (farmers || []).find((farmer) => farmer.id === field.value)?.name
                           : "Selecione um agricultor..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
