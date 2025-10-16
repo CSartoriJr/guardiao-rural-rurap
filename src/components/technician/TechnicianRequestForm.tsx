@@ -443,15 +443,13 @@ export default function TechnicianRequestForm() {
                           <CommandItem
                             key={farmer.id}
                             value={`${farmer.name} ${farmer.cpf}`}
-                            onSelect={() => {
-                              setValue("farmerId", farmer.id, { shouldValidate: true });
-                              setPopoverOpen(false);
-                            }}
                             onMouseDown={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setValue("farmerId", farmer.id, { shouldValidate: true });
-                                setPopoverOpen(false);
+                            }}
+                            onSelect={() => {
+                              setValue("farmerId", farmer.id, { shouldValidate: true });
+                              setPopoverOpen(false);
                             }}
                           >
                             <Check
@@ -599,7 +597,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl1"
                 onUploadComplete={(url) => setValue('photoUrl1', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl1}
-                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
+                uploadPath={selectedFarmerId && user?.id ? `requests/${selectedFarmerId}/${user.id}` : ''}
               />
             </div>
             <div>
@@ -608,7 +606,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl2"
                 onUploadComplete={(url) => setValue('photoUrl2', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl2}
-                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
+                uploadPath={selectedFarmerId && user?.id ? `requests/${selectedFarmerId}/${user.id}` : ''}
               />
             </div>
             <div>
@@ -617,7 +615,7 @@ export default function TechnicianRequestForm() {
                 id="photoUrl3"
                 onUploadComplete={(url) => setValue('photoUrl3', url, { shouldValidate: true })}
                 currentImageUrl={photoUrl3}
-                uploadPath={selectedFarmerId ? `requests/${selectedFarmerId}` : ''}
+                uploadPath={selectedFarmerId && user?.id ? `requests/${selectedFarmerId}/${user.id}` : ''}
               />
             </div>
           </div>
