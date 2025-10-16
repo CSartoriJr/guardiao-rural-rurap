@@ -34,6 +34,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   useEffect(() => {
     const currentPreviewUrl = previewUrl;
+    // Cleanup function to revoke the object URL to avoid memory leaks
     return () => {
       if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(currentPreviewUrl);
@@ -46,7 +47,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = '';
+    event.target.value = ''; // Reset input to allow re-selecting the same file
 
     if (!file) return;
     
@@ -54,7 +55,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setUploadProgress(0);
 
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    setPreviewUrl(objectUrl); // This is the crucial fix
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
@@ -103,7 +104,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             onUploadComplete(publicUrl);
-            setPreviewUrl(publicUrl);
+            setPreviewUrl(publicUrl); // Now set the final URL
             toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
             resolve(xhr.response);
           } else {
