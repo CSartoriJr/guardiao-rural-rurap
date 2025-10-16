@@ -72,11 +72,11 @@ export default function TechnicianRequestCard({ request }: TechnicianRequestCard
         </div>
         <div className="flex justify-between items-center">
             <CardDescription className="text-xs truncate pr-2">ID: {request.id}</CardDescription>
-            <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)} className="ml-auto flex-shrink-0">
-                <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs">
-                    <Eye className="mr-1 h-3 w-3" /> Ver
-                </Button>
-            </Link>
+            <Button asChild variant="default" size="sm" className="bg-primary hover:bg-primary/90 h-7 px-2 text-xs ml-auto flex-shrink-0">
+              <Link href={APP_ROUTES.TECHNICIAN_VIEW_REQUEST(request.id)}>
+                  <Eye className="mr-1 h-3 w-3" /> Ver
+              </Link>
+            </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-2 py-3 flex-grow">
