@@ -13,6 +13,7 @@ export const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Variáveis para as instâncias do Firebase
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
@@ -20,36 +21,31 @@ let storage: FirebaseStorage;
 let firebaseInitializedCorrectly = false;
 
 try {
-  if (getApps().length) {
-    app = getApp();
-    console.log('[Firebase] Re-using existing Firebase app instance.');
-  } else {
-    app = initializeApp(firebaseConfig);
-    console.log('[Firebase] New Firebase app initialized.');
-  }
-
+  // Inicialização segura para evitar reinicialização em HMR
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
 
+  // Habilitar persistência offline apenas no navegador
   if (typeof window !== 'undefined') {
     enableIndexedDbPersistence(db).catch((err) => {
       if (err.code === 'failed-precondition') {
-        console.warn('[Firebase] Firestore offline persistence failed: another tab has it enabled.');
+        console.warn('[Firebase] Persistência offline falhou: outra aba já a tem habilitada.');
       } else if (err.code === 'unimplemented') {
-        console.warn('[Firebase] Firestore offline persistence is not available in this browser.');
+        console.warn('[Firebase] Persistência offline não está disponível neste navegador.');
       }
     });
   }
 
   firebaseInitializedCorrectly = true;
-  console.log('[Firebase] All services initialized successfully.');
+  console.log('[Firebase] Serviços inicializados com sucesso.');
 
 } catch (e: any) {
+  console.error('[Firebase Initialization Error] Erro crítico durante a inicialização do Firebase:', e.message);
   firebaseInitializedCorrectly = false;
-  console.error('[Firebase Initialization Error] A critical error occurred during Firebase setup:', e.message);
-  // We don't initialize any of the exports if setup fails.
-  // This helps prevent other services from using a partially initialized Firebase.
+  // Em caso de falha, as exportações serão indefinidas, o que será tratado pelas verificações nos serviços.
 }
 
 export { app, auth, db, storage, firebaseInitializedCorrectly };
