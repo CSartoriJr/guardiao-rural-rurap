@@ -28,8 +28,6 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   const { toast } = useToast();
   
-  const displayUrl = currentImageUrl;
-  
   useEffect(() => {
     setPreviewUrl(currentImageUrl || null);
   }, [currentImageUrl]);
@@ -64,6 +62,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setPreviewUrl(null);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       return;
     }
     
@@ -72,6 +71,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
       setPreviewUrl(null);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       return;
     }
 
@@ -196,6 +196,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         }`}
       >
         {isUploading ? (
+          <>
+          {previewUrl && <Image src={previewUrl} alt={`Pré-visualização de envio ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1 opacity-40" unoptimized />}
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
             <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
@@ -204,6 +206,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
                 <p className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary-foreground">{uploadProgress.toFixed(0)}%</p>
             </div>
           </div>
+        </>
         ) : error ? (
           <div className="p-2 text-center text-destructive">
             <AlertCircle className="mx-auto h-10 w-10" />
