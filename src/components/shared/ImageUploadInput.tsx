@@ -20,6 +20,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -27,15 +28,26 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
   
   const { toast } = useToast();
   
+  // Keep displayUrl for showing the final, uploaded image URL
   const displayUrl = currentImageUrl;
+  
+  useEffect(() => {
+    // When the component receives a new URL from its parent, update the preview
+    setPreviewUrl(currentImageUrl || null);
+  }, [currentImageUrl]);
 
   useEffect(() => {
+    // Cleanup function to revoke the object URL and abort uploads
+    const currentPreviewUrl = previewUrl;
     return () => {
+      if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
       if (xhrRef.current) {
         xhrRef.current.abort();
       }
     };
-  }, []);
+  }, [previewUrl]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -46,11 +58,16 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setError(null);
     setUploadProgress(0);
 
+    // Create a local URL for immediate preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
+      setPreviewUrl(null); // Clear invalid preview
       return;
     }
     
@@ -58,6 +75,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
       toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
+      setPreviewUrl(null);
       return;
     }
 
@@ -89,6 +107,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             onUploadComplete(publicUrl);
+            setPreviewUrl(publicUrl); // Update preview to final URL
             toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
             resolve(xhr.response);
           } else {
@@ -100,7 +119,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
         xhr.addEventListener('error', () => {
           console.error('Upload failed due to a network error.');
-          setError('Falha no upload devido a um erro de rede.');
+          let userFriendlyMessage = 'Falha no upload devido a um erro de rede. Verifique sua conexão e tente novamente.';
+          setError(userFriendlyMessage);
           reject(new Error('Network error during upload.'));
         });
 
@@ -116,10 +136,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       });
 
     } catch (uploadError: any) {
-      const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-      setError(errorMsg);
-      toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+      if (uploadError.code !== 'storage/canceled' && uploadError.message !== 'Upload aborted.') {
+        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+        setError(errorMsg);
+        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
+      }
       onUploadComplete(null);
+      setPreviewUrl(null); // Clear preview on failure
     } finally {
       setIsUploading(false);
       xhrRef.current = null;
@@ -134,6 +157,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setError(null);
       setUploadProgress(0);
       onUploadComplete(null);
+      setPreviewUrl(null);
       toast({ title: 'Imagem Removida' });
     }
   };
@@ -186,8 +210,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               Tentar Novamente
             </Button>
           </div>
-        ) : displayUrl ? (
-           <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill sizes="33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
+        ) : previewUrl ? (
+           <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={previewUrl.startsWith('https://placehold.co') || previewUrl.startsWith('blob:')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>
@@ -205,7 +229,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         )}
       </div>
 
-      {(displayUrl && !isUploading) && (
+      {(previewUrl && !isUploading) && (
         <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="text-destructive hover:border-destructive/80 hover:bg-destructive/10 mt-2">
           <X className="mr-2 h-4 w-4" /> Remover Imagem
         </Button>
