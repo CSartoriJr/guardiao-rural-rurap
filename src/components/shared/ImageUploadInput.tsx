@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
@@ -78,26 +79,30 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     }
 
     let fileToUpload = file;
-    try {
-      console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-        fileType: 'image/jpeg',
-      };
-      const compressedFile = await imageCompression(file, options);
-      console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-      fileToUpload = compressedFile;
-    } catch (compressionError) {
-      console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
-      toast({ 
-        title: 'Compressão Falhou', 
-        description: 'Enviando a imagem original. Isso pode levar mais tempo.',
-        variant: 'default'
-      });
-      fileToUpload = file;
+    // Comprimir imagem se for maior que 1MB
+    if (file.size > 1 * 1024 * 1024) {
+      try {
+        console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: 'image/jpeg',
+        };
+        const compressedFile = await imageCompression(file, options);
+        console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+        fileToUpload = compressedFile;
+      } catch (compressionError) {
+        console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
+        toast({ 
+          title: 'Compressão Falhou', 
+          description: 'Enviando a imagem original. Isso pode levar mais tempo.',
+          variant: 'default'
+        });
+        fileToUpload = file; // Fallback to original file
+      }
     }
+
 
     try {
       console.log(`[ImageUploadInput] Passing file to uploadImage service for path: ${uploadPath}. File size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
@@ -167,7 +172,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         name={`${id}-camera`}
         className="hidden"
         accept="image/*"
-        capture="user"
+        capture="environment"
         onChange={handleFileChange}
         disabled={isUploading || !uploadPath}
         aria-hidden="true"
