@@ -51,7 +51,6 @@ export function uploadFile(
   const storagePath = `${path}/${uniqueFileName}`;
   const storageRef = ref(storage!, storagePath);
 
-  // Log a pasta exata para facilitar a depuração
   console.log(`[FileUploader] Tentando fazer upload para a pasta: "${path}" com o nome de arquivo: "${uniqueFileName}"`);
 
   const uploadTask = uploadBytesResumable(storageRef, file);
@@ -81,6 +80,9 @@ export function uploadFile(
         switch(error.code) {
             case 'storage/unauthorized':
                 userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
+                break;
+            case 'storage/retry-limit-exceeded':
+                userFriendlyMessage = 'Falha de comunicação com o servidor. Por favor, verifique sua conexão e tente novamente em alguns instantes.';
                 break;
             case 'storage/unknown':
                 userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
