@@ -22,6 +22,9 @@ const nextConfig = {
       },
     ],
   },
+  serverActions: {
+    bodySizeLimit: '15mb',
+  },
 };
 
 module.exports = nextConfig;

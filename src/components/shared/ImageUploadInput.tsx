@@ -76,7 +76,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        file, // Using the original file directly
+        file,
         uploadPath,
         (percentage) => {
             setUploadProgress(percentage);
@@ -170,7 +170,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
             </Button>
           </div>
         ) : displayUrl ? (
-           <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
+           <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>
