@@ -13,90 +13,43 @@ export const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | undefined = undefined;
-let auth: Auth | undefined = undefined;
-let db: Firestore | undefined = undefined;
-let storage: FirebaseStorage | undefined = undefined;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
 let firebaseInitializedCorrectly = false;
 
-const essentialKeys = [
-  firebaseConfig.apiKey,
-  firebaseConfig.authDomain,
-  firebaseConfig.projectId,
-  firebaseConfig.storageBucket, // Added storage bucket check
-];
-
-if (essentialKeys.some(key => !key)) {
-  const missingKeys = [];
-  if (!firebaseConfig.apiKey) missingKeys.push('NEXT_PUBLIC_FIREBASE_API_KEY');
-  if (!firebaseConfig.authDomain) missingKeys.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
-  if (!firebaseConfig.projectId) missingKeys.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
-  if (!firebaseConfig.storageBucket) missingKeys.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
-
-  const errorMessage = `[Firebase Initialization Error] Firebase configuration is MISSING CRUCIAL KEYS: ${missingKeys.join(', ')}. Please set these in your .env file or build environment. Firebase will not be initialized.`;
-  console.error(errorMessage);
-  // No longer throwing an error here to allow build to pass. Runtime checks will handle this.
-  firebaseInitializedCorrectly = false;
-} else {
-  if (getApps().length === 0) {
-    try {
-      app = initializeApp(firebaseConfig);
-      console.log('[Firebase] Firebase App initialized.');
-      firebaseInitializedCorrectly = true;
-    } catch (e: any) {
-      console.error('[Firebase Initialization Error] Failed to initialize Firebase app:', e.message);
-      firebaseInitializedCorrectly = false;
-    }
-  } else {
+try {
+  if (getApps().length) {
     app = getApp();
-    console.log('[Firebase] Firebase App already initialized.');
-    firebaseInitializedCorrectly = true;
+    console.log('[Firebase] Re-using existing Firebase app instance.');
+  } else {
+    app = initializeApp(firebaseConfig);
+    console.log('[Firebase] New Firebase app initialized.');
   }
 
-  if (app && firebaseInitializedCorrectly) {
-    try {
-      auth = getAuth(app);
-      console.log('[Firebase] Firebase Auth initialized.');
-    } catch (e: any) {
-      console.error('[Firebase Initialization Error] Failed to initialize Firebase Auth:', e.message);
-      auth = undefined;
-      firebaseInitializedCorrectly = false;
-    }
-    try {
-      db = getFirestore(app);
-      if (typeof window !== 'undefined') {
-        enableIndexedDbPersistence(db)
-          .then(() => {
-            console.log('[Firebase] Firestore offline persistence enabled successfully.');
-          })
-          .catch((err) => {
-            if (err.code === 'failed-precondition') {
-              console.warn('[Firebase] Firestore offline persistence failed: Another tab has it enabled.');
-            } else if (err.code === 'unimplemented') {
-              console.warn('[Firebase] Firestore offline persistence is not supported in this browser.');
-            } else {
-              console.error('[Firebase] An error occurred while enabling offline persistence:', err);
-            }
-          });
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+
+  if (typeof window !== 'undefined') {
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('[Firebase] Firestore offline persistence failed: another tab has it enabled.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[Firebase] Firestore offline persistence is not available in this browser.');
       }
-      console.log('[Firebase] Firestore initialized.');
-    } catch (e: any) {
-      console.error('[Firebase Initialization Error] Failed to initialize Firestore:', e.message);
-      db = undefined;
-      firebaseInitializedCorrectly = false;
-    }
-    try {
-      storage = getStorage(app);
-      console.log('[Firebase] Firebase Storage initialized.');
-    } catch (e: any) {
-      console.error('[Firebase Initialization Error] Failed to initialize Firebase Storage:', e.message);
-      storage = undefined;
-      firebaseInitializedCorrectly = false;
-    }
-  } else if (firebaseInitializedCorrectly) { // if app was initialized but something else failed
-      firebaseInitializedCorrectly = false; // ensure it's false if any subsequent init fails
-      console.error('[Firebase] App was initialized but a sub-service (Auth, DB, or Storage) failed to initialize.');
+    });
   }
+
+  firebaseInitializedCorrectly = true;
+  console.log('[Firebase] All services initialized successfully.');
+
+} catch (e: any) {
+  firebaseInitializedCorrectly = false;
+  console.error('[Firebase Initialization Error] A critical error occurred during Firebase setup:', e.message);
+  // We don't initialize any of the exports if setup fails.
+  // This helps prevent other services from using a partially initialized Firebase.
 }
 
 export { app, auth, db, storage, firebaseInitializedCorrectly };

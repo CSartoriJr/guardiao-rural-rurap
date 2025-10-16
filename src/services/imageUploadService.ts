@@ -4,8 +4,13 @@ import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTa
 import { v4 as uuidv4 } from 'uuid'; // For unique filenames
 
 const ensureFirebaseInitialized = () => {
-  if (!firebaseInitializedCorrectly || !storage) {
-    const errorMessage = "[ImageUploadService] Firebase Storage not properly initialized. Cannot perform storage operations.";
+  if (!firebaseInitializedCorrectly) {
+    const errorMessage = "[ImageUploadService] Firebase not properly initialized. Cannot perform storage operations.";
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+  if (!storage) {
+    const errorMessage = "[ImageUploadService] Firebase Storage instance is not available. Check firebase.ts initialization.";
     console.error(errorMessage);
     throw new Error(errorMessage);
   }
