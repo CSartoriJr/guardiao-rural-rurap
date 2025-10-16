@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import Image from 'next/image';
@@ -89,9 +88,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           useWebWorker: true,
           fileType: 'image/jpeg',
         };
-        const compressedFile = await imageCompression(file, options);
-        console.log(`[ImageUpload] Compression successful. New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-        fileToUpload = compressedFile;
+        fileToUpload = await imageCompression(file, options);
+        console.log(`[ImageUpload] Compression successful. New size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       } catch (compressionError) {
         console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
         toast({ 
