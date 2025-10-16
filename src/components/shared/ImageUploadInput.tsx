@@ -8,7 +8,6 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import type { UploadTask } from 'firebase/storage';
-import imageCompression from 'browser-image-compression';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -75,41 +74,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     setIsUploading(true);
 
-    let fileToUpload = file;
-    // Comprimir imagem se for maior que 1MB
-    if (file.size > 1 * 1024 * 1024) {
-      try {
-        toast({ title: 'Comprimindo imagem...', description: 'A imagem é grande e será otimizada antes do envio.' });
-        console.log(`[ImageUpload] Attempting to compress image. Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-          fileType: 'image/jpeg', // Sempre converte para JPEG para consistência e tamanho
-        };
-        const compressedBlob = await imageCompression(file, options);
-        fileToUpload = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpeg"), {
-          type: 'image/jpeg',
-          lastModified: Date.now(),
-        });
-
-        console.log(`[ImageUpload] Compression successful. New size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
-      } catch (compressionError) {
-        console.warn('[ImageUpload] Image compression failed, falling back to original file. Error:', compressionError);
-        toast({ 
-          title: 'Compressão Falhou', 
-          description: 'Enviando a imagem original. Isso pode levar mais tempo.',
-          variant: 'default'
-        });
-        fileToUpload = file; // Fallback to original file
-      }
-    }
-
-
     try {
-      console.log(`[ImageUploadInput] Passing file to uploadImage service for path: ${uploadPath}. File size: ${(fileToUpload.size / 1024 / 1024).toFixed(2)} MB`);
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        fileToUpload,
+        file,
         uploadPath,
         (percentage) => {
             setUploadProgress(percentage);
