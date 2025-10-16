@@ -268,7 +268,7 @@ export default function FarmerViewRequestPage() {
  const LocationDisplay = () => {
     if (!request) return null;
 
-    let locationString = "";
+    let locationString = "Coordenadas não disponíveis.";
     let municipalityDisplayString = request.municipality ? `${request.municipality}` : "Aguardando processamento da IA";
 
     if (typeof request.latitude === 'number' && typeof request.longitude === 'number') {
@@ -461,6 +461,7 @@ export default function FarmerViewRequestPage() {
                     src={expandedImageUri}
                     alt="Imagem expandida da Solicitação"
                     fill
+                    sizes="100vw"
                     style={{objectFit: "contain"}}
                     unoptimized={expandedImageUri.startsWith('https://placehold.co')}
                 />

@@ -598,6 +598,7 @@ export default function TechnicianViewRequestPage() {
                     src={expandedImageUri}
                     alt="Imagem expandida da Solicitação"
                     fill
+                    sizes="100vw"
                     style={{ objectFit: 'contain' }}
                 />
             </div>
