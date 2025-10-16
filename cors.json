@@ -10,6 +10,7 @@
     "responseHeader": [
       "Content-Type",
       "Authorization",
+      "x-goog-resumable",
       "x-goog-meta-uuid",
       "x-goog-meta-owner"
     ],
