@@ -76,7 +76,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
     try {
       const { uploadTask, promise: uploadPromise } = uploadImage(
-        file,
+        file, // Using the original file directly
         uploadPath,
         (percentage) => {
             setUploadProgress(percentage);
