@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Camera, FileImage, X, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/services/imageUploadService';
-import type { UploadTask } from 'firebase/storage';
+import { getSignedUploadUrl } from '@/ai/flows/get-signed-upload-url';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -23,33 +23,29 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const uploadTaskRef = useRef<UploadTask | null>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
   
   const { toast } = useToast();
   
   const displayUrl = currentImageUrl;
 
   useEffect(() => {
-    // Cleanup function to cancel ongoing upload if the component unmounts.
     return () => {
-      if (uploadTaskRef.current) {
-        console.log(`[ImageUploadInput] Component unmounting, cancelling upload for ${id}`);
-        uploadTaskRef.current.cancel();
+      if (xhrRef.current) {
+        xhrRef.current.abort();
       }
     };
-  }, [id]);
+  }, []);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = ''; // Reset input to allow re-selecting the same file
+    event.target.value = '';
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     
     setError(null);
     setUploadProgress(0);
-    
+
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
@@ -57,14 +53,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setError(errorMsg);
       return;
     }
-
-    if (file.size > 15 * 1024 * 1024) { // 15MB limit
-      const errorMsg = 'Arquivo muito grande (máximo 15MB).';
-      toast({ title: 'Arquivo Muito Grande', description: errorMsg, variant: 'destructive' });
-      setError(errorMsg);
-      return;
-    }
-
+    
     if (!uploadPath) {
       const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
       toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
@@ -75,44 +64,72 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setIsUploading(true);
 
     try {
-      const { uploadTask, promise: uploadPromise } = uploadImage(
-        file,
-        uploadPath,
-        (percentage) => {
-            setUploadProgress(percentage);
-        }
-      );
-      
-      uploadTaskRef.current = uploadTask;
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpeg';
+      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+      const fullPath = `${uploadPath}/${uniqueFileName}`;
 
-      const downloadURL = await uploadPromise;
+      toast({ title: 'Preparando upload seguro...' });
       
-      onUploadComplete(downloadURL);
-      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+      const { signedUrl, publicUrl } = await getSignedUploadUrl({
+        filePath: fullPath,
+        contentType: file.type,
+      });
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setUploadProgress(Math.round(progress));
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            onUploadComplete(publicUrl);
+            toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+            resolve(xhr.response);
+          } else {
+            console.error('Upload failed with status:', xhr.status, xhr.statusText);
+            setError(`Falha no upload: ${xhr.statusText}`);
+            reject(new Error(`Upload failed: ${xhr.statusText}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          console.error('Upload failed due to a network error.');
+          setError('Falha no upload devido a um erro de rede.');
+          reject(new Error('Network error during upload.'));
+        });
+
+        xhr.addEventListener('abort', () => {
+          console.log('Upload aborted by user.');
+          setError('Upload cancelado.');
+          reject(new Error('Upload aborted.'));
+        });
+
+        xhr.open('PUT', signedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
 
     } catch (uploadError: any) {
-      const isCancelled = uploadError.code === 'storage/canceled';
-      if (isCancelled) {
-        setError('Upload cancelado.');
-        console.log('[ImageUploadInput] Upload was cancelled.');
-      } else {
-        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-        setError(errorMsg);
-        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
-        console.error('[ImageUploadInput] Upload failed with error:', uploadError);
-      }
+      const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+      setError(errorMsg);
+      toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
       onUploadComplete(null);
     } finally {
       setIsUploading(false);
-      uploadTaskRef.current = null;
+      xhrRef.current = null;
     }
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (uploadTaskRef.current) {
-      console.log('[ImageUploadInput] User cancelled upload.');
-      uploadTaskRef.current.cancel();
+    if (xhrRef.current) {
+      xhrRef.current.abort();
     } else {
       setError(null);
       setUploadProgress(0);
@@ -170,7 +187,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
             </Button>
           </div>
         ) : displayUrl ? (
-           <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
+           <Image src={displayUrl} alt={`Pré-visualização ${id}`} fill sizes="33vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized={displayUrl.startsWith('https://placehold.co')} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
             <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>

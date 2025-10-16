@@ -2,18 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Regra simplificada: Permite a leitura e escrita na pasta 'requests'
-    // para qualquer usuário que esteja autenticado no sistema.
-    // Isso cobre o cenário do agricultor e do técnico.
+    // Regra para a pasta de solicitações
+    // Leitura pública, escrita é controlada por URLs assinadas (geradas no backend)
     match /requests/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if true;
+      allow write: if false; // Uploads diretos são bloqueados por segurança
     }
 
-    // Regra para laudos: Permite que qualquer usuário autenticado
-    // leia e escreva, o que é necessário para técnicos fazerem upload
-    // e agricultores/outros visualizarem.
-    match /laudos/{allPaths=**} {
+    // Regra para a pasta de laudos
+    // A escrita é permitida para qualquer usuário autenticado (técnicos)
+    match /laudos/{requestId}/{allPaths=**} {
        allow read: if request.auth != null;
        allow write: if request.auth != null;
     }

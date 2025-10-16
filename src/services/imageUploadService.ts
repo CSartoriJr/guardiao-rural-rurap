@@ -3,6 +3,9 @@ import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTask, FirebaseStorageError } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid'; // For unique filenames
 
+// This service is now deprecated in favor of signed URL uploads.
+// The functions are kept to avoid breaking imports, but they should not be used for new uploads.
+
 const ensureFirebaseInitialized = () => {
   if (!firebaseInitializedCorrectly) {
     const errorMessage = "[ImageUploadService] Firebase not properly initialized. Cannot perform storage operations.";
@@ -21,6 +24,9 @@ interface UploadFileResult {
   promise: Promise<string>;
 }
 
+/**
+ * @deprecated Use a signed URL flow for new uploads. This function uses the client SDK which can have permission issues.
+ */
 export function uploadImage(
   file: File,
   path: string,
@@ -29,11 +35,15 @@ export function uploadImage(
   return uploadFile(file, path, onProgressUpdate);
 }
 
+/**
+ * @deprecated Use a signed URL flow for new uploads. This function uses the client SDK which can have permission issues.
+ */
 export function uploadFile(
   file: File,
   path: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
+  console.warn("[DEPRECATED] uploadFile service is called. Should migrate to signed URL uploads.");
   ensureFirebaseInitialized();
 
   if (!path) {
