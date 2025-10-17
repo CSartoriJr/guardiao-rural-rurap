@@ -7,7 +7,7 @@
       "http://localhost:3000"
     ],
     "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "responseHeader": ["*"],
+    "responseHeader": ["Content-Type", "Authorization"],
     "maxAgeSeconds": 3600
   }
 ]
