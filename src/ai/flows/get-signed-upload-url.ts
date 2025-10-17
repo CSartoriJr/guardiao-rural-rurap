@@ -41,7 +41,6 @@ export type GetSignedUploadUrlInput = z.infer<typeof GetSignedUploadUrlInputSche
 
 const GetSignedUploadUrlOutputSchema = z.object({
   signedUrl: z.string().url(),
-  publicUrl: z.string().url(),
 });
 export type GetSignedUploadUrlOutput = z.infer<typeof GetSignedUploadUrlOutputSchema>;
 
@@ -62,7 +61,6 @@ const getSignedUploadUrlFlow = ai.defineFlow(
       const bucket = storage.bucket();
       const file = bucket.file(filePath);
 
-      // This is a "Resumable" upload URL, which is better for larger files.
       const [signedUrl] = await file.getSignedUrl({
         version: 'v4',
         action: 'write',
@@ -70,11 +68,8 @@ const getSignedUploadUrlFlow = ai.defineFlow(
         contentType: contentType,
       });
 
-      // Construct the public, non-signed URL for storage after upload
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(filePath)}?alt=media`;
-      
       console.log(`[getSignedUploadUrlFlow] Successfully generated signed URL.`);
-      return { signedUrl, publicUrl };
+      return { signedUrl };
 
     } catch (error: any) {
       console.error('[getSignedUploadUrlFlow] Error generating signed URL:', error);

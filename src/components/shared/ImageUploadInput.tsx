@@ -24,7 +24,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const { toast } = useToast();
   
@@ -39,8 +39,8 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(currentPreviewUrl);
       }
-      if (xhrRef.current) {
-        xhrRef.current.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, [previewUrl]);
@@ -55,7 +55,7 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setUploadProgress(0);
 
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl); // This is the crucial fix
+    setPreviewUrl(objectUrl);
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
@@ -85,62 +85,35 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
       toast({ title: 'Preparando upload seguro...' });
       
-      const { signedUrl, publicUrl } = await getSignedUploadUrl({
+      const { signedUrl } = await getSignedUploadUrl({
         filePath: fullPath,
         contentType: file.type,
       });
 
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhrRef.current = xhr;
-
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const progress = (event.loaded / event.total) * 100;
-            setUploadProgress(Math.round(progress));
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            onUploadComplete(publicUrl);
-            setPreviewUrl(publicUrl); // Now set the final URL
-            toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
-            resolve(xhr.response);
-          } else {
-            console.error('Upload failed with status:', xhr.status, xhr.statusText);
-            setError(`Falha no upload: ${xhr.statusText}`);
-            reject(new Error(`Upload failed: ${xhr.statusText}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          console.error('Upload failed due to a network error.');
-          let userFriendlyMessage = 'Falha no upload devido a um erro de rede. Verifique sua conexão e tente novamente.';
-           if (xhrRef.current?.status === 503) {
-            userFriendlyMessage = 'O serviço de armazenamento está indisponível. Por favor, tente novamente em alguns instantes.';
-          }
-          setError(userFriendlyMessage);
-          reject(new Error('Network error during upload.'));
-        });
-
-        xhr.addEventListener('abort', () => {
-          console.log('Upload aborted by user.');
-          setError('Upload cancelado.');
-          reject(new Error('Upload aborted.'));
-        });
-
-        xhr.open('PUT', signedUrl);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
+      abortControllerRef.current = new AbortController();
+      const response = await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+        signal: abortControllerRef.current.signal,
       });
 
+      if (!response.ok) {
+        throw new Error(`Falha no upload: ${response.status} ${response.statusText}`);
+      }
+
+      const publicUrl = signedUrl.split('?')[0]; // The URL without query params is the public one
+      onUploadComplete(publicUrl);
+      setPreviewUrl(publicUrl);
+      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+
     } catch (uploadError: any) {
-      if (uploadError.code !== 'storage/canceled' && uploadError.message !== 'Upload aborted.') {
+      if (uploadError.name === 'AbortError') {
+        setError('Upload cancelado.');
+      } else {
         let userFriendlyMessage = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-        if (uploadError.code === 'storage/retry-limit-exceeded') {
-          userFriendlyMessage = 'Falha de comunicação com o servidor. Por favor, verifique sua conexão e tente novamente em alguns instantes.';
-        }
         setError(userFriendlyMessage);
         toast({ title: 'Falha no Upload', description: userFriendlyMessage, variant: 'destructive' });
       }
@@ -148,14 +121,14 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       setPreviewUrl(null);
     } finally {
       setIsUploading(false);
-      xhrRef.current = null;
+      abortControllerRef.current = null;
     }
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (xhrRef.current) {
-      xhrRef.current.abort();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     } else {
       setError(null);
       setUploadProgress(0);
@@ -198,16 +171,13 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
       >
         {isUploading ? (
           <>
-          {previewUrl && <Image src={previewUrl} alt={`Pré-visualização de envio ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1 opacity-40" unoptimized />}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-            <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
-            <div className="w-3/4 mt-1 relative">
-                <Progress value={uploadProgress} className="h-5" />
-                <p className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary-foreground">{uploadProgress.toFixed(0)}%</p>
+            {previewUrl && <Image src={previewUrl} alt={`Pré-visualização de envio ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1 opacity-40" unoptimized />}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
+              {/* Progress bar can be complex with fetch, so we show an indeterminate state */}
             </div>
-          </div>
-        </>
+          </>
         ) : error ? (
           <div className="p-2 text-center text-destructive">
             <AlertCircle className="mx-auto h-10 w-10" />
