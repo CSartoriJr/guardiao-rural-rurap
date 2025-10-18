@@ -1,13 +1,12 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permite que qualquer pessoa leia arquivos.
-    // Isso é seguro porque os nomes dos arquivos são UUIDs, então são difíceis de adivinhar.
-    allow read;
-
-    // Bloqueia a escrita para todos, exceto através de URLs assinadas (signed URLs),
-    // que são geradas pelo nosso backend seguro.
-    allow write: if false;
+    // Permite a leitura pública de todos os arquivos.
+    // A escrita continua protegida e só é permitida através de URLs assinadas
+    // ou por usuários autenticados, dependendo de outras regras que possam ser adicionadas.
+    match /{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null;
+    }
   }
 }
