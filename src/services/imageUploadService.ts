@@ -1,127 +1,127 @@
-// src/services/imageUploadService.ts
-import { storage, firebaseInitializedCorrectly } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL, UploadTaskSnapshot, UploadTask, FirebaseStorageError } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid'; // For unique filenames
+'use client';
+import { v4 as uuidv4 } from 'uuid';
+import { getSignedUploadUrl } from '@/ai/flows/get-signed-upload-url';
 
-// This service is now deprecated in favor of signed URL uploads.
-// The functions are kept to avoid breaking imports, but they should not be used for new uploads.
+/**
+ * Uploads a file to Firebase Storage using a secure signed URL.
+ * This is the recommended method for client-side uploads.
+ *
+ * @param file The file to upload.
+ * @param path The base path in storage (e.g., 'requests/userId').
+ * @param onProgressUpdate Callback function to report upload progress (0-100).
+ * @param signal AbortSignal to allow canceling the upload.
+ * @returns A promise that resolves with the public URL of the uploaded file.
+ */
+export async function uploadImageWithSignedUrl(
+  file: File,
+  path: string,
+  onProgressUpdate?: (percentage: number) => void,
+  signal?: AbortSignal
+): Promise<string> {
+  if (!path) {
+    throw new Error('O caminho de destino é obrigatório para o upload do arquivo.');
+  }
 
-const ensureFirebaseInitialized = () => {
-  if (!firebaseInitializedCorrectly) {
-    const errorMessage = "[ImageUploadService] Firebase not properly initialized. Cannot perform storage operations.";
-    console.error(errorMessage);
-    throw new Error(errorMessage);
+  const fileExtension = file.name.split('.').pop() || 'dat';
+  const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+  const fullPath = `${path}/${uniqueFileName}`;
+
+  try {
+    // 1. Get the signed URL from our secure Genkit flow
+    console.log(`[uploadImage] Requesting signed URL for path: ${fullPath}`);
+    const { signedUrl } = await getSignedUploadUrl({
+      filePath: fullPath,
+      contentType: file.type,
+    });
+    console.log(`[uploadImage] Received signed URL.`);
+
+    // 2. Upload the file directly to Firebase Storage using fetch
+    console.log(`[uploadImage] Starting upload to signed URL...`);
+    
+    // We use XMLHttpRequest instead of fetch to get upload progress
+    return new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Listen for abort signal
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          console.log('[uploadImage] Abort signal received. Aborting XHR.');
+          xhr.abort();
+          reject(new DOMException('Upload aborted by user', 'AbortError'));
+        });
+      }
+
+      // Progress listener
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgressUpdate) {
+          const percentage = (event.loaded / event.total) * 100;
+          onProgressUpdate(percentage);
+        }
+      };
+
+      // Error listener
+      xhr.onerror = () => {
+        console.error('[uploadImage] XHR upload failed.');
+        reject(new Error('Falha na requisição de upload. Verifique sua conexão.'));
+      };
+
+      // Success listener
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // 3. Construct the public URL after successful upload
+          const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(fullPath)}?alt=media`;
+          console.log(`[uploadImage] Upload successful. Public URL: ${publicUrl}`);
+          resolve(publicUrl);
+        } else {
+          console.error(`[uploadImage] Upload failed with status: ${xhr.status} - ${xhr.statusText}`);
+          reject(new Error(`Falha no upload com o código: ${xhr.status}.`));
+        }
+      };
+      
+      xhr.open('PUT', signedUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+  } catch (error: any) {
+    console.error('[uploadImage] Error during signed URL upload process:', error);
+    throw new Error(error.message || 'Não foi possível concluir o upload da imagem.');
   }
-  if (!storage) {
-    const errorMessage = "[ImageUploadService] Firebase Storage instance is not available. Check firebase.ts initialization.";
-    console.error(errorMessage);
-    throw new Error(errorMessage);
-  }
-};
+}
+
+// Deprecated original functions are kept to avoid breaking imports, but they are empty.
 
 interface UploadFileResult {
-  uploadTask: UploadTask;
+  uploadTask: any; // Mock to avoid breaking type signatures
   promise: Promise<string>;
 }
 
 /**
- * @deprecated Use a signed URL flow for new uploads. This function uses the client SDK which can have permission issues.
+ * @deprecated Use uploadImageWithSignedUrl instead. This function uses the client SDK which has permission issues and lacks robustness.
  */
 export function uploadImage(
   file: File,
   path: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  return uploadFile(file, path, onProgressUpdate);
+  console.warn("[DEPRECATED] uploadImage service is called. Should migrate to signed URL uploads.");
+  return {
+    uploadTask: {},
+    promise: Promise.reject(new Error("This upload method is deprecated. Use uploadImageWithSignedUrl."))
+  };
 }
 
 /**
- * @deprecated Use a signed URL flow for new uploads. This function uses the client SDK which can have permission issues.
+ * @deprecated Use uploadImageWithSignedUrl instead.
  */
 export function uploadFile(
   file: File,
   path: string,
   onProgressUpdate?: (percentage: number) => void
 ): UploadFileResult {
-  console.warn("[DEPRECATED] uploadFile service is called. Should migrate to signed URL uploads.");
-  ensureFirebaseInitialized();
-
-  if (!path) {
-    const err = new Error('O caminho de destino é obrigatório para o upload do arquivo.');
-    console.error(`[FileUploader] ${err.message}`);
-    // We need to return a structure that includes a rejected promise.
+    console.warn("[DEPRECATED] uploadFile service is called. Should migrate to signed URL uploads.");
     return {
-      uploadTask: {} as UploadTask,
-      promise: Promise.reject(err),
+        uploadTask: {},
+        promise: Promise.reject(new Error("This upload method is deprecated. Use uploadImageWithSignedUrl."))
     };
-  }
-
-  const fileExtension = file.name.split('.').pop() || 'dat';
-  const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-  const storagePath = `${path}/${uniqueFileName}`;
-  const storageRef = ref(storage!, storagePath);
-
-  console.log(`[FileUploader] Tentando fazer upload para a pasta: "${path}" com o nome de arquivo: "${uniqueFileName}"`);
-
-  const uploadTask = uploadBytesResumable(storageRef, file);
-
-  const promise = new Promise<string>((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      (snapshot: UploadTaskSnapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log(`[FileUploader] Upload is ${progress.toFixed(2)}% done for ${file.name}`);
-        if (onProgressUpdate) {
-          onProgressUpdate(Math.round(progress));
-        }
-      },
-      (error: FirebaseStorageError) => {
-        if (error.code === 'storage/canceled') {
-          console.log(`[FileUploader] Upload canceled by user for file: ${file.name}`);
-          const cancellationError = new Error('Upload cancelado pelo usuário.');
-          (cancellationError as any).code = 'storage/canceled';
-          reject(cancellationError);
-          return;
-        }
-        
-        console.error(`[FileUploader] Firebase Storage Error for ${file.name} - Code: ${error.code}, Message: ${error.message}`);
-        
-        let userFriendlyMessage = 'Ocorreu um erro ao enviar seu arquivo. Tente novamente.';
-        switch(error.code) {
-            case 'storage/unauthorized':
-                userFriendlyMessage = 'Você não tem permissão para enviar arquivos. Verifique as regras de segurança do Firebase Storage.';
-                break;
-            case 'storage/retry-limit-exceeded':
-                userFriendlyMessage = 'Falha de comunicação com o servidor. Por favor, verifique sua conexão e tente novamente em alguns instantes.';
-                break;
-            case 'storage/unknown':
-                userFriendlyMessage = 'Ocorreu um erro desconhecido no servidor. Verifique sua conexão e tente novamente.';
-                break;
-        }
-
-        const finalError = new Error(userFriendlyMessage);
-        (finalError as any).code = error.code;
-        
-        reject(finalError);
-      },
-      async () => {
-        try {
-          console.log('[FileUploader] Upload complete. Getting download URL...');
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log(`[FileUploader] File ${file.name} uploaded successfully. URL:`, downloadURL);
-          if (onProgressUpdate) {
-            onProgressUpdate(100);
-          }
-          resolve(downloadURL);
-        } catch (e: any) {
-          console.error(`[FileUploader] Error getting download URL for ${file.name}:`, e);
-          const getUrlError = new Error(e.message || 'Falha ao obter URL de download após o upload.');
-          (getUrlError as any).code = e.code || 'storage/get-url-failed';
-          reject(getUrlError);
-        }
-      }
-    );
-  });
-
-  return { uploadTask, promise };
 }

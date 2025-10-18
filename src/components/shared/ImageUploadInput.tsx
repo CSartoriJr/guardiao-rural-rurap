@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, FileImage, X, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { uploadImage } from '@/services/imageUploadService'; // Use o serviço existente
-import type { UploadTask } from 'firebase/storage';
+import { uploadImageWithSignedUrl } from '@/services/imageUploadService';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -24,28 +23,34 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const uploadTaskRef = useRef<UploadTask | null>(null);
+  const uploadControllerRef = useRef<AbortController | null>(null);
   
   const { toast } = useToast();
-  
+
   useEffect(() => {
     // Sincroniza o previewUrl se a prop externa mudar
-    if (currentImageUrl !== previewUrl) {
-      setPreviewUrl(currentImageUrl || null);
+    if (currentImageUrl && currentImageUrl !== previewUrl) {
+      setPreviewUrl(currentImageUrl);
+    }
+    // Se a currentImageUrl for removida (ex: reset do form), limpa o preview
+    if (!currentImageUrl && previewUrl) {
+        if (previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(null);
     }
   }, [currentImageUrl]);
 
 
   useEffect(() => {
-    const currentPreviewUrl = previewUrl;
-    // Limpeza para revogar a URL do objeto e evitar vazamentos de memória
+    // Cleanup function para revogar a URL do objeto e evitar vazamentos de memória
     return () => {
-      if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(currentPreviewUrl);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
       }
       // Cancela o upload se o componente for desmontado
-      if (uploadTaskRef.current) {
-        uploadTaskRef.current.cancel();
+      if (uploadControllerRef.current) {
+        uploadControllerRef.current.abort();
       }
     };
   }, [previewUrl]);
@@ -59,18 +64,17 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
     setError(null);
     setUploadProgress(0);
 
-    // --- Início da correção da Pré-visualização Instantânea ---
+    // Cria uma URL local para pré-visualização instantânea
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl); // Define a pré-visualização local imediatamente
-    // --- Fim da correção ---
+    setPreviewUrl(objectUrl);
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setPreviewUrl(null); // Limpa a pré-visualização em caso de erro
-      if (objectUrl) URL.revokeObjectURL(objectUrl); // Limpa a URL do blob
+      setPreviewUrl(null);
+      URL.revokeObjectURL(objectUrl);
       return;
     }
     
@@ -79,56 +83,59 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
         setError(errorMsg);
         setPreviewUrl(null);
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        URL.revokeObjectURL(objectUrl);
         return;
     }
 
     setIsUploading(true);
+    uploadControllerRef.current = new AbortController();
 
     try {
-      const { uploadTask, promise: uploadPromise } = uploadImage(
+      const downloadURL = await uploadImageWithSignedUrl(
         file,
         uploadPath,
-        (percentage) => setUploadProgress(percentage) // Passa a função de callback para o progresso
+        (percentage) => setUploadProgress(percentage),
+        uploadControllerRef.current.signal
       );
       
-      uploadTaskRef.current = uploadTask;
-      const downloadURL = await uploadPromise;
-      
-      onUploadComplete(downloadURL); // Informa o formulário pai sobre a URL final
-      setPreviewUrl(downloadURL); // Atualiza a pré-visualização para a URL permanente
-      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
+      onUploadComplete(downloadURL);
+      // Não precisa mais setar a previewUrl aqui, pois a URL permanente não é necessária para a visualização
+      toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada com sucesso.' });
 
     } catch (uploadError: any) {
-      const isCancelled = uploadError.code === 'storage/canceled';
-      if (isCancelled) {
+      if (uploadError.name === 'AbortError') {
         setError('Upload cancelado.');
         setPreviewUrl(null);
+        URL.revokeObjectURL(objectUrl);
       } else {
         const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
         setError(errorMsg);
-        setPreviewUrl(null); // Limpa a pré-visualização em caso de erro
+        setPreviewUrl(null);
+        URL.revokeObjectURL(objectUrl);
         toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
       }
       onUploadComplete(null);
     } finally {
       setIsUploading(false);
-      uploadTaskRef.current = null;
+      uploadControllerRef.current = null;
     }
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (uploadTaskRef.current) {
-      uploadTaskRef.current.cancel(); // Isso irá acionar o catch no `handleFileChange`
+    if (uploadControllerRef.current) {
+      uploadControllerRef.current.abort();
     } else {
-      setError(null);
-      setUploadProgress(0);
-      setPreviewUrl(null); // Apenas limpa a URL de pré-visualização
-      onUploadComplete(null);
-      if (currentImageUrl) {
-        toast({ title: 'Imagem Removida' });
-      }
+        if (previewUrl && previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setError(null);
+        setUploadProgress(0);
+        setPreviewUrl(null);
+        onUploadComplete(null);
+        if (currentImageUrl) {
+            toast({ title: 'Imagem Removida' });
+        }
     }
   };
   
@@ -163,9 +170,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           error ? 'border-destructive' : 'border-border'
         }`}
       >
-        {previewUrl ? (
-          <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className={`p-1 ${isUploading ? 'opacity-40' : ''}`} data-ai-hint="plant leaf symptom cassava" unoptimized />
-        ) : null}
+        {previewUrl && (
+          <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className={`p-1 ${isUploading ? 'opacity-40' : ''}`} data-ai-hint="plant leaf symptom cassava" unoptimized={previewUrl.startsWith('blob:')} />
+        )}
 
         {isUploading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
