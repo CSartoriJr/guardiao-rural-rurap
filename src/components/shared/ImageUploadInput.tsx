@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Camera, FileImage, X, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { getSignedUploadUrl } from '@/ai/flows/get-signed-upload-url';
-import { v4 as uuidv4 } from 'uuid';
+import { uploadImage } from '@/services/imageUploadService'; // Use o serviço existente
+import type { UploadTask } from 'firebase/storage';
 
 interface ImageUploadInputProps {
   onUploadComplete: (url: string | null) => void;
@@ -24,117 +24,111 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
   
   const { toast } = useToast();
   
   useEffect(() => {
-    setPreviewUrl(currentImageUrl || null);
+    // Sincroniza o previewUrl se a prop externa mudar
+    if (currentImageUrl !== previewUrl) {
+      setPreviewUrl(currentImageUrl || null);
+    }
   }, [currentImageUrl]);
+
 
   useEffect(() => {
     const currentPreviewUrl = previewUrl;
-    // Cleanup function to revoke the object URL to avoid memory leaks
+    // Limpeza para revogar a URL do objeto e evitar vazamentos de memória
     return () => {
       if (currentPreviewUrl && currentPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(currentPreviewUrl);
       }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      // Cancela o upload se o componente for desmontado
+      if (uploadTaskRef.current) {
+        uploadTaskRef.current.cancel();
       }
     };
   }, [previewUrl]);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = ''; // Reset input to allow re-selecting the same file
+    event.target.value = ''; // Limpa o input para permitir selecionar o mesmo arquivo novamente
 
     if (!file) return;
     
     setError(null);
     setUploadProgress(0);
 
+    // --- Início da correção da Pré-visualização Instantânea ---
     const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    setPreviewUrl(objectUrl); // Define a pré-visualização local imediatamente
+    // --- Fim da correção ---
 
     const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!acceptedTypes.includes(file.type.toLowerCase())) {
       const errorMsg = 'Tipo inválido. Use JPEG, PNG, WEBP, ou HEIC.';
       toast({ title: 'Arquivo Inválido', description: errorMsg, variant: 'destructive' });
       setError(errorMsg);
-      setPreviewUrl(null);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null); // Limpa a pré-visualização em caso de erro
+      if (objectUrl) URL.revokeObjectURL(objectUrl); // Limpa a URL do blob
       return;
     }
     
     if (!uploadPath) {
-      const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
-      toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
-      setError(errorMsg);
-      setPreviewUrl(null);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      return;
+        const errorMsg = 'O caminho de destino para o upload não foi especificado. Selecione um agricultor primeiro.';
+        toast({ title: 'Erro de Configuração', description: errorMsg, variant: 'destructive' });
+        setError(errorMsg);
+        setPreviewUrl(null);
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        return;
     }
 
     setIsUploading(true);
 
     try {
-      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpeg';
-      const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-      const fullPath = `${uploadPath}/${uniqueFileName}`;
-
-      toast({ title: 'Preparando upload seguro...' });
+      const { uploadTask, promise: uploadPromise } = uploadImage(
+        file,
+        uploadPath,
+        (percentage) => setUploadProgress(percentage) // Passa a função de callback para o progresso
+      );
       
-      const { signedUrl } = await getSignedUploadUrl({
-        filePath: fullPath,
-        contentType: file.type,
-      });
-
-      abortControllerRef.current = new AbortController();
-      const response = await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Falha no upload: ${response.status} ${response.statusText}`);
-      }
-
-      const publicUrl = signedUrl.split('?')[0]; // The URL without query params is the public one
-      onUploadComplete(publicUrl);
-      setPreviewUrl(publicUrl);
+      uploadTaskRef.current = uploadTask;
+      const downloadURL = await uploadPromise;
+      
+      onUploadComplete(downloadURL); // Informa o formulário pai sobre a URL final
+      setPreviewUrl(downloadURL); // Atualiza a pré-visualização para a URL permanente
       toast({ title: 'Upload Concluído', description: 'Sua imagem foi enviada.' });
 
     } catch (uploadError: any) {
-      if (uploadError.name === 'AbortError') {
+      const isCancelled = uploadError.code === 'storage/canceled';
+      if (isCancelled) {
         setError('Upload cancelado.');
+        setPreviewUrl(null);
       } else {
-        let userFriendlyMessage = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
-        setError(userFriendlyMessage);
-        toast({ title: 'Falha no Upload', description: userFriendlyMessage, variant: 'destructive' });
+        const errorMsg = uploadError.message || 'Ocorreu um erro ao enviar a imagem.';
+        setError(errorMsg);
+        setPreviewUrl(null); // Limpa a pré-visualização em caso de erro
+        toast({ title: 'Falha no Upload', description: errorMsg, variant: 'destructive' });
       }
       onUploadComplete(null);
-      setPreviewUrl(null);
     } finally {
       setIsUploading(false);
-      abortControllerRef.current = null;
+      uploadTaskRef.current = null;
     }
   };
   
   const handleRemoveOrCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    if (uploadTaskRef.current) {
+      uploadTaskRef.current.cancel(); // Isso irá acionar o catch no `handleFileChange`
     } else {
       setError(null);
       setUploadProgress(0);
+      setPreviewUrl(null); // Apenas limpa a URL de pré-visualização
       onUploadComplete(null);
-      setPreviewUrl(null);
-      toast({ title: 'Imagem Removida' });
+      if (currentImageUrl) {
+        toast({ title: 'Imagem Removida' });
+      }
     }
   };
   
@@ -169,16 +163,22 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
           error ? 'border-destructive' : 'border-border'
         }`}
       >
-        {isUploading ? (
-          <>
-            {previewUrl && <Image src={previewUrl} alt={`Pré-visualização de envio ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1 opacity-40" unoptimized />}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-              <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
-              {/* Progress bar can be complex with fetch, so we show an indeterminate state */}
+        {previewUrl ? (
+          <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className={`p-1 ${isUploading ? 'opacity-40' : ''}`} data-ai-hint="plant leaf symptom cassava" unoptimized />
+        ) : null}
+
+        {isUploading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 p-2 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <p className="mt-2 text-sm text-muted-foreground">Enviando...</p>
+            <div className="w-full px-4 mt-1 relative">
+                <Progress value={uploadProgress} className="h-4" />
+                <p className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-primary-foreground">{uploadProgress.toFixed(0)}%</p>
             </div>
-          </>
-        ) : error ? (
+          </div>
+        )}
+
+        {error && !isUploading && (
           <div className="p-2 text-center text-destructive">
             <AlertCircle className="mx-auto h-10 w-10" />
             <p className="mt-1 text-xs font-medium break-words">{error}</p>
@@ -186,15 +186,15 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
               Tentar Novamente
             </Button>
           </div>
-        ) : previewUrl ? (
-           <Image src={previewUrl} alt={`Pré-visualização ${id}`} fill sizes="100vw" style={{objectFit: "contain"}} className="p-1" data-ai-hint="plant leaf symptom cassava" unoptimized />
-        ) : (
+        )}
+        
+        {!previewUrl && !isUploading && !error && (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-4">
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={isUploading || !uploadPath}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => cameraInputRef.current?.click()} disabled={!uploadPath}>
               <Camera className="mr-2 h-4 w-4" />
               Tirar Foto
             </Button>
-            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading || !uploadPath}>
+            <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={!uploadPath}>
               <FileImage className="mr-2 h-4 w-4" />
               Escolher da Galeria
             </Button>
@@ -205,14 +205,9 @@ export default function ImageUploadInput({ onUploadComplete, id, currentImageUrl
         )}
       </div>
 
-      {(previewUrl && !isUploading) && (
+      {(previewUrl || isUploading) && (
         <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="text-destructive hover:border-destructive/80 hover:bg-destructive/10 mt-2">
-          <X className="mr-2 h-4 w-4" /> Remover Imagem
-        </Button>
-      )}
-      {isUploading && (
-        <Button variant="outline" size="sm" onClick={handleRemoveOrCancel} className="mt-2 text-destructive hover:border-destructive/80 hover:bg-destructive/10">
-          <X className="mr-2 h-4 w-4" /> Cancelar Upload
+          <X className="mr-2 h-4 w-4" /> {isUploading ? 'Cancelar Upload' : 'Remover Imagem'}
         </Button>
       )}
     </div>
