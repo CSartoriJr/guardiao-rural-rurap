@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { CacaBruxaLogo } from './Logo';
 import { APP_ROUTES } from '@/config/routes';
-import { LogOut, UserCircle, LayoutDashboard, BarChart3, Users, KeyRound, TractorIcon } from 'lucide-react';
+import { LogOut, UserCircle, LayoutDashboard, BarChart3, Users, KeyRound, TractorIcon, Trash2 } from 'lucide-react';
 import ChangePasswordDialog from './ChangePasswordDialog';
 
 export default function AppHeader() {
@@ -130,6 +130,15 @@ export default function AppHeader() {
              <KeyRound className="h-5 w-5 md:mr-2" />
              <span className="hidden md:inline">Alterar Senha</span>
           </Button>
+
+          {user.role === 'farmer' && (
+             <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" asChild>
+                <Link href={APP_ROUTES.FARMER_REQUEST_DELETION}>
+                  <Trash2 className="h-5 w-5 md:mr-2" />
+                  <span className="hidden md:inline">Excluir</span>
+                </Link>
+              </Button>
+          )}
 
           <Button variant="outline" size="sm" onClick={handleLogout} className="text-destructive hover:bg-destructive/10 border-destructive/50 hover:border-destructive">
             <LogOut className="h-5 w-5 md:mr-2" />

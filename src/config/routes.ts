@@ -7,6 +7,7 @@ export const APP_ROUTES = {
   FARMER_DASHBOARD: '/farmer/dashboard',
   FARMER_SUBMIT_REQUEST: '/farmer/submit',
   FARMER_VIEW_REQUEST: (id: string) => `/farmer/request/${id}`,
+  FARMER_REQUEST_DELETION: '/farmer/request-deletion', // Route for deletion confirmation page
   TECHNICIAN_DASHBOARD: '/technician/dashboard',
   TECHNICIAN_SUBMIT_REQUEST: '/technician/submit',
   TECHNICIAN_VIEW_REQUEST: (id: string) => `/technician/request/${id}`,

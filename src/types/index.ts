@@ -11,6 +11,7 @@ export interface User {
   registeredByTechnicianId?: string; // ID of the technician who registered the farmer
   registeredByTechnicianName?: string; // Name of the technician who registered the farmer
   registrationStatus?: RegistrationStatus; // Status of the farmer's registration
+  deletionRequested?: boolean; // Flag to indicate user wants to delete their account
 
   // Fields specific to farmer role, stored in Firestore document
   phone?: string;

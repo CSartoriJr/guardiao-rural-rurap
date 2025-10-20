@@ -8,14 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
-import { ClipboardList, Frown, Search, Building, MapPin, ListFilter } from 'lucide-react';
+import { ClipboardList, Frown, Search, Building, MapPin, ListFilter, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const fetchAllUsers = async (): Promise<AppUser[]> => {
   if (!firebaseInitializedCorrectly || !db) return [];
@@ -63,6 +64,10 @@ export default function AdminDashboard() {
         setIsLoading(false);
     }
   }, [user, toast]);
+  
+  const usersRequestingDeletion = useMemo(() => {
+    return allUsers.filter(u => u.deletionRequested === true);
+  }, [allUsers]);
   
   const { filteredRequests, statusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = {
@@ -143,6 +148,22 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Administrador</h1>
       </div>
+
+      {usersRequestingDeletion.length > 0 && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Ação Necessária: Solicitações de Exclusão</AlertTitle>
+          <AlertDescription>
+            {usersRequestingDeletion.length} agricultor(es) solicitaram a exclusão de suas contas.
+            <Button asChild variant="link" className="p-0 h-auto ml-2 text-destructive font-semibold">
+              <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
+                Ir para Gerenciamento de Usuários
+              </Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
 
        <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-8">
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
