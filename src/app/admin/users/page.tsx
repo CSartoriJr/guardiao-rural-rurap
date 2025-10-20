@@ -310,7 +310,7 @@ export default function ManageUsersPage() {
         </Card>
       </div>
       
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -336,15 +336,6 @@ export default function ManageUsersPage() {
               <span className="text-sm font-medium">Cadastros Inaptos</span>
             </div>
             <div className="text-2xl font-bold">{totalCounts.unfitFarmers}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-destructive">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Trash2 className="h-6 w-6 text-destructive" />
-              <span className="text-sm font-medium">Solicitou Exclusão</span>
-            </div>
-            <div className="text-2xl font-bold">{totalCounts.deletionRequests}</div>
           </CardContent>
         </Card>
       </div>
