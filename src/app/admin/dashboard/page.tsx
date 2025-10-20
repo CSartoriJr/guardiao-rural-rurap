@@ -66,7 +66,7 @@ export default function AdminDashboard() {
   }, [user, toast]);
   
   const usersRequestingDeletion = useMemo(() => {
-    return allUsers.filter(u => u.deletionRequested === true);
+    return allUsers.filter(u => u.registrationStatus === 'Excluir');
   }, [allUsers]);
   
   const { filteredRequests, statusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
           <AlertDescription>
             {usersRequestingDeletion.length} agricultor(es) solicitaram a exclusão de suas contas.
             <Button asChild variant="link" className="p-0 h-auto ml-2 text-destructive font-semibold">
-              <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>
+              <Link href={`${APP_ROUTES.ADMIN_MANAGE_USERS}?status=Excluir`}>
                 Ir para Gerenciamento de Usuários
               </Link>
             </Button>

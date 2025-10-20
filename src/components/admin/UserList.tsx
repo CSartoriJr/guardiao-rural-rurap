@@ -48,7 +48,7 @@ const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
   role: z.enum(['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'], { required_error: "A função é obrigatória." }),
-  registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto']).optional(),
+  registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto', 'Excluir']).optional(),
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
   address: z.string().optional(),
@@ -117,7 +117,7 @@ const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) =>
     let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
     if (status === 'Confirmado') variant = 'default';
     if (status === 'Pendente') variant = 'secondary';
-    if (status === 'Inapto') variant = 'destructive';
+    if (status === 'Inapto' || status === 'Excluir') variant = 'destructive';
 
     return <Badge variant={variant} className="ml-2">{status}</Badge>;
 }
@@ -520,6 +520,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                               <SelectItem value="Pendente">Pendente</SelectItem>
                               <SelectItem value="Confirmado">Confirmado</SelectItem>
                               <SelectItem value="Inapto">Inapto</SelectItem>
+                              <SelectItem value="Excluir">Excluir</SelectItem>
                             </SelectContent>
                           </Select>
                         )}

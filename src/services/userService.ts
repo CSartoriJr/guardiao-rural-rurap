@@ -61,10 +61,12 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
     // Apply defensive transformation to handle potential data inconsistencies
     const data = docSnap.data();
     const validRoles: AppUser['role'][] = ['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'];
+    const validStatuses: RegistrationStatus[] = ['Pendente', 'Confirmado', 'Inapto', 'Excluir'];
+
     const safeUser: AppUser = {
       id: docSnap.id,
       cpf: typeof data.cpf === 'string' ? data.cpf : '',
-      role: validRoles.includes(data.role) ? data.role : 'farmer', // Fix: Include new roles
+      role: validRoles.includes(data.role) ? data.role : 'farmer',
       name: typeof data.name === 'string' ? data.name : 'Nome Inválido',
       email: typeof data.email === 'string' ? data.email : undefined,
       phone: typeof data.phone === 'string' ? data.phone : undefined,
@@ -74,7 +76,7 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
       familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
       assignedMunicipalities: Array.isArray(data.assignedMunicipalities) ? data.assignedMunicipalities : undefined,
       caf: typeof data.caf === 'string' ? data.caf : undefined,
-      registrationStatus: ['Pendente', 'Confirmado', 'Inapto'].includes(data.registrationStatus) ? data.registrationStatus : undefined,
+      registrationStatus: validStatuses.includes(data.registrationStatus) ? data.registrationStatus : undefined,
     };
     return safeUser;
   }
@@ -114,6 +116,7 @@ export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> 
     // Process all fetched farmers.
     const allFarmers = querySnapshot.docs.reduce((acc, docSnap) => {
         const data = docSnap.data();
+        const validStatuses: RegistrationStatus[] = ['Pendente', 'Confirmado', 'Inapto', 'Excluir'];
         // Basic validation for a document to be considered a valid farmer
         if (data && typeof data.name === 'string' && typeof data.cpf === 'string') {
             const safeUser: AppUser = {
@@ -128,7 +131,7 @@ export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> 
               municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
               familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
               caf: typeof data.caf === 'string' ? data.caf : undefined,
-              registrationStatus: ['Pendente', 'Confirmado', 'Inapto'].includes(data.registrationStatus) ? data.registrationStatus : undefined,
+              registrationStatus: validStatuses.includes(data.registrationStatus) ? data.registrationStatus : 'Pendente',
             };
             acc.push(safeUser);
         } else {

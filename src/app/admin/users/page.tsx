@@ -1,14 +1,14 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
 import type { User as AppUserType, RegistrationStatus } from '@/types'; // Renamed to avoid conflict
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase, Building } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase, Building, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -55,15 +55,11 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
     }
   } else if (user.role === 'technician') {
     try {
-      // First, query for all requests associated with the technician.
-      // This is a simple query and does not require a composite index.
       const requestsQuery = firestoreQuery(
         collection(db, 'requests'),
         where('technicianId', '==', user.id),
       );
       const requestsSnapshot = await getDocs(requestsQuery);
-
-      // Now, process the results in-memory.
       const allRequests = requestsSnapshot.docs.map(doc => doc.data());
       const respondedRequests = allRequests.filter(req => req.status !== 'Pending');
       
@@ -71,7 +67,6 @@ const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: nu
           responseCount: respondedRequests.length,
           requestCount: allRequests.length 
       };
-
     } catch (e) {
       console.error(`Erro ao buscar atividades para técnico ${user.id}:`, e);
       activityCount = { responseCount: 0, requestCount: 0 };
@@ -88,10 +83,18 @@ export type UserWithActivityCount = AppUserType & {
 export default function ManageUsersPage() {
   const { user: adminUser, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserWithActivityCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<AppUserType['role'] | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+
+  useEffect(() => {
+    const statusParam = searchParams.get('status') as RegistrationStatus | null;
+    if (statusParam && ['Pendente', 'Confirmado', 'Inapto', 'Excluir'].includes(statusParam)) {
+      setStatusFilter(statusParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (authInitializing) return;
@@ -104,7 +107,6 @@ export default function ManageUsersPage() {
             return { ...u, ...activity };
           });
           const usersWithCounts = await Promise.all(usersWithCountsPromises);
-          // Adiciona uma verificação para garantir que ambos a.name e b.name existam antes de comparar
           usersWithCounts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           setUsers(usersWithCounts);
         })
@@ -122,8 +124,6 @@ export default function ManageUsersPage() {
   const handleUserUpdate = async (userId: string, updatedData: Partial<AppUserType>) => {
     try {
       const { password, ...firestoreData } = updatedData;
-
-      // Call the secure Genkit flow to perform the update
       const result = await updateUserAsAdmin({ userId, updatedData: firestoreData });
 
       if (!result.success) {
@@ -133,12 +133,9 @@ export default function ManageUsersPage() {
       setUsers(prevUsers => {
           const userIndex = prevUsers.findIndex(u => u.id === userId);
           if (userIndex === -1) return prevUsers;
-
           const newUsers = [...prevUsers];
-          // Merge existing user data with the updates
           const updatedUser = { ...newUsers[userIndex], ...firestoreData };
           newUsers[userIndex] = updatedUser;
-          
           newUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           return newUsers;
         });
@@ -151,8 +148,6 @@ export default function ManageUsersPage() {
   };
 
   const handleUserDelete = async (userId: string, userName: string) => {
-    // Deleting Firebase Auth user client-side is complex and risky.
-    // This will only delete the Firestore document.
     try {
       await deleteUserFirestoreDocument(userId);
       setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
@@ -183,6 +178,7 @@ export default function ManageUsersPage() {
         case 'Confirmado': return 'Confirmado';
         case 'Pendente': return 'Pendente';
         case 'Inapto': return 'Inapto';
+        case 'Excluir': return 'Excluir';
         default: return 'Todos os Status';
     }
   }
@@ -195,7 +191,6 @@ export default function ManageUsersPage() {
       usersToFilter = usersToFilter.filter(user => user.role === roleFilter);
     }
     
-    // The status filter only applies if a user is a farmer
     if (statusFilter !== 'all') {
       usersToFilter = usersToFilter.filter(user => user.role === 'farmer' && user.registrationStatus === statusFilter);
     }
@@ -215,6 +210,7 @@ export default function ManageUsersPage() {
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
+      deletionRequests: farmers.filter(f => f.registrationStatus === 'Excluir').length,
     };
   }, [users]);
 
@@ -257,6 +253,7 @@ export default function ManageUsersPage() {
                   <SelectItem value="Confirmado">Confirmados ({totalCounts.confirmedFarmers})</SelectItem>
                   <SelectItem value="Pendente">Pendentes ({totalCounts.pendingFarmers})</SelectItem>
                   <SelectItem value="Inapto">Inaptos ({totalCounts.unfitFarmers})</SelectItem>
+                  <SelectItem value="Excluir">Solicitou Exclusão ({totalCounts.deletionRequests})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -313,7 +310,7 @@ export default function ManageUsersPage() {
         </Card>
       </div>
       
-       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -339,6 +336,15 @@ export default function ManageUsersPage() {
               <span className="text-sm font-medium">Cadastros Inaptos</span>
             </div>
             <div className="text-2xl font-bold">{totalCounts.unfitFarmers}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-destructive">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Trash2 className="h-6 w-6 text-destructive" />
+              <span className="text-sm font-medium">Solicitou Exclusão</span>
+            </div>
+            <div className="text-2xl font-bold">{totalCounts.deletionRequests}</div>
           </CardContent>
         </Card>
       </div>
@@ -403,8 +409,3 @@ export default function ManageUsersPage() {
     </PageWrapper>
   );
 }
-
-    
-    
-
-    

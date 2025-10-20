@@ -1,4 +1,4 @@
-export type RegistrationStatus = 'Pendente' | 'Confirmado' | 'Inapto';
+export type RegistrationStatus = 'Pendente' | 'Confirmado' | 'Inapto' | 'Excluir';
 
 export interface User {
   id: string; // Firebase Auth UID

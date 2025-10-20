@@ -31,7 +31,7 @@ export default function RequestDeletionPage() {
     setIsSubmitting(true);
     try {
       // Mark the user's document for deletion
-      await updateUserDocument(user.id, { deletionRequested: true });
+      await updateUserDocument(user.id, { registrationStatus: 'Excluir' });
 
       // Log the user out
       await logout();
