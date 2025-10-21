@@ -16,9 +16,8 @@ import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
-import { deleteUserFirestoreDocument } from '@/services/userService';
 import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
-import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin';
+import { updateUserAsAdmin, deleteUserByAdmin } from '@/ai/flows/manage-user-by-admin';
 
 
 const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
@@ -149,7 +148,10 @@ export default function ManageUsersPage() {
 
   const handleUserDelete = async (userId: string, userName: string) => {
     try {
-      await deleteUserFirestoreDocument(userId);
+      const result = await deleteUserByAdmin({ userId });
+      if (!result.success) {
+        throw new Error(result.message || 'Falha ao remover documento do usuário no servidor.');
+      }
       setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
       toast({ 
         title: "Documento de Usuário Removido", 
