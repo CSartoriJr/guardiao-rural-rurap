@@ -102,62 +102,6 @@ export const updateUserDocument = async (userId: string, data: Partial<AppUser>)
 };
 
 
-export const getFarmers = async (municipalities?: string[]): Promise<AppUser[]> => {
-  ensureFirebaseInitialized();
-  const usersRef = collection(db!, USERS_COLLECTION);
-  
-  // This is a simple query that only requires a single-field index (which Firestore creates automatically).
-  // This is much more robust than a composite query which might fail if the index doesn't exist.
-  const q = query(usersRef, where('role', '==', 'farmer'));
-
-  try {
-    const querySnapshot = await getDocs(q);
-    
-    // Process all fetched farmers.
-    const allFarmers = querySnapshot.docs.reduce((acc, docSnap) => {
-        const data = docSnap.data();
-        const validStatuses: RegistrationStatus[] = ['Pendente', 'Confirmado', 'Inapto', 'Excluir'];
-        // Basic validation for a document to be considered a valid farmer
-        if (data && typeof data.name === 'string' && typeof data.cpf === 'string') {
-            const safeUser: AppUser = {
-              id: docSnap.id,
-              cpf: data.cpf,
-              role: 'farmer',
-              name: data.name,
-              email: typeof data.email === 'string' ? data.email : undefined,
-              phone: typeof data.phone === 'string' ? data.phone : undefined,
-              address: typeof data.address === 'string' ? data.address : undefined,
-              organizationalUnit: typeof data.organizationalUnit === 'string' ? data.organizationalUnit : undefined,
-              municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
-              familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
-              caf: typeof data.caf === 'string' ? data.caf : undefined,
-              registrationStatus: validStatuses.includes(data.registrationStatus) ? data.registrationStatus : 'Pendente',
-            };
-            acc.push(safeUser);
-        } else {
-            console.warn(`[UserService] Skipping malformed farmer document with ID: ${docSnap.id}`);
-        }
-        return acc;
-    }, [] as AppUser[]);
-
-    // Now, filter them in the code based on the technician's assigned municipalities.
-    const filteredFarmers = (municipalities && municipalities.length > 0)
-      ? allFarmers.filter(farmer => farmer.municipality && municipalities.includes(farmer.municipality))
-      : allFarmers;
-      
-    console.log(`[UserService] Fetched ${allFarmers.length} total valid farmer docs, returning ${filteredFarmers.length} after filtering by municipality.`);
-
-    // Sort the final list alphabetically by name.
-    filteredFarmers.sort((a, b) => a.name.localeCompare(b.name));
-    return filteredFarmers;
-
-  } catch (error) {
-    console.error("[UserService] Error fetching farmers:", error);
-    // On error, return an empty array to prevent the UI from crashing.
-    return [];
-  }
-};
-
 export const getUserDocumentSafely = async (userId: string): Promise<AppUser | null> => {
     ensureFirebaseInitialized();
     try {

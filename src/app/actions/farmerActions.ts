@@ -1,45 +1,70 @@
 'use server';
-
-import { getFarmers, getUserDocumentSafely } from '@/services/userService';
-import type { User } from '@/types';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { getUserDocumentSafely } from '@/services/userService';
+import type { User, RegistrationStatus } from '@/types';
 import { cookies } from 'next/headers';
-import { getUserDocument } from '@/services/userService';
-
 
 async function getCurrentUser(): Promise<User | null> {
     try {
         const session = cookies().get('session')?.value || '';
         if (!session) return null;
-
-        // Valide o token de sessão usando o Firebase Admin SDK (exemplo conceitual)
-        // Em um app real, isso seria feito com uma verificação segura.
-        // A lógica aqui é simplificada para o ambiente do Studio.
-        // const decodedClaims = await auth().verifySessionCookie(session);
-        // const user = await getUserDocument(decodedClaims.uid);
-        
-        // Simulação para o ambiente de desenvolvimento, assumindo que a sessão é válida
-        // Em um projeto real, você teria uma forma de obter o UID do usuário a partir da sessão.
-        // Como não temos acesso ao UID aqui de forma segura, vamos focar no que podemos fazer.
-        // Esta parte do código é mais um placeholder, a lógica principal está no `getFarmers`.
-        // A lógica de `getFarmers` foi ajustada para não depender do usuário aqui, mas sim dos municípios passados.
-
     } catch (error) {
         console.error('Error getting current user from session:', error);
     }
     return null;
 }
 
+export async function getFarmers(municipalities?: string[]): Promise<User[]> {
+  const usersRef = collection(db, 'users');
+  const q = query(usersRef, where('role', '==', 'farmer'));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    const allFarmers = querySnapshot.docs.reduce((acc, docSnap) => {
+        const data = docSnap.data();
+        const validStatuses: RegistrationStatus[] = ['Pendente', 'Confirmado', 'Inapto', 'Excluir'];
+        if (data && typeof data.name === 'string' && typeof data.cpf === 'string') {
+            const safeUser: User = {
+              id: docSnap.id,
+              cpf: data.cpf,
+              role: 'farmer',
+              name: data.name,
+              email: typeof data.email === 'string' ? data.email : undefined,
+              phone: typeof data.phone === 'string' ? data.phone : undefined,
+              address: typeof data.address === 'string' ? data.address : undefined,
+              organizationalUnit: typeof data.organizationalUnit === 'string' ? data.organizationalUnit : undefined,
+              municipality: typeof data.municipality === 'string' ? data.municipality : undefined,
+              familyMembers: typeof data.familyMembers === 'number' ? data.familyMembers : undefined,
+              caf: typeof data.caf === 'string' ? data.caf : undefined,
+              registrationStatus: validStatuses.includes(data.registrationStatus) ? data.registrationStatus : 'Pendente',
+            };
+            acc.push(safeUser);
+        }
+        return acc;
+    }, [] as User[]);
+
+    const filteredFarmers = (municipalities && municipalities.length > 0)
+      ? allFarmers.filter(farmer => farmer.municipality && municipalities.includes(farmer.municipality))
+      : allFarmers;
+
+    filteredFarmers.sort((a, b) => a.name.localeCompare(b.name));
+    return filteredFarmers;
+
+  } catch (error) {
+    console.error("[FarmerActions] Error fetching farmers:", error);
+    return [];
+  }
+};
+
 
 export async function getFarmersList(municipalities?: string[]): Promise<User[]> {
   try {
-    // A lógica foi simplificada para depender apenas dos municípios passados.
-    // O `getFarmers` em `userService` já lida com o caso de `municipalities` ser undefined
-    // e busca todos os agricultores, o que atende aos perfis de consulta.
     const farmers = await getFarmers(municipalities);
     return farmers;
   } catch (error) {
     console.error('Failed to get farmers list via server action:', error);
-    return []; // Return empty on error
+    return []; 
   }
 }
 
