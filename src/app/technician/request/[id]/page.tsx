@@ -7,7 +7,7 @@ import ResponseForm from '@/components/technician/ResponseForm';
 import type { AgriRequest, DeviceLocationStatus, User as AppUser, RegistrationStatus } from '@/types';
 import { getRequestById, updateRequest as updateRequestInFirestore, deleteRequestFromFirestore } from '@/services/requestService'; // Use Firestore
 import { getUserDocument } from '@/services/userService'; // Import service to get user data
-import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin'; // Import server action to update user
+import { updateUserAsAdmin } from '@/ai/flows/manage-user-by-admin'; // Corrected import path
 import { amapaMunicipalities } from '@/lib/mockData'; // For municipality list, not for request data itself
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

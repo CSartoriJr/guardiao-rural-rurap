@@ -17,7 +17,7 @@ import { firebaseInitializedCorrectly, db } from '@/lib/firebase'; // For checki
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { organizationalUnits } from '@/lib/mockData';
-import { updateUserAsAdmin } from '@/ai/flows/update-user-by-admin';
+import { updateUserAsAdmin } from '@/ai/flows/manage-user-by-admin';
 
 const cpfValidation = z.string().refine(cpf => {
   const numericCpf = cpf.replace(/\D/g, '');
