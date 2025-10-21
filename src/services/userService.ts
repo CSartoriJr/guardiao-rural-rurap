@@ -1,5 +1,5 @@
 // src/services/userService.ts
-import { db, firebaseInitializedCorrectly, auth as firebaseAuth } from '@/lib/firebase';
+import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch, deleteField } from 'firebase/firestore';
 import type { User as AuthUser } from 'firebase/auth'; // Firebase Auth user type
 import type { User as AppUser, RegistrationStatus } from '@/types'; // Your application's user type
