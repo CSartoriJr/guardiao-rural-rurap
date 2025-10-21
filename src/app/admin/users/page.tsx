@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PageWrapper from '@/components/shared/PageWrapper';
 import UserList from '@/components/admin/UserList';
@@ -19,67 +19,8 @@ import { collection, getDocs, query as firestoreQuery, where } from 'firebase/fi
 import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
 import { updateUserAsAdmin, deleteUserByAdmin } from '@/ai/flows/manage-user-by-admin';
 
-
-const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
-  if (!firebaseInitializedCorrectly || !db) {
-    console.error("Firebase não inicializado. Não é possível buscar usuários.");
-    return [];
-  }
-  const usersCollectionRef = collection(db, 'users');
-  const userSnapshot = await getDocs(usersCollectionRef);
-  const userList = userSnapshot.docs.reduce((acc, doc) => {
-    const data = doc.data();
-    // Garante que o usuário tenha os campos mínimos necessários (id e nome)
-    if (data && typeof data.name === 'string' && data.name.trim() !== '') {
-      acc.push({ id: doc.id, ...data } as AppUserType);
-    } else {
-      console.warn(`[ManageUsersPage] Skipping malformed user document with ID: ${doc.id}`);
-    }
-    return acc;
-  }, [] as AppUserType[]);
-  return userList;
-};
-
-const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: number; responseCount?: number }> => {
-  if (!firebaseInitializedCorrectly || !db) return {};
-  let activityCount: { requestCount?: number; responseCount?: number } = {};
-
-  if (user.role === 'farmer' && user.id) { // Check for user ID
-    try {
-      const requests = await getRequestsForFarmer(user.id);
-      activityCount = { requestCount: requests.length };
-    } catch (e) {
-      console.error(`Erro ao buscar Solicitações para agricultor ${user.id}:`, e);
-      activityCount = { requestCount: 0 };
-    }
-  } else if (user.role === 'technician') {
-    try {
-      const requestsQuery = firestoreQuery(
-        collection(db, 'requests'),
-        where('technicianId', '==', user.id),
-      );
-      const requestsSnapshot = await getDocs(requestsQuery);
-      const allRequests = requestsSnapshot.docs.map(doc => doc.data());
-      const respondedRequests = allRequests.filter(req => req.status !== 'Pending');
-      
-      activityCount = { 
-          responseCount: respondedRequests.length,
-          requestCount: allRequests.length 
-      };
-    } catch (e) {
-      console.error(`Erro ao buscar atividades para técnico ${user.id}:`, e);
-      activityCount = { responseCount: 0, requestCount: 0 };
-    }
-  }
-  return activityCount;
-};
-
-export type UserWithActivityCount = AppUserType & { 
-  requestCount?: number; 
-  responseCount?: number; 
-};
-
-export default function ManageUsersPage() {
+// This is a new component to contain the main logic.
+function UserPageContent() {
   const { user: adminUser, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -194,7 +135,12 @@ export default function ManageUsersPage() {
     }
     
     if (statusFilter !== 'all') {
-      usersToFilter = usersToFilter.filter(user => user.role === 'farmer' && user.registrationStatus === statusFilter);
+      // Allow 'Excluir' status to be filtered regardless of role
+      if (statusFilter === 'Excluir') {
+        usersToFilter = usersToFilter.filter(user => user.registrationStatus === statusFilter);
+      } else {
+        usersToFilter = usersToFilter.filter(user => user.role === 'farmer' && user.registrationStatus === statusFilter);
+      }
     }
 
     return usersToFilter;
@@ -212,7 +158,7 @@ export default function ManageUsersPage() {
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
-      deletionRequests: farmers.filter(f => f.registrationStatus === 'Excluir').length,
+      deletionRequests: users.filter(u => u.registrationStatus === 'Excluir').length, // Count across all roles
     };
   }, [users]);
 
@@ -244,9 +190,9 @@ export default function ManageUsersPage() {
               </Select>
             </div>
             <div className="w-full sm:w-auto sm:min-w-[200px]">
-              <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status (Agricultores)</Label>
+              <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status</Label>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
-                <SelectTrigger id="status-filter" className="w-full mt-1 bg-card" disabled={roleFilter !== 'farmer' && roleFilter !== 'all'}>
+                <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
                   <ListFilter className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Filtrar por status..." />
                 </SelectTrigger>
@@ -372,7 +318,6 @@ export default function ManageUsersPage() {
         </Card>
       </div>
 
-
       {isLoading || authInitializing ? (
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
@@ -401,4 +346,95 @@ export default function ManageUsersPage() {
       )}
     </PageWrapper>
   );
+}
+
+export type UserWithActivityCount = AppUserType & { 
+  requestCount?: number; 
+  responseCount?: number; 
+};
+
+const fetchAllUsersFromFirestore = async (): Promise<AppUserType[]> => {
+  if (!firebaseInitializedCorrectly || !db) {
+    console.error("Firebase não inicializado. Não é possível buscar usuários.");
+    return [];
+  }
+  const usersCollectionRef = collection(db, 'users');
+  const userSnapshot = await getDocs(usersCollectionRef);
+  const userList = userSnapshot.docs.reduce((acc, doc) => {
+    const data = doc.data();
+    // Garante que o usuário tenha os campos mínimos necessários (id e nome)
+    if (data && typeof data.name === 'string' && data.name.trim() !== '') {
+      acc.push({ id: doc.id, ...data } as AppUserType);
+    } else {
+      console.warn(`[ManageUsersPage] Skipping malformed user document with ID: ${doc.id}`);
+    }
+    return acc;
+  }, [] as AppUserType[]);
+  return userList;
+};
+
+const countUserActivity = async (user: AppUserType): Promise<{ requestCount?: number; responseCount?: number }> => {
+  if (!firebaseInitializedCorrectly || !db) return {};
+  let activityCount: { requestCount?: number; responseCount?: number } = {};
+
+  if (user.role === 'farmer' && user.id) { // Check for user ID
+    try {
+      const requests = await getRequestsForFarmer(user.id);
+      activityCount = { requestCount: requests.length };
+    } catch (e) {
+      console.error(`Erro ao buscar Solicitações para agricultor ${user.id}:`, e);
+      activityCount = { requestCount: 0 };
+    }
+  } else if (user.role === 'technician') {
+    try {
+      const requestsQuery = firestoreQuery(
+        collection(db, 'requests'),
+        where('technicianId', '==', user.id),
+      );
+      const requestsSnapshot = await getDocs(requestsQuery);
+      const allRequests = requestsSnapshot.docs.map(doc => doc.data());
+      const respondedRequests = allRequests.filter(req => req.status !== 'Pending');
+      
+      activityCount = { 
+          responseCount: respondedRequests.length,
+          requestCount: allRequests.length 
+      };
+    } catch (e) {
+      console.error(`Erro ao buscar atividades para técnico ${user.id}:`, e);
+      activityCount = { responseCount: 0, requestCount: 0 };
+    }
+  }
+  return activityCount;
+};
+
+export default function ManageUsersPage() {
+    return (
+        <Suspense fallback={<UserPageSkeleton />}>
+            <UserPageContent />
+        </Suspense>
+    )
+}
+
+function UserPageSkeleton() {
+    return (
+        <PageWrapper allowedRoles={['admin']}>
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
+                    <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
+                </div>
+                <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-2">
+                    <Skeleton className="h-10 w-48" />
+                    <Skeleton className="h-10 w-48" />
+                </div>
+            </div>
+            <div className="space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+        </PageWrapper>
+    )
 }

@@ -369,7 +369,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 <TableCell>{user.cpf}</TableCell>
                 <TableCell>{getRoleDisplayName(user.role)}</TableCell>
                 <TableCell className="text-center">
-                  {user.role === 'farmer' ? <RegistrationStatusBadge status={user.registrationStatus} /> : 'N/A'}
+                  <RegistrationStatusBadge status={user.registrationStatus} />
                 </TableCell>
                 <TableCell className="text-center">
                   {user.role === 'farmer' || user.role === 'technician'
