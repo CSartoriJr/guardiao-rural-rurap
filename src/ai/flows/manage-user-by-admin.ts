@@ -8,11 +8,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { updateUserDocument } from '@/services/userService';
 import { z } from 'genkit';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import type { User } from '@/types';
-import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, deleteDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 
 
 // Input for the update flow
@@ -63,7 +62,7 @@ const manageUserByAdminFlow = ai.defineFlow(
     outputSchema: UpdateUserAsAdminOutputSchema,
   },
   async ({ userId, updatedData }) => {
-    if (!firebaseInitializedCorrectly) {
+    if (!firebaseInitializedCorrectly || !db) {
       console.error('[manageUserByAdminFlow] Firebase not initialized. Cannot update user.');
       return { success: false, message: "A conexão com o servidor de dados não foi estabelecida." };
     }
@@ -71,7 +70,8 @@ const manageUserByAdminFlow = ai.defineFlow(
     // Core logic: call the Firestore service function from the server-side flow.
     try {
       console.log(`[manageUserByAdminFlow] Attempting to update user ${userId} with data:`, updatedData);
-      await updateUserDocument(userId, updatedData);
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, updatedData);
       console.log(`[manageUserByAdminFlow] Successfully updated user ${userId}.`);
       return { success: true };
     } catch (error: any) {
@@ -102,7 +102,7 @@ const deleteUserByAdminFlow = ai.defineFlow(
 
     try {
         const userRef = doc(db, 'users', userId);
-        const userDoc = await userRef.get();
+        const userDoc = await getDoc(userRef);
         if (!userDoc.exists()) {
             return { success: false, message: "Usuário não encontrado no Firestore." };
         }
