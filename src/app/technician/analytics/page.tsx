@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -9,12 +8,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService';
 import { amapaMunicipalities } from '@/lib/mockData';
-import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle, Users, UserCheck, Clock, MessagesSquare } from 'lucide-react';
+import { Loader2, MapPin, ListChecks, PieChartIcon, BarChart3 as BarChart3IconLucide, AlertTriangle, AlertCircleIcon, CheckCircle2, XCircle, Users, UserCheck, Clock, MessagesSquare, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AmapaInteractiveMap } from '@/components/shared/AmapaInteractiveMap';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db, firebaseInitializedCorrectly } from '@/lib/firebase';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import DescriptiveReport from '@/components/technician/DescriptiveReport';
 
 
 // Fetch all requests from Firestore
@@ -218,6 +220,25 @@ export default function TechnicianAnalyticsPage() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-headline text-gray-800">Painel de Análise</h1>
+           <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Relatório Descritivo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Relatório Descritivo do Guardião Rural</DialogTitle>
+              </DialogHeader>
+              <DescriptiveReport
+                stats={stats}
+                users={users}
+                requests={requests}
+                selectedMunicipality={selectedMunicipality}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
