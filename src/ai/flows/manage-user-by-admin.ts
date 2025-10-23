@@ -11,7 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import type { User } from '@/types';
-import { doc, deleteDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore';
 
 
 // Input for the update flow
