@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                 </Select>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
+                <Label htmlFor="status-filter" className="text-xs text-muted-foreground">Cadastro</Label>
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
                     <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
                     <ListFilter className="mr-1.5 h-3.5 w-3.5" />
