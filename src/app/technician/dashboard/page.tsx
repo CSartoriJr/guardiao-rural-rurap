@@ -1,12 +1,11 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
 import TechnicianRequestCard from '@/components/technician/RequestCard';
-import type { AgriRequest, User as AppUser, RegistrationStatus } from '@/types';
+import type { AgriRequest, User as AppUser, RegistrationStatus, RequestStatus } from '@/types';
 import { getAllRequestsForAdmin as getAllRequestsSystemWide } from '@/services/requestService'; 
 import { useAuth } from '@/hooks/useAuth';
-import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin, Search, Building } from 'lucide-react';
+import { ClipboardList, Frown, PlusCircle, UserPlus, ListFilter, MapPin, Search, Building, Clock, CheckCircle, XCircle, HelpCircle, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -31,10 +30,14 @@ export default function TechnicianDashboard() {
   const [allRequests, setAllRequests] = useState<AgriRequest[]>([]);
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
-  const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
-  const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
+  
+  // Filter States
   const [searchQuery, setSearchQuery] = useState('');
+  const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
+  const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatus | 'all'>('all');
+
 
   useEffect(() => {
     if (user) {
@@ -71,10 +74,11 @@ export default function TechnicianDashboard() {
     return allRequests;
   }, [allRequests, user]);
   
-  const { technicianVisibleRequests, statusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
+  const { technicianVisibleRequests, registrationStatusCounts, requestStatusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = { 
         technicianVisibleRequests: [], 
-        statusCounts: { all: 0, Confirmed: 0, Pending: 0, Unfit: 0 },
+        registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0 },
+        requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
         municipalityCounts: {} as Record<string, number>,
         orgUnitCounts: {} as Record<string, number>,
         availableMunicipalities: [] as string[],
@@ -111,38 +115,51 @@ export default function TechnicianDashboard() {
       };
     });
 
-    if (municipalityFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
-    }
-    
     if (organizationalUnitFilter !== 'all') {
       enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
     }
     
-    initialResult.statusCounts = {
+    if (municipalityFilter !== 'all') {
+      enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
+    }
+    
+    initialResult.registrationStatusCounts = {
       all: enrichedRequests.length,
       Confirmed: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
       Pending: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
-      Unfit: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
+      Inapto: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
     };
+    
+    initialResult.requestStatusCounts = {
+        all: enrichedRequests.length,
+        'Pending': enrichedRequests.filter(req => req.status === 'Pending').length,
+        'Positive': enrichedRequests.filter(req => req.status === 'Positive').length,
+        'Negative': enrichedRequests.filter(req => req.status === 'Negative').length,
+        'Inconclusive': enrichedRequests.filter(req => req.status === 'Inconclusive').length,
+        'Suspeita de Infecção': enrichedRequests.filter(req => req.status === 'Suspeita de Infecção').length
+    }
 
-    let filteredRequests = enrichedRequests;
+    let finalFilteredRequests = enrichedRequests;
 
     if (statusFilter !== 'all') {
-      filteredRequests = filteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+      finalFilteredRequests = finalFilteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+    }
+    
+    if (requestStatusFilter !== 'all') {
+        finalFilteredRequests = finalFilteredRequests.filter(req => req.status === requestStatusFilter);
     }
     
     if (searchQuery) {
-        filteredRequests = filteredRequests.filter(req => 
+        finalFilteredRequests = finalFilteredRequests.filter(req => 
             req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
 
-    initialResult.technicianVisibleRequests = filteredRequests;
+    initialResult.technicianVisibleRequests = finalFilteredRequests;
 
     return initialResult;
 
-  }, [baseRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter]);
+  }, [baseRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter, requestStatusFilter]);
 
 
   return (
@@ -163,20 +180,24 @@ export default function TechnicianDashboard() {
         </div>
       </div>
       
-      <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-8">
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-            <div className="relative w-full sm:w-auto sm:min-w-[150px]">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    type="text"
-                    placeholder="Buscar por agricultor..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 h-9 text-xs"
-                />
+      <div className="flex flex-col md:flex-row items-end justify-between gap-2 mb-8">
+        <div className="flex flex-col sm:flex-row items-end gap-2 w-full flex-wrap">
+            <div className="w-full sm:w-auto sm:min-w-[150px]">
+                <Label htmlFor="search-input" className="sr-only">Buscar</Label>
+                <div className="relative">
+                    <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        id="search-input"
+                        type="text"
+                        placeholder="Buscar por agricultor..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 h-9 text-xs"
+                    />
+                </div>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="organizational-unit-filter" className="sr-only">Filtrar por Unidade</Label>
+                <Label htmlFor="organizational-unit-filter" className="text-xs text-muted-foreground">Unidade</Label>
                 <Select value={organizationalUnitFilter} onValueChange={(value) => setOrganizationalUnitFilter(value)}>
                     <SelectTrigger id="organizational-unit-filter" className="w-full h-9 text-xs">
                     <Building className="mr-1.5 h-3.5 w-3.5" />
@@ -191,7 +212,7 @@ export default function TechnicianDashboard() {
                 </Select>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
+                <Label htmlFor="municipality-filter" className="text-xs text-muted-foreground">Município</Label>
                 <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
                     <SelectTrigger id="municipality-filter" className="w-full h-9 text-xs">
                     <MapPin className="mr-1.5 h-3.5 w-3.5" />
@@ -206,17 +227,34 @@ export default function TechnicianDashboard() {
                 </Select>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="status-filter" className="sr-only">Filtrar por Status do Cadastro</Label>
+                <Label htmlFor="status-filter" className="text-xs text-muted-foreground">Cadastro</Label>
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
                     <SelectTrigger id="status-filter" className="w-full h-9 text-xs">
                     <ListFilter className="mr-1.5 h-3.5 w-3.5" />
                     <SelectValue placeholder="Filtrar status..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Status ({statusCounts.all})</SelectItem>
-                        <SelectItem value="Confirmado">Confirmado ({statusCounts.Confirmed})</SelectItem>
-                        <SelectItem value="Pendente">Pendente ({statusCounts.Pending})</SelectItem>
-                        <SelectItem value="Inapto">Inapto ({statusCounts.Unfit})</SelectItem>
+                        <SelectItem value="all">Todos os Status ({registrationStatusCounts.all})</SelectItem>
+                        <SelectItem value="Confirmado">Confirmado ({registrationStatusCounts.Confirmed})</SelectItem>
+                        <SelectItem value="Pendente">Pendente ({registrationStatusCounts.Pending})</SelectItem>
+                        <SelectItem value="Inapto">Inapto ({registrationStatusCounts.Inapto})</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="w-full sm:w-auto sm:max-w-[220px]">
+                <Label htmlFor="request-status-filter" className="text-xs text-muted-foreground">Solicitação</Label>
+                <Select value={requestStatusFilter} onValueChange={(value) => setRequestStatusFilter(value as RequestStatus | 'all')}>
+                    <SelectTrigger id="request-status-filter" className="w-full h-9 text-xs">
+                    <ListFilter className="mr-1.5 h-3.5 w-3.5" />
+                    <SelectValue placeholder="Filtrar status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Status ({requestStatusCounts.all})</SelectItem>
+                        <SelectItem value="Pending"><Clock className="mr-2 h-4 w-4 inline-block" />Pendente ({requestStatusCounts.Pending})</SelectItem>
+                        <SelectItem value="Positive"><CheckCircle className="mr-2 h-4 w-4 inline-block text-green-600" />Positivo ({requestStatusCounts.Positive})</SelectItem>
+                        <SelectItem value="Negative"><XCircle className="mr-2 h-4 w-4 inline-block text-red-600" />Possivelmente Negativo ({requestStatusCounts.Negative})</SelectItem>
+                        <SelectItem value="Inconclusive"><HelpCircle className="mr-2 h-4 w-4 inline-block text-yellow-600" />Inconclusivo ({requestStatusCounts.Inconclusive})</SelectItem>
+                        <SelectItem value="Suspeita de Infecção"><AlertCircle className="mr-2 h-4 w-4 inline-block text-orange-500" />Suspeita de Infecção ({requestStatusCounts['Suspeita de Infecção']})</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
