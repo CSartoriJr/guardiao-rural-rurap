@@ -335,7 +335,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     if (user.role === 'technician' && (user.responseCount ?? 0) > 0) {
       return "Este técnico possui respostas e não pode ser removido.";
     }
-    return "Remover documento do usuário (Auth user não será afetado)";
+    return "Remover usuário (Auth e Firestore)";
   };
 
 
@@ -690,15 +690,15 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
          <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
+              <AlertDialogTitle>Confirmar Remoção Completa</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja remover o documento do usuário "{userToDelete.name}" (CPF: {userToDelete.cpf}) do Firestore? Esta ação não pode ser desfeita e o usuário Firebase Auth correspondente não será removido por esta ação.
+                Tem certeza que deseja remover "{userToDelete.name}" (CPF: {userToDelete.cpf})? Esta ação não pode ser desfeita e removerá permanentemente o acesso de login (Firebase Auth) e todos os dados associados (Firestore) do usuário.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-                Remover Documento
+                Remover Usuário
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

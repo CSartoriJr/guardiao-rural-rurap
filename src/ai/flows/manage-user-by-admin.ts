@@ -4,7 +4,7 @@
  * This flow acts as a server-side proxy to bypass client-side Firestore security rules.
  *
  * - updateUserAsAdmin - The exported function for updating user data.
- * - deleteUserByAdmin - The exported function for deleting a user document.
+ * - deleteUserByAdmin - The exported function for deleting a user document and their auth record.
  */
 
 import { ai } from '@/ai/genkit';
@@ -12,7 +12,8 @@ import { z } from 'genkit';
 import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import type { User } from '@/types';
 import { doc, deleteDoc, collection, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore';
-
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 
 // Input for the update flow
 const UpdateUserAsAdminInputSchema = z.object({
@@ -99,6 +100,21 @@ const deleteUserByAdminFlow = ai.defineFlow(
     if (userId === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') {
       return { success: false, message: "O Administrador Master não pode ser removido." };
     }
+    
+    // Initialize Firebase Admin SDK for Auth operations
+    if (!getApps().length) {
+      const serviceAccount = {
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      };
+      if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+        const msg = "Credenciais do Firebase Admin não estão configuradas. Não é possível excluir a autenticação do usuário.";
+        console.error(`[deleteUserByAdminFlow] ${msg}`);
+        return { success: false, message: msg };
+      }
+      initializeApp({ credential: cert(serviceAccount) });
+    }
 
     try {
         const userRef = doc(db, 'users', userId);
@@ -112,7 +128,7 @@ const deleteUserByAdminFlow = ai.defineFlow(
             const adminQuery = query(collection(db, 'users'), where("role", "==", "admin"));
             const adminSnapshot = await getDocs(adminQuery);
             if (adminSnapshot.docs.length <= 1) {
-            return { success: false, message: "Não é possível remover o único administrador do sistema." };
+              return { success: false, message: "Não é possível remover o único administrador do sistema." };
             }
         }
 
@@ -130,13 +146,30 @@ const deleteUserByAdminFlow = ai.defineFlow(
             }
         }
 
+        // Delete Firestore document first
         await deleteDoc(userRef);
         console.log(`[deleteUserByAdminFlow] User Firestore document deleted for ${userId}.`);
-        return { success: true };
+
+        // Then, delete Firebase Auth user
+        try {
+            await getAdminAuth().deleteUser(userId);
+            console.log(`[deleteUserByAdminFlow] Firebase Auth user deleted for ${userId}.`);
+        } catch (authError: any) {
+            // If the auth user doesn't exist, it's not a critical failure in this context.
+            // This can happen if a user was manually deleted from Auth console.
+            if (authError.code === 'auth/user-not-found') {
+                console.warn(`[deleteUserByAdminFlow] Firebase Auth user not found for ID ${userId}. Only Firestore doc was deleted.`);
+            } else {
+                // For other auth errors, we should report them.
+                throw authError;
+            }
+        }
+
+        return { success: true, message: "Usuário removido do banco de dados e do sistema de autenticação." };
 
     } catch (error: any) {
         console.error(`[deleteUserByAdminFlow] Error deleting user ${userId}:`, error);
-        return { success: false, message: error.message || "Ocorreu um erro desconhecido no servidor ao remover o documento." };
+        return { success: false, message: error.message || "Ocorreu um erro desconhecido no servidor ao remover o usuário." };
     }
   }
 );

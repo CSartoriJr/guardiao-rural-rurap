@@ -91,16 +91,16 @@ function UserPageContent() {
     try {
       const result = await deleteUserByAdmin({ userId });
       if (!result.success) {
-        throw new Error(result.message || 'Falha ao remover documento do usuário no servidor.');
+        throw new Error(result.message || 'Falha ao remover usuário do servidor.');
       }
       setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
       toast({ 
-        title: "Documento de Usuário Removido", 
-        description: `O documento do usuário ${userName} foi removido. Para restaurar o acesso, crie um novo usuário para essa pessoa.` 
+        title: "Usuário Removido", 
+        description: result.message || `O usuário ${userName} foi removido com sucesso.` 
       });
     } catch (error: any) {
-      console.error("Falha ao remover documento do usuário:", error);
-      toast({ title: "Falha na Remoção do Documento", description: error.message || "Ocorreu um erro.", variant: "destructive" });
+      console.error("Falha ao remover usuário:", error);
+      toast({ title: "Falha na Remoção", description: error.message || "Ocorreu um erro.", variant: "destructive" });
     }
   };
   
