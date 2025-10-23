@@ -50,6 +50,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
+        if (user && user.id === fbUser.uid) {
+            // Se o usuário do estado já corresponde ao usuário do Firebase, não faz nada
+            setInitializing(false);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         const appUserDoc = await getUserDocument(fbUser.uid);
         if (appUserDoc) {
@@ -67,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const login = async (numericCpf: string, password: string): Promise<AppUser | null> => {
     if (!firebaseInitializedCorrectly || !firebaseAuth) throw new Error("Firebase Auth não está inicializado.");
@@ -112,16 +118,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createAuthAndFirestoreUser = async (
     userData: Omit<AppUser, 'id'> & { passwordInput: string; role: AppUser['role'] }
   ): Promise<AppUser | null> => {
-    if (!firebaseInitializedCorrectly || !firebaseAuth) {
-      throw new Error("Firebase Auth não está inicializado.");
+    if (!firebaseInitializedCorrectly) {
+      throw new Error("Firebase não está inicializado.");
     }
-    
-    // Admins and Technicians always create users in a temporary auth session
-    // to avoid logging themselves out. This is also used when a tech registers a farmer.
-    const useTempAuth = userData.role !== 'farmer' || !!userData.registeredByTechnicianId;
 
+    const useTempAuth = userData.role !== 'farmer' || !!userData.registeredByTechnicianId;
     let authProvider = firebaseAuth;
     let tempApp: FirebaseApp | undefined;
+    
     setLoading(true);
 
     try {
@@ -129,12 +133,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const tempAppName = `auth-worker-${userData.role}-${Date.now()}`;
         tempApp = initializeApp(firebaseConfig, tempAppName);
         authProvider = getAuth(tempApp);
-        console.log(`[AuthContext] Using temporary Firebase app: ${tempAppName}`);
       }
 
       const firebaseCompatibleEmail = `${userData.cpf.replace(/\D/g, '')}@cacabruxa.app`;
       
-      console.log(`[AuthContext] Creating Firebase Auth user with email: ${firebaseCompatibleEmail}`);
       const userCredential = await createUserWithEmailAndPassword(authProvider, firebaseCompatibleEmail, userData.passwordInput);
       const fbUser = userCredential.user;
 
@@ -142,12 +144,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const { passwordInput, ...firestoreData } = userData;
 
-      console.log(`[AuthContext] Calling server flow to create Firestore document for user ${fbUser.uid}`);
       const appUser = await createUserDocumentOnServer({
         userId: fbUser.uid,
         userData: firestoreData,
       });
-      console.log(`[AuthContext] Server flow completed successfully for user ${fbUser.uid}`);
+
+      // If a farmer is self-registering, log them in directly
+      if (!useTempAuth) {
+        console.log("[AuthContext] Self-registration complete. Setting user state now.");
+        setFirebaseUser(fbUser);
+        setUser(appUser);
+      }
 
       return appUser;
 
@@ -156,11 +163,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('Este CPF já está cadastrado.');
       }
-      // Re-throw a generic or specific error message to be caught by the form.
       throw new Error(error.message || `Falha ao cadastrar ${userData.role}.`);
     } finally {
       if (tempApp) {
-        console.log(`[AuthContext] Deleting temporary Firebase app.`);
         await deleteApp(tempApp);
       }
       setLoading(false);
@@ -168,7 +173,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const registerFarmer = async (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }): Promise<AppUser | null> => {
-    // This is for a farmer self-registering. They always start as Pending.
     return createAuthAndFirestoreUser({ 
       ...userData, 
       role: 'farmer',
@@ -182,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: 'farmer' as const,
         registeredByTechnicianId: technician.id,
         registeredByTechnicianName: technician.name,
-        registrationStatus: 'Confirmado' as const, // Technicians register confirmed farmers
+        registrationStatus: 'Confirmado' as const,
     };
     return createAuthAndFirestoreUser(userDataWithTechnician);
   };
