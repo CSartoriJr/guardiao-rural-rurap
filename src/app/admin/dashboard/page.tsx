@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
-import { ClipboardList, Frown, Search, Building, MapPin, ListFilter, AlertCircle, CheckCircle, HelpCircle, XCircle } from 'lucide-react';
+import { ClipboardList, Frown, Search, Building, MapPin, ListFilter, AlertCircle, CheckCircle, HelpCircle, XCircle, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
                         <SelectItem value="all">Todos os Status ({registrationStatusCounts.all})</SelectItem>
                         <SelectItem value="Confirmado">Confirmado ({registrationStatusCounts.Confirmed})</SelectItem>
                         <SelectItem value="Pendente">Pendente ({registrationStatusCounts.Pending})</SelectItem>
-                        <SelectItem value="Inapto">Inapto ({registrationStatusCounts.Unfit})</SelectItem>
+                        <SelectItem value="Inapto">Inapto ({registrationStatusCounts.Inapto})</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -315,3 +315,5 @@ const CardSkeleton = () => (
     </div>
   </div>
 );
+
+    
