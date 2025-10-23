@@ -102,10 +102,10 @@ export default function FarmerRegistrationForm() {
       if (newUser) {
         toast({
           title: 'Cadastro Realizado!',
-          description: `Bem-vindo(a), ${newUser.name}! Seu cadastro foi realizado com sucesso. Faça login para continuar.`,
+          description: `Bem-vindo(a), ${newUser.name}! Seu cadastro foi realizado com sucesso.`,
         });
         reset();
-        router.push(APP_ROUTES.LOGIN);
+        router.push(APP_ROUTES.FARMER_DASHBOARD);
       } else {
         // This case should ideally be handled by registerFarmer throwing an error
         toast({ title: "Falha no Cadastro", description: "Não foi possível realizar seu cadastro. Por favor, tente novamente.", variant: "destructive" });
