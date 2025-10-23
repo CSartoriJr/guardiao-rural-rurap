@@ -165,20 +165,24 @@ export default function AdminDashboard() {
       )}
 
 
-       <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-8">
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-            <div className="relative w-full sm:w-auto sm:min-w-[150px]">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    type="text"
-                    placeholder="Buscar por agricultor..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 h-9 text-xs"
-                />
+       <div className="flex flex-col md:flex-row items-end justify-between gap-2 mb-8">
+        <div className="flex flex-col sm:flex-row items-end gap-2 w-full">
+            <div className="w-full sm:w-auto sm:min-w-[150px]">
+              <Label htmlFor="search-input" className="sr-only">Buscar</Label>
+              <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                      id="search-input"
+                      type="text"
+                      placeholder="Buscar por agricultor..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 h-9 text-xs"
+                  />
+              </div>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="organizational-unit-filter" className="sr-only">Filtrar por Unidade</Label>
+                <Label htmlFor="organizational-unit-filter" className="text-xs text-muted-foreground">Unidade</Label>
                 <Select value={organizationalUnitFilter} onValueChange={(value) => setOrganizationalUnitFilter(value)}>
                     <SelectTrigger id="organizational-unit-filter" className="w-full h-9 text-xs">
                     <Building className="mr-1.5 h-3.5 w-3.5" />
@@ -193,7 +197,7 @@ export default function AdminDashboard() {
                 </Select>
             </div>
             <div className="w-full sm:w-auto sm:max-w-[220px]">
-                <Label htmlFor="municipality-filter" className="sr-only">Filtrar por Município</Label>
+                <Label htmlFor="municipality-filter" className="text-xs text-muted-foreground">Município</Label>
                 <Select value={municipalityFilter} onValueChange={(value) => setMunicipalityFilter(value)}>
                     <SelectTrigger id="municipality-filter" className="w-full h-9 text-xs">
                     <MapPin className="mr-1.5 h-3.5 w-3.5" />
