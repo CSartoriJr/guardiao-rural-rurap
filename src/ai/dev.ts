@@ -1,4 +1,4 @@
-
+'use client';
 import { config } from 'dotenv';
 config();
 
@@ -7,3 +7,4 @@ import '@/ai/flows/manage-user-by-admin.ts';
 import '@/ai/flows/create-user-document.ts';
 import '@/ai/flows/create-external-user.ts';
 import '@/ai/flows/get-signed-upload-url.ts';
+import '@/ai/flows/submit-feedback.ts';
