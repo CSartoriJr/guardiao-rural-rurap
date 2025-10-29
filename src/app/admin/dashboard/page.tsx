@@ -72,7 +72,7 @@ export default function AdminDashboard() {
   
   const { filteredRequests, registrationStatusCounts, requestStatusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = {
-      filteredRequests: [],
+      filteredRequests: [] as AgriRequest[],
       registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0 },
       requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
       municipalityCounts: {} as Record<string, number>,
@@ -87,14 +87,18 @@ export default function AdminDashboard() {
     
     const availableMuniSet = new Set<string>();
     const availableOrgUnitSet = new Set<string>();
+
     allRequests.forEach(req => {
-      if(req.municipality) {
-        availableMuniSet.add(req.municipality);
-        initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
+      const trimmedMunicipality = req.municipality?.trim();
+      const trimmedOrgUnit = req.organizationalUnit?.trim();
+
+      if(trimmedMunicipality) {
+        availableMuniSet.add(trimmedMunicipality);
+        initialResult.municipalityCounts[trimmedMunicipality] = (initialResult.municipalityCounts[trimmedMunicipality] || 0) + 1;
       }
-      if(req.organizationalUnit) {
-        availableOrgUnitSet.add(req.organizationalUnit);
-        initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
+      if(trimmedOrgUnit) {
+        availableOrgUnitSet.add(trimmedOrgUnit);
+        initialResult.orgUnitCounts[trimmedOrgUnit] = (initialResult.orgUnitCounts[trimmedOrgUnit] || 0) + 1;
       }
     });
 
@@ -112,11 +116,11 @@ export default function AdminDashboard() {
     });
 
     if (organizationalUnitFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit?.trim() === organizationalUnitFilter);
     }
 
     if (municipalityFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
+      enrichedRequests = enrichedRequests.filter(req => req.municipality?.trim() === municipalityFilter);
     }
     
     initialResult.registrationStatusCounts = {
@@ -220,7 +224,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios ({allRequests.length})</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({Object.values(municipalityCounts).reduce((a, b) => a + b, 0)})</SelectItem>
                         {availableMunicipalities.map(muni => (
                         <SelectItem key={muni} value={muni}>{muni} ({municipalityCounts[muni] || 0})</SelectItem>
                         ))}
