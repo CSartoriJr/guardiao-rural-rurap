@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase, Building, Trash2 } from 'lucide-react';
+import { Frown, ListFilter, UserCheck, Users as UsersIcon, TractorIcon, ShieldPlus, UserPlus, Clock, UserX, Briefcase, Building, Trash2, ShieldCheck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ function UserPageContent() {
 
   useEffect(() => {
     if (authInitializing) return;
-    if (adminUser && adminUser.role === 'admin' && firebaseInitializedCorrectly) {
+    if (adminUser && (adminUser.role === 'admin' || adminUser.role === 'Gestão') && firebaseInitializedCorrectly) {
       setIsLoading(true);
       fetchAllUsersFromFirestore()
         .then(async fetchedUsers => {
@@ -112,6 +112,7 @@ function UserPageContent() {
       case 'GabineteGov': return 'Gabinete Gov.';
       case 'Diagro': return 'Diagro';
       case 'SDR': return 'SDR';
+      case 'Gestão': return 'Gestão';
       default: return role;
     }
   };
@@ -155,6 +156,7 @@ function UserPageContent() {
       gabineteGov: users.filter(u => u.role === 'GabineteGov').length,
       diagro: users.filter(u => u.role === 'Diagro').length,
       sdr: users.filter(u => u.role === 'SDR').length,
+      gestao: users.filter(u => u.role === 'Gestão').length,
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
@@ -164,71 +166,74 @@ function UserPageContent() {
 
 
   return (
-    <PageWrapper allowedRoles={['admin']}>
+    <PageWrapper allowedRoles={['admin', 'Gestão']}>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
         </div>
-        <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-2">
-            <div className="w-full sm:w-auto sm:min-w-[200px]">
-              <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
-              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
-                <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
-                  <ListFilter className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Filtrar por função..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as Funções</SelectItem>
-                  <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
-                  <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
-                  <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
-                  <SelectItem value="GabineteGov">Gabinete Gov. ({totalCounts.gabineteGov})</SelectItem>
-                  <SelectItem value="Diagro">Diagro ({totalCounts.diagro})</SelectItem>
-                  <SelectItem value="SDR">SDR ({totalCounts.sdr})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full sm:w-auto sm:min-w-[200px]">
-              <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status</Label>
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
-                <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
-                  <ListFilter className="mr-2 h-4 w-4 text-primary" />
-                  <SelectValue placeholder="Filtrar por status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="Confirmado">Confirmados ({totalCounts.confirmedFarmers})</SelectItem>
-                  <SelectItem value="Pendente">Pendentes ({totalCounts.pendingFarmers})</SelectItem>
-                  <SelectItem value="Inapto">Inaptos ({totalCounts.unfitFarmers})</SelectItem>
-                  <SelectItem value="Excluir">Solicitou Exclusão ({totalCounts.deletionRequests})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-             <Button asChild className="w-full sm:w-auto">
-                <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Criar Técnico
-                </Link>
-            </Button>
-            <Button asChild className="w-full sm:w-auto" variant="outline">
-                <Link href={APP_ROUTES.ADMIN_CREATE_EXTERNAL_USER}>
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Cadastro Externo
-                </Link>
-            </Button>
-            {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
-              <Button asChild className="w-full sm:w-auto bg-success text-success-foreground hover:bg-success/90">
-                <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
-                  <ShieldPlus className="mr-2 h-4 w-4" />
-                  Adicionar Admin
-                </Link>
+        {adminUser?.role === 'admin' && (
+          <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-2">
+              <div className="w-full sm:w-auto sm:min-w-[200px]">
+                <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
+                <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as AppUserType['role'] | 'all')}>
+                  <SelectTrigger id="role-filter" className="w-full mt-1 bg-card">
+                    <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Filtrar por função..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Funções</SelectItem>
+                    <SelectItem value="admin">Administradores ({totalCounts.admins})</SelectItem>
+                    <SelectItem value="Gestão">Gestão ({totalCounts.gestao})</SelectItem>
+                    <SelectItem value="technician">Técnicos ({totalCounts.technicians})</SelectItem>
+                    <SelectItem value="farmer">Agricultores ({totalCounts.farmers})</SelectItem>
+                    <SelectItem value="GabineteGov">Gabinete Gov. ({totalCounts.gabineteGov})</SelectItem>
+                    <SelectItem value="Diagro">Diagro ({totalCounts.diagro})</SelectItem>
+                    <SelectItem value="SDR">SDR ({totalCounts.sdr})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:w-auto sm:min-w-[200px]">
+                <Label htmlFor="status-filter" className="text-sm font-medium">Filtrar por Status</Label>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>
+                  <SelectTrigger id="status-filter" className="w-full mt-1 bg-card">
+                    <ListFilter className="mr-2 h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Filtrar por status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Confirmado">Confirmados ({totalCounts.confirmedFarmers})</SelectItem>
+                    <SelectItem value="Pendente">Pendentes ({totalCounts.pendingFarmers})</SelectItem>
+                    <SelectItem value="Inapto">Inaptos ({totalCounts.unfitFarmers})</SelectItem>
+                    <SelectItem value="Excluir">Solicitou Exclusão ({totalCounts.deletionRequests})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button asChild className="w-full sm:w-auto">
+                  <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Criar Técnico
+                  </Link>
               </Button>
-            )}
-        </div>
+              <Button asChild className="w-full sm:w-auto" variant="outline">
+                  <Link href={APP_ROUTES.ADMIN_CREATE_EXTERNAL_USER}>
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      Cadastro Externo
+                  </Link>
+              </Button>
+              {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
+                <Button asChild className="w-full sm:w-auto bg-success text-success-foreground hover:bg-success/90">
+                  <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
+                    <ShieldPlus className="mr-2 h-4 w-4" />
+                    Adicionar Admin
+                  </Link>
+                </Button>
+              )}
+          </div>
+        )}
       </div>
 
-      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -254,6 +259,15 @@ function UserPageContent() {
               <span className="text-sm font-medium">Total de Administradores</span>
             </div>
             <div className="text-2xl font-bold">{totalCounts.admins}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm font-medium">Total de Gestores</span>
+            </div>
+            <div className="text-2xl font-bold">{totalCounts.gestao}</div>
           </CardContent>
         </Card>
       </div>
@@ -417,7 +431,7 @@ export default function ManageUsersPage() {
 
 function UserPageSkeleton() {
     return (
-        <PageWrapper allowedRoles={['admin']}>
+        <PageWrapper allowedRoles={['admin', 'Gestão']}>
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>

@@ -29,6 +29,7 @@ export default function AppHeader() {
       case 'GabineteGov': return 'Gabinete Gov.';
       case 'Diagro': return 'Diagro';
       case 'SDR': return 'SDR';
+      case 'Gestão': return 'Gestão';
       default: return 'Usuário';
     }
   }
@@ -37,7 +38,7 @@ export default function AppHeader() {
   let homeDashboardLink = APP_ROUTES.LOGIN;
   if (user.role === 'farmer') homeDashboardLink = APP_ROUTES.FARMER_DASHBOARD;
   else if (user.role === 'technician') homeDashboardLink = APP_ROUTES.TECHNICIAN_DASHBOARD;
-  else if (user.role === 'admin') homeDashboardLink = APP_ROUTES.ADMIN_DASHBOARD;
+  else if (user.role === 'admin' || user.role === 'Gestão') homeDashboardLink = APP_ROUTES.ADMIN_DASHBOARD;
   else if (['GabineteGov', 'Diagro', 'SDR'].includes(user.role)) homeDashboardLink = APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL;
 
 
@@ -84,13 +85,13 @@ export default function AppHeader() {
             </>
           )}
 
-          {/* Admin Links */}
-          {user.role === 'admin' && (
+          {/* Admin & Gestão Links */}
+          {(user.role === 'admin' || user.role === 'Gestão') && (
             <>
               <Link href={APP_ROUTES.ADMIN_DASHBOARD}>
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="h-5 w-5 md:mr-2" />
-                  <span className="hidden md:inline">Painel Admin</span>
+                  <span className="hidden md:inline">Painel</span>
                 </Button>
               </Link>
               <Link href={APP_ROUTES.ADMIN_MANAGE_USERS}>

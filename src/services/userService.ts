@@ -60,7 +60,7 @@ export const getUserDocument = async (userId: string): Promise<AppUser | null> =
   if (docSnap.exists()) {
     // Apply defensive transformation to handle potential data inconsistencies
     const data = docSnap.data();
-    const validRoles: AppUser['role'][] = ['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'];
+    const validRoles: AppUser['role'][] = ['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR', 'Gestão'];
     const validStatuses: RegistrationStatus[] = ['Pendente', 'Confirmado', 'Inapto', 'Excluir'];
 
     const safeUser: AppUser = {

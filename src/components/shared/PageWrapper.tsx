@@ -30,7 +30,7 @@ export default function PageWrapper({ children, allowedRoles }: PageWrapperProps
         console.log(`[PageWrapper] User role '${user.role}' not allowed for this page. Redirecting.`);
         if (user.role === 'farmer') router.replace(APP_ROUTES.FARMER_DASHBOARD);
         else if (user.role === 'technician') router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
-        else if (user.role === 'admin') router.replace(APP_ROUTES.ADMIN_DASHBOARD);
+        else if (user.role === 'admin' || user.role === 'Gestão') router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         else router.replace(APP_ROUTES.LOGIN); // Fallback for any other roles
       }
     }

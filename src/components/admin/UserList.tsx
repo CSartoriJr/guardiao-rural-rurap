@@ -47,7 +47,7 @@ const cafValidation = z.string().refine(val => {
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   cpf: cpfValidation,
-  role: z.enum(['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'], { required_error: "A função é obrigatória." }),
+  role: z.enum(['farmer', 'technician', 'admin', 'GabineteGov', 'Diagro', 'SDR', 'Gestão'], { required_error: "A função é obrigatória." }),
   registrationStatus: z.enum(['Pendente', 'Confirmado', 'Inapto', 'Excluir']).optional(),
   phone: z.string().optional(),
   email: z.string().email({ message: 'E-mail inválido.' }).optional().or(z.literal('')),
@@ -382,26 +382,28 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  {!(user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== user.id) && (
+                  {currentAdmin?.role === 'admin' && !(user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== user.id) && (
                     <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
                       <Pencil className="mr-2 h-4 w-4" /> Editar
                     </Button>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteClick(user)}
-                    disabled={
-                      user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' ||
-                      user.id === currentAdminId ||
-                      (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
-                      (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||
-                      (user.role === 'technician' && (user.responseCount ?? 0) > 0)
-                    }
-                    title={getDeleteButtonTitle(user)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Remover
-                  </Button>
+                  {currentAdmin?.role === 'admin' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClick(user)}
+                      disabled={
+                        user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' ||
+                        user.id === currentAdminId ||
+                        (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
+                        (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||
+                        (user.role === 'technician' && (user.responseCount ?? 0) > 0)
+                      }
+                      title={getDeleteButtonTitle(user)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Remover
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -462,6 +464,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                           <SelectItem value="farmer">Agricultor</SelectItem>
                           <SelectItem value="technician">Técnico</SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="Gestão">Gestão</SelectItem>
                           <SelectItem value="GabineteGov">Gabinete Gov.</SelectItem>
                           <SelectItem value="Diagro">Diagro</SelectItem>
                           <SelectItem value="SDR">SDR</SelectItem>

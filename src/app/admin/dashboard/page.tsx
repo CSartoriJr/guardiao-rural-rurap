@@ -42,7 +42,7 @@ export default function AdminDashboard() {
 
 
   useEffect(() => {
-    if (user && user.role === 'admin') {
+    if (user && (user.role === 'admin' || user.role === 'Gestão')) {
       setIsLoading(true);
       Promise.all([
         getAllRequestsForAdmin(),
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
         .finally(() => {
           setIsLoading(false);
         });
-    } else if (user === null && user?.role !== 'admin') {
+    } else if (user === null && user?.role !== 'admin' && user?.role !== 'Gestão') {
         setIsLoading(false);
     }
   }, [user, toast]);
@@ -160,12 +160,12 @@ export default function AdminDashboard() {
 
 
   return (
-    <PageWrapper allowedRoles={['admin']}>
+    <PageWrapper allowedRoles={['admin', 'Gestão']}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-headline text-gray-800">Painel do Administrador</h1>
       </div>
 
-      {usersRequestingDeletion.length > 0 && (
+      {usersRequestingDeletion.length > 0 && user?.role === 'admin' && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Ação Necessária: Solicitações de Exclusão</AlertTitle>

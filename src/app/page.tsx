@@ -17,7 +17,7 @@ export default function HomePage() {
           router.replace(APP_ROUTES.FARMER_DASHBOARD);
         } else if (user.role === 'technician') {
           router.replace(APP_ROUTES.TECHNICIAN_DASHBOARD);
-        } else if (user.role === 'admin') {
+        } else if (user.role === 'admin' || user.role === 'Gestão') {
           router.replace(APP_ROUTES.ADMIN_DASHBOARD);
         } else if (['GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
           router.replace(APP_ROUTES.TECHNICIAN_ANALYTICS_PANEL); // Redireciona usuários externos para a análise

@@ -3,7 +3,7 @@ export type RegistrationStatus = 'Pendente' | 'Confirmado' | 'Inapto' | 'Excluir
 export interface User {
   id: string; // Firebase Auth UID
   cpf: string;
-  role: 'farmer' | 'technician' | 'admin' | 'GabineteGov' | 'Diagro' | 'SDR';
+  role: 'farmer' | 'technician' | 'admin' | 'GabineteGov' | 'Diagro' | 'SDR' | 'Gestão';
   name: string;
   email?: string; // This is now optional
   password?: string; // Only used for initial creation/reset, not stored directly in Firestore if using Firebase Auth.
