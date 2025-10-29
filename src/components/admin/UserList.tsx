@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText, KeyRound, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, ListChecks, MessageSquareText, Eye, EyeOff, Phone, Mail, Home, MapPin, Users as UsersIconLucide, FileText, KeyRound, Loader2, View } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +25,6 @@ import { resetUserPasswordByAdmin } from '@/ai/flows/reset-user-password-by-admi
 
 interface UserListProps {
   users: UserWithActivityCount[];
-  currentAdminId: string;
   onUserUpdate: (userId: string, updatedData: Partial<AppUserType>) => Promise<void>;
   onUserDelete: (userId: string, userName: string) => Promise<void>;
   getRoleDisplayName: (role: AppUserType['role']) => string;
@@ -122,7 +121,7 @@ const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) =>
     return <Badge variant={variant} className="ml-2">{status}</Badge>;
 }
 
-export default function UserList({ users, currentAdminId, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
+export default function UserList({ users, onUserUpdate, onUserDelete, getRoleDisplayName }: UserListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithActivityCount | null>(null);
@@ -323,7 +322,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     if (user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1') {
       return "O Administrador Master não pode ser removido.";
     }
-    if (user.id === currentAdminId) {
+    if (user.id === currentAdmin?.id) {
       return "Você não pode remover seu próprio usuário.";
     }
     if (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) {
@@ -337,6 +336,8 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
     }
     return "Remover usuário (Auth e Firestore)";
   };
+
+  const isReadOnly = currentAdmin?.role === 'Gestão';
 
 
   return (
@@ -382,7 +383,12 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                     : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  {currentAdmin?.role === 'admin' && !(user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdminId !== user.id) && (
+                   {currentAdmin?.role === 'Gestão' && (
+                    <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
+                      <View className="mr-2 h-4 w-4" /> Visualizar
+                    </Button>
+                  )}
+                  {currentAdmin?.role === 'admin' && !(user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && currentAdmin?.id !== user.id) && (
                     <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>
                       <Pencil className="mr-2 h-4 w-4" /> Editar
                     </Button>
@@ -394,7 +400,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       onClick={() => handleDeleteClick(user)}
                       disabled={
                         user.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' ||
-                        user.id === currentAdminId ||
+                        user.id === currentAdmin?.id ||
                         (user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1) ||
                         (user.role === 'farmer' && (user.requestCount ?? 0) > 0) ||
                         (user.role === 'technician' && (user.responseCount ?? 0) > 0)
@@ -415,9 +421,9 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {setIsEditDialogOpen(open); if(!open) setEditingUser(null);}}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar Usuário: {editingUser.name}</DialogTitle>
+              <DialogTitle>{isReadOnly ? 'Visualizar Usuário' : 'Editar Usuário'}: {editingUser.name}</DialogTitle>
               <DialogDescription>
-                Modifique os dados do usuário.
+                {isReadOnly ? 'Visualize os detalhes do usuário.' : 'Modifique os dados do usuário.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -427,7 +433,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => <Input id="edit-name" {...field} />}
+                    render={({ field }) => <Input id="edit-name" {...field} readOnly={isReadOnly} />}
                   />
                   {errors.name && <p className="text-xs text-destructive pt-1">{errors.name.message}</p>}
                 </div>
@@ -455,7 +461,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
-                        disabled={editingUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1'}
+                        disabled={isReadOnly || editingUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1'}
                       >
                         <SelectTrigger id="edit-role">
                           <SelectValue placeholder="Selecione uma função" />
@@ -480,7 +486,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                   <Controller
                     name="email"
                     control={control}
-                    render={({ field }) => <Input id="edit-email" type="email" placeholder="email@example.com" {...field} />}
+                    render={({ field }) => <Input id="edit-email" type="email" placeholder="email@example.com" {...field} readOnly={isReadOnly} />}
                   />
                   {errors.email && <p className="text-xs text-destructive pt-1">{errors.email.message}</p>}
                 </div>
@@ -497,7 +503,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                           options={organizationalUnitOptions}
                           selected={field.value || []}
                           onChange={field.onChange}
-                          className="w-full"
+                          className={cn(isReadOnly && "pointer-events-none opacity-50")}
                           placeholder="Selecione os municípios..."
                         />
                       )}
@@ -515,7 +521,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         name="registrationStatus"
                         control={control}
                         render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly}>
                             <SelectTrigger id="edit-registrationStatus">
                               <SelectValue placeholder="Selecione um status" />
                             </SelectTrigger>
@@ -534,7 +540,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Controller
                         name="caf"
                         control={control}
-                        render={({ field }) => <Input id="edit-caf" placeholder="APxxxxxx.xx.xxxxxxxxxCAF" {...field} onChange={(e) => handleCafInputChange(e, field.onChange)} />}
+                        render={({ field }) => <Input id="edit-caf" placeholder="APxxxxxx.xx.xxxxxxxxxCAF" {...field} onChange={(e) => handleCafInputChange(e, field.onChange)} readOnly={isReadOnly} />}
                       />
                       {errors.caf && <p className="text-xs text-destructive pt-1">{errors.caf.message}</p>}
                     </div>
@@ -550,6 +556,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                             {...field}
                             onChange={(e) => handlePhoneInputChange(e, field.onChange)}
                             maxLength={15}
+                            readOnly={isReadOnly}
                           />
                         )}
                       />
@@ -560,7 +567,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Controller
                         name="address"
                         control={control}
-                        render={({ field }) => <Input id="edit-address" placeholder="Rua, Número, Bairro..." {...field} />}
+                        render={({ field }) => <Input id="edit-address" placeholder="Rua, Número, Bairro..." {...field} readOnly={isReadOnly} />}
                       />
                       {errors.address && <p className="text-xs text-destructive pt-1">{errors.address.message}</p>}
                     </div>
@@ -570,7 +577,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         name="municipality"
                         control={control}
                         render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly}>
                             <SelectTrigger id="edit-municipality">
                               <SelectValue placeholder="Selecione um município" />
                             </SelectTrigger>
@@ -590,7 +597,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                         name="organizationalUnit"
                         control={control}
                         render={({ field }) => (
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isReadOnly}>
                                 <SelectTrigger id="organizationalUnit">
                                 <SelectValue placeholder="Selecione uma unidade" />
                                 </SelectTrigger>
@@ -609,7 +616,7 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                       <Controller
                         name="familyMembers"
                         control={control}
-                        render={({ field }) => <Input id="edit-familyMembers" type="number" min="0" placeholder="Ex: 4" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />}
+                        render={({ field }) => <Input id="edit-familyMembers" type="number" min="0" placeholder="Ex: 4" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} readOnly={isReadOnly} />}
                       />
                       {errors.familyMembers && <p className="text-xs text-destructive pt-1">{errors.familyMembers.message}</p>}
                     </div>
@@ -617,16 +624,24 @@ export default function UserList({ users, currentAdminId, onUserUpdate, onUserDe
                 )}
               </div>
               <DialogFooter className="pt-4 items-center">
-                <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
-                    <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
-                </Button>
-                <div className="flex-grow"></div>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancelar</Button>
-                </DialogClose>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
-                </Button>
+                 {isReadOnly ? (
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">Fechar</Button>
+                  </DialogClose>
+                ) : (
+                  <>
+                    <Button type="button" variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
+                        <KeyRound className="mr-2 h-4 w-4" /> Alterar Senha
+                    </Button>
+                    <div className="flex-grow"></div>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </>
+                )}
               </DialogFooter>
             </form>
           </DialogContent>

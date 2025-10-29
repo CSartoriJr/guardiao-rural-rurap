@@ -346,7 +346,6 @@ function UserPageContent() {
       ) : filteredUsers.length > 0 ? (
         <UserList 
           users={filteredUsers} 
-          currentAdminId={adminUser?.id || ''}
           onUserUpdate={handleUserUpdate} 
           onUserDelete={handleUserDelete}
           getRoleDisplayName={getRoleDisplayName} 
