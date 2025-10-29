@@ -17,12 +17,14 @@ export const amapaMunicipalities: string[] = [
   "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
   "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
   "Serra do Navio", "Tartarugalzinho", "Vitória do Jari",
-  "Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"
 ];
 
 export const organizationalUnits: string[] = [
-  ...amapaMunicipalities,
-  "Maracá"
+    "Amapá", "Calçoene", "Cutias", "Ferreira Gomes", "Itaubal",
+    "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
+    "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
+    "Serra do Navio", "Tartarugalzinho", "Vitória do Jari",
+    "Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"
 ].sort((a, b) => a.localeCompare(b));
 
 
