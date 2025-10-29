@@ -21,6 +21,7 @@ import { MultiSelect } from '../ui/multi-select';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { resetUserPasswordByAdmin } from '@/ai/flows/reset-user-password-by-admin';
+import { cn } from '@/lib/utils';
 
 
 interface UserListProps {
