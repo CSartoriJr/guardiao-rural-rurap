@@ -358,7 +358,7 @@ export default function TechnicianViewRequestPage() {
 
   if (isLoading || authInitializing) { 
     return (
-       <PageWrapper allowedRoles={['technician', 'admin']}>
+       <PageWrapper allowedRoles={['technician', 'admin', 'Gestão']}>
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-8 w-1/4 mb-6" />
           <Card>
@@ -399,7 +399,7 @@ export default function TechnicianViewRequestPage() {
 
   if (error) {
      return (
-      <PageWrapper allowedRoles={['technician', 'admin']}>
+      <PageWrapper allowedRoles={['technician', 'admin', 'Gestão']}>
         <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
           <h2 className="text-xl font-semibold text-destructive">{error}</h2>
@@ -413,7 +413,7 @@ export default function TechnicianViewRequestPage() {
 
   if (!request) { 
     return (
-      <PageWrapper allowedRoles={['technician', 'admin']}>
+      <PageWrapper allowedRoles={['technician', 'admin', 'Gestão']}>
          <div className="text-center py-10">
           <XCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground">Solicitação Não Encontrada</h2>
@@ -427,7 +427,7 @@ export default function TechnicianViewRequestPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician', 'admin']}>
+    <PageWrapper allowedRoles={['technician', 'admin', 'Gestão']}>
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-6">
             <Button variant="outline" onClick={() => router.back()} className="group">

@@ -33,7 +33,7 @@ export default function TechnicianFarmersPage() {
 
   useEffect(() => {
     if (initializing) return;
-    if (user && ['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
+    if (user && ['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
       setIsLoading(true);
       
       // Determine if municipalities should be passed based on user role
@@ -85,7 +85,7 @@ export default function TechnicianFarmersPage() {
 
   if (isLoading || initializing) {
     return (
-      <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
+      <PageWrapper allowedRoles={['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR']}>
         <div className="space-y-6">
           <Skeleton className="h-10 w-1/3" />
           <Skeleton className="h-8 w-2/5" />
@@ -104,7 +104,7 @@ export default function TechnicianFarmersPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
+    <PageWrapper allowedRoles={['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR']}>
        <Dialog open={!!selectedFarmer} onOpenChange={(open) => !open && setSelectedFarmer(null)}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
