@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -171,7 +172,7 @@ export default function TechnicianAnalyticsPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
+      <PageWrapper allowedRoles={['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR']}>
         <div className="space-y-8">
           <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-1/3" />
@@ -216,7 +217,7 @@ export default function TechnicianAnalyticsPage() {
   }
 
   return (
-    <PageWrapper allowedRoles={['technician', 'admin', 'GabineteGov', 'Diagro', 'SDR']}>
+    <PageWrapper allowedRoles={['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR']}>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-headline text-gray-800">Painel de Análise</h1>
