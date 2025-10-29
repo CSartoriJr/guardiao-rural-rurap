@@ -172,7 +172,7 @@ function UserPageContent() {
           <h1 className="text-3xl font-headline text-gray-800">Gerenciar Usuários</h1>
           <p className="text-muted-foreground">Visualize, edite ou remova os usuários do sistema.</p>
         </div>
-        {adminUser?.role === 'admin' && (
+        {(adminUser?.role === 'admin' || adminUser?.role === 'Gestão') && (
           <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-2">
               <div className="w-full sm:w-auto sm:min-w-[200px]">
                 <Label htmlFor="role-filter" className="text-sm font-medium">Filtrar por Função</Label>
@@ -209,25 +209,29 @@ function UserPageContent() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button asChild className="w-full sm:w-auto">
-                  <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Criar Técnico
-                  </Link>
-              </Button>
-              <Button asChild className="w-full sm:w-auto" variant="outline">
-                  <Link href={APP_ROUTES.ADMIN_CREATE_EXTERNAL_USER}>
-                      <Briefcase className="mr-2 h-4 w-4" />
-                      Cadastro Externo
-                  </Link>
-              </Button>
-              {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
-                <Button asChild className="w-full sm:w-auto bg-success text-success-foreground hover:bg-success/90">
-                  <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
-                    <ShieldPlus className="mr-2 h-4 w-4" />
-                    Adicionar Admin
-                  </Link>
-                </Button>
+              {adminUser?.role === 'admin' && (
+                <>
+                  <Button asChild className="w-full sm:w-auto">
+                      <Link href={APP_ROUTES.ADMIN_CREATE_TECHNICIAN}>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Criar Técnico
+                      </Link>
+                  </Button>
+                  <Button asChild className="w-full sm:w-auto" variant="outline">
+                      <Link href={APP_ROUTES.ADMIN_CREATE_EXTERNAL_USER}>
+                          <Briefcase className="mr-2 h-4 w-4" />
+                          Cadastro Externo
+                      </Link>
+                  </Button>
+                  {adminUser?.id === 'Cp9ZO2xfwCVRfuCXFhKpetUVJFz1' && (
+                    <Button asChild className="w-full sm:w-auto bg-success text-success-foreground hover:bg-success/90">
+                      <Link href={APP_ROUTES.ADMIN_CREATE_ADMIN}>
+                        <ShieldPlus className="mr-2 h-4 w-4" />
+                        Adicionar Admin
+                      </Link>
+                    </Button>
+                  )}
+                </>
               )}
           </div>
         )}
