@@ -27,7 +27,7 @@ const externalUserFormSchema = z.object({
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
   cpf: cpfValidation,
   email: z.string().email({ message: 'E-mail inválido. Será usado para recuperação de senha.' }),
-  role: z.enum(['GabineteGov', 'Diagro', 'SDR'], { required_error: "A função é obrigatória." }),
+  role: z.enum(['GabineteGov', 'Diagro', 'SDR', 'Gestão'], { required_error: "A função é obrigatória." }),
   password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -125,7 +125,7 @@ export default function CreateExternalUserForm() {
         <Card className="w-full shadow-lg">
         <CardHeader>
             <CardTitle className="font-headline text-2xl">Criar Novo Usuário Externo</CardTitle>
-            <CardDescription>Preencha os detalhes para um usuário de visualização (Gabinete, Diagro, SDR).</CardDescription>
+            <CardDescription>Preencha os detalhes para um usuário de visualização (Gabinete, Diagro, SDR, Gestão).</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
@@ -181,6 +181,7 @@ export default function CreateExternalUserForm() {
                       <SelectItem value="GabineteGov">Gabinete Gov.</SelectItem>
                       <SelectItem value="Diagro">Diagro</SelectItem>
                       <SelectItem value="SDR">SDR</SelectItem>
+                      <SelectItem value="Gestão">Gestão</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

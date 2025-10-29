@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A secure flow for creating an external user (GabineteGov, Diagro, SDR).
+ * @fileOverview A secure flow for creating an external user (GabineteGov, Diagro, SDR, Gestão).
  * This flow is called by an admin to create a new user with view-only permissions.
  *
  * - createExternalUser - The exported function that server-side logic will call.
@@ -22,7 +22,7 @@ const CreateExternalUserInputSchema = z.object({
   name: z.string(),
   cpf: z.string(),
   email: z.string().email(),
-  role: z.enum(['GabineteGov', 'Diagro', 'SDR']),
+  role: z.enum(['GabineteGov', 'Diagro', 'SDR', 'Gestão']),
   password: z.string(),
 });
 export type CreateExternalUserInput = z.infer<typeof CreateExternalUserInputSchema>;
