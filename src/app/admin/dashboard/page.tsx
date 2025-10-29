@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -89,8 +90,8 @@ export default function AdminDashboard() {
     const availableOrgUnitSet = new Set<string>();
 
     allRequests.forEach(req => {
-      const trimmedMunicipality = req.municipality?.trim();
-      const trimmedOrgUnit = req.organizationalUnit?.trim();
+      const trimmedMunicipality = typeof req.municipality === 'string' ? req.municipality.trim() : null;
+      const trimmedOrgUnit = typeof req.organizationalUnit === 'string' ? req.organizationalUnit.trim() : null;
 
       if(trimmedMunicipality) {
         availableMuniSet.add(trimmedMunicipality);
@@ -321,3 +322,4 @@ const CardSkeleton = () => (
 );
 
     
+
