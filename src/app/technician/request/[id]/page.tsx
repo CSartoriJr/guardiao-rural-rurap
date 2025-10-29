@@ -83,7 +83,7 @@ const RegistrationStatusCard = ({
 export default function TechnicianViewRequestPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, initializing: authInitializing } = useAuth();
+  const { user, reauthenticateCurrentUser, initializing: authInitializing } = useAuth();
   const { toast } = useToast();
 
   const [request, setRequest] = useState<AgriRequest | null>(null);
@@ -100,8 +100,10 @@ export default function TechnicianViewRequestPage() {
   const requestId = typeof params.id === 'string' ? params.id : undefined;
 
   useEffect(() => { // Effect for initial data loading
-    if (authInitializing || !user) {
-      if(!authInitializing && !user) setIsLoading(false);
+    if (authInitializing) return;
+
+    if (!user) {
+      setIsLoading(false);
       return;
     }
 
@@ -194,13 +196,15 @@ export default function TechnicianViewRequestPage() {
 
   const handleConfirmDelete = async () => {
     if (!user || user.role !== 'admin' || !request || !requestId) return;
-
+  
     setIsDeleting(true);
-    // Placeholder for admin password check
-    if (adminPassword === "23jr02cs") {
+  
+    const isAuthenticated = await reauthenticateCurrentUser(adminPassword);
+  
+    if (isAuthenticated) {
       try {
-        await deleteRequestFromFirestore(requestId); 
-        toast({ title: 'Solicitação Removida', description: `A Solicitação ID ${requestId} foi removido.` });
+        await deleteRequestFromFirestore(requestId);
+        toast({ title: 'Solicitação Removida', description: `A Solicitação ID ${requestId} foi removida.` });
         router.push(APP_ROUTES.ADMIN_DASHBOARD);
       } catch (e: any) {
         toast({ title: 'Erro na Remoção', description: e.message || 'Ocorreu um erro ao tentar remover a Solicitação.', variant: 'destructive' });
@@ -208,6 +212,7 @@ export default function TechnicianViewRequestPage() {
     } else {
       toast({ title: 'Senha Incorreta', description: 'A senha de administrador está incorreta.', variant: 'destructive' });
     }
+  
     setIsDeleting(false);
     setIsDeleteDialogOpen(false);
     setAdminPassword('');
@@ -444,7 +449,7 @@ export default function TechnicianViewRequestPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar Remoção da Solicitação</AlertDialogTitle>
                     <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Para confirmar a remoção da Solicitação ID <span className="font-semibold">{request.id}</span>, por favor, digite sua senha de administrador. (Senha de demonstração: 23jr02cs)
+                    Esta ação não pode ser desfeita. Para confirmar a remoção da Solicitação ID <span className="font-semibold">{request.id}</span>, por favor, digite sua senha de administrador para continuar.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2 my-4">

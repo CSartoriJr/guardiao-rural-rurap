@@ -30,6 +30,7 @@ interface AuthContextType {
   createTechnicianWithAuth: (userData: Omit<AppUser, 'id' | 'role' | 'assignedMunicipalities'> & { passwordInput: string }) => Promise<AppUser | null>;
   createAdminWithAuth: (userData: Omit<AppUser, 'id' | 'role'> & { passwordInput: string }) => Promise<AppUser | null>;
   updateCurrentUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  reauthenticateCurrentUser: (password: string) => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -199,36 +200,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return createAuthAndFirestoreUser({ ...userData, role: 'admin' });
   };
   
-  const updateCurrentUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+  const reauthenticateCurrentUser = async (password: string): Promise<boolean> => {
     if (!firebaseAuth || !firebaseAuth.currentUser) {
-      throw new Error('Nenhum usuário logado para alterar a senha.');
+      console.error('[reauthenticateCurrentUser] No current user to reauthenticate.');
+      return false;
     }
     const currentUser = firebaseAuth.currentUser;
     if (!currentUser.email) {
-        throw new Error('E-mail do usuário não encontrado, não é possível reautenticar.');
+      console.error('[reauthenticateCurrentUser] Current user has no email.');
+      return false;
     }
-
-    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
-
+  
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+  
     try {
       await reauthenticateWithCredential(currentUser, credential);
+      console.log(`[AuthContext] User ${currentUser.uid} reauthenticated successfully.`);
+      return true;
+    } catch (error: any) {
+      console.error('[AuthContext] Reauthentication failed:', error.code);
+      return false;
+    }
+  };
+  
+  const updateCurrentUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    const reauthenticated = await reauthenticateCurrentUser(currentPassword);
+    if (!reauthenticated) {
+      throw new Error('A senha atual está incorreta.');
+    }
+    
+    const currentUser = firebaseAuth.currentUser;
+    if (!currentUser) {
+      throw new Error('Nenhum usuário logado para alterar a senha.');
+    }
+  
+    try {
       await updatePassword(currentUser, newPassword);
       console.log(`[AuthContext] Password updated for user ${currentUser.uid}. Signing out for security.`);
       await logout();
     } catch (error: any) {
-      console.error('[AuthContext] Failed to update password:', error);
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          throw new Error('A senha atual está incorreta.');
-      }
-      if (error.code === 'auth/requires-recent-login') {
-          throw new Error('Esta é uma operação sensível. Por favor, faça login novamente antes de tentar alterar sua senha.');
-      }
+      console.error('[AuthContext] Failed to update password after reauthentication:', error);
       throw new Error(error.message || 'Falha ao alterar a senha.');
     }
   };
+  
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, registerFarmerByTechnician, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, initializing, login, logout, registerFarmer, registerFarmerByTechnician, createTechnicianWithAuth, createAdminWithAuth, updateCurrentUserPassword, reauthenticateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
