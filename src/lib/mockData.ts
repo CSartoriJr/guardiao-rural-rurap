@@ -21,7 +21,7 @@ export const amapaMunicipalities: string[] = [
 
 export const organizationalUnits: string[] = [
     "Amapá", "Calçoene", "Cutias", "Ferreira Gomes", "Itaubal",
-    "Laranjal do Jari", "Macapá", "Mazagão", "Oiapoque",
+    "Laranjal do Jari", "Macapá", "Maracá", "Mazagão", "Oiapoque",
     "Pedra Branca do Amaparí", "Porto Grande", "Pracuúba", "Santana",
     "Serra do Navio", "Tartarugalzinho", "Vitória do Jari",
     "Água Branca do Cajarí", "Pacuí", "Bailique", "Maruanum"
