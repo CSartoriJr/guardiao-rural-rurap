@@ -18,6 +18,7 @@ import { firebaseInitializedCorrectly, db } from '@/lib/firebase';
 import { collection, getDocs, query as firestoreQuery, where } from 'firebase/firestore'; // Added firestoreQuery
 import { getRequestsForFarmer } from '@/services/requestService'; // To count farmer requests
 import { updateUserAsAdmin, deleteUserByAdmin } from '@/ai/flows/manage-user-by-admin';
+import { organizationalUnits } from '@/lib/mockData';
 
 // This is a new component to contain the main logic.
 function UserPageContent() {
@@ -28,6 +29,8 @@ function UserPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<AppUserType['role'] | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+  const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
+
 
   useEffect(() => {
     const statusParam = searchParams.get('status') as RegistrationStatus | null;
@@ -143,13 +146,17 @@ function UserPageContent() {
         usersToFilter = usersToFilter.filter(user => user.role === 'farmer' && user.registrationStatus === statusFilter);
       }
     }
+    
+    if (organizationalUnitFilter !== 'all') {
+        usersToFilter = usersToFilter.filter(user => user.organizationalUnit === organizationalUnitFilter);
+    }
 
     return usersToFilter;
-  }, [users, roleFilter, statusFilter]);
+  }, [users, roleFilter, statusFilter, organizationalUnitFilter]);
 
-  const totalCounts = useMemo(() => {
+  const { totalCounts, orgUnitCounts, availableOrgUnits } = useMemo(() => {
     const farmers = users.filter(u => u.role === 'farmer');
-    return {
+    const counts = {
       farmers: farmers.length,
       technicians: users.filter(u => u.role === 'technician').length,
       admins: users.filter(u => u.role === 'admin').length,
@@ -160,8 +167,19 @@ function UserPageContent() {
       confirmedFarmers: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pendingFarmers: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfitFarmers: farmers.filter(f => f.registrationStatus === 'Inapto').length,
-      deletionRequests: users.filter(u => u.registrationStatus === 'Excluir').length, // Count across all roles
+      deletionRequests: users.filter(u => u.registrationStatus === 'Excluir').length,
     };
+    
+    const orgCounts: Record<string, number> = {};
+    const orgUnits = new Set<string>();
+    users.forEach(user => {
+      if (user.organizationalUnit) {
+        orgUnits.add(user.organizationalUnit);
+        orgCounts[user.organizationalUnit] = (orgCounts[user.organizationalUnit] || 0) + 1;
+      }
+    });
+
+    return { totalCounts: counts, orgUnitCounts: orgCounts, availableOrgUnits: Array.from(orgUnits).sort() };
   }, [users]);
 
 
@@ -190,6 +208,21 @@ function UserPageContent() {
                     <SelectItem value="GabineteGov">Gabinete Gov. ({totalCounts.gabineteGov})</SelectItem>
                     <SelectItem value="Diagro">Diagro ({totalCounts.diagro})</SelectItem>
                     <SelectItem value="SDR">SDR ({totalCounts.sdr})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:w-auto sm:min-w-[200px]">
+                <Label htmlFor="org-unit-filter" className="text-sm font-medium">Unidade Organizacional</Label>
+                <Select value={organizationalUnitFilter} onValueChange={setOrganizationalUnitFilter}>
+                  <SelectTrigger id="org-unit-filter" className="w-full mt-1 bg-card">
+                    <Building className="mr-2 h-4 w-4 text-primary" />
+                    <SelectValue placeholder="Filtrar por unidade..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Unidades ({users.length})</SelectItem>
+                    {availableOrgUnits.map(unit => (
+                      <SelectItem key={unit} value={unit}>{unit} ({orgUnitCounts[unit] || 0})</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
