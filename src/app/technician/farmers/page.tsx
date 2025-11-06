@@ -6,7 +6,7 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Users, Search, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { getRequestsForFarmer from '@/services/requestService';
+import { getRequestsForFarmer } from '@/services/requestService';
 
 export type FarmerWithRequestCount = User & { requestCount?: number };
 
@@ -120,9 +120,13 @@ export default function TechnicianFarmersPage() {
       <PageWrapper allowedRoles={['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR']}>
         <div className="space-y-6">
           <Skeleton className="h-10 w-1/3" />
-          <Skeleton className="h-8 w-2/5" />
-           <div className="space-y-4">
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+          </div>
+           <div className="space-y-4">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -300,5 +304,3 @@ export default function TechnicianFarmersPage() {
     </PageWrapper>
   );
 }
-
-    
