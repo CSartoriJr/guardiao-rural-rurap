@@ -6,17 +6,17 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Search, Home, MapPin, Phone, Mail, TractorIcon, UserPlus, Info, UserCheck, Clock, UserX, ListFilter } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Users, Search, MapPin, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmersList } from '@/app/actions/farmerActions';
 import type { User, RegistrationStatus } from '@/types';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -28,6 +28,7 @@ export default function TechnicianFarmersPage() {
   const [selectedFarmer, setSelectedFarmer] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+  const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
   
   const assignedMunicipalities = useMemo(() => user?.assignedMunicipalities || [], [user]);
 
@@ -36,7 +37,6 @@ export default function TechnicianFarmersPage() {
     if (user && ['technician', 'admin', 'Gestão', 'GabineteGov', 'Diagro', 'SDR'].includes(user.role)) {
       setIsLoading(true);
       
-      // Determine if municipalities should be passed based on user role
       const municipalitiesToFetch = user.role === 'technician' ? user.assignedMunicipalities : undefined;
 
       getFarmersList(municipalitiesToFetch)
@@ -55,23 +55,48 @@ export default function TechnicianFarmersPage() {
     }
   }, [user, initializing, toast]);
 
-  const filteredFarmers = useMemo(() => {
-    return farmers.filter(farmer => {
-      const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (farmer.cpf && farmer.cpf.includes(searchTerm));
-      const matchesStatus = statusFilter === 'all' || farmer.registrationStatus === statusFilter;
-      return matchesSearch && matchesStatus;
+  const { filteredFarmers, statusCounts, orgUnitCounts, availableOrgUnits } = useMemo(() => {
+    const orgUnits = new Set<string>();
+    const orgCounts: Record<string, number> = {};
+
+    farmers.forEach(farmer => {
+      if (farmer.organizationalUnit) {
+        orgUnits.add(farmer.organizationalUnit);
+        orgCounts[farmer.organizationalUnit] = (orgCounts[farmer.organizationalUnit] || 0) + 1;
+      }
     });
-  }, [farmers, searchTerm, statusFilter]);
-  
-  const statusCounts = useMemo(() => {
-    return {
+
+    let usersToFilter = farmers;
+
+    if (organizationalUnitFilter !== 'all') {
+      usersToFilter = usersToFilter.filter(farmer => farmer.organizationalUnit === organizationalUnitFilter);
+    }
+    
+    if (statusFilter !== 'all') {
+      usersToFilter = usersToFilter.filter(farmer => farmer.registrationStatus === statusFilter);
+    }
+    
+    if (searchTerm) {
+      usersToFilter = usersToFilter.filter(farmer => 
+        farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (farmer.cpf && farmer.cpf.includes(searchTerm))
+      );
+    }
+
+    const counts = {
       confirmed: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
       pending: farmers.filter(f => f.registrationStatus === 'Pendente').length,
       unfit: farmers.filter(f => f.registrationStatus === 'Inapto').length,
     };
-  }, [farmers]);
-
+    
+    return {
+      filteredFarmers: usersToFilter,
+      statusCounts: counts,
+      orgUnitCounts: orgCounts,
+      availableOrgUnits: Array.from(orgUnits).sort()
+    };
+  }, [farmers, searchTerm, statusFilter, organizationalUnitFilter]);
+  
   const totalFarmerCount = useMemo(() => farmers.length, [farmers]);
 
   const getStatusFilterDisplayName = (status: RegistrationStatus | 'all') => {
@@ -130,8 +155,8 @@ export default function TechnicianFarmersPage() {
                             <span className="text-sm font-medium">Total de Agricultores</span>
                              <p className="text-xs text-muted-foreground">
                                 {assignedMunicipalities.length > 0
-                                    ? `Visíveis para seus municípios`
-                                    : "Visíveis para todos os municípios"
+                                    ? `Visíveis para suas unidades`
+                                    : "Visíveis para todas as unidades"
                                 }
                             </p>
                         </div>
@@ -169,7 +194,7 @@ export default function TechnicianFarmersPage() {
         </div>
 
         <div className="mb-6 bg-card p-4 rounded-lg shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -179,6 +204,20 @@ export default function TechnicianFarmersPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10"
                     />
+                </div>
+                 <div className="w-full">
+                    <Select value={organizationalUnitFilter} onValueChange={setOrganizationalUnitFilter}>
+                        <SelectTrigger id="org-unit-filter" className="w-full">
+                        <Building className="mr-2 h-4 w-4 text-primary" />
+                        <SelectValue placeholder="Filtrar por unidade..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas as Unidades ({farmers.length})</SelectItem>
+                          {availableOrgUnits.map(unit => (
+                            <SelectItem key={unit} value={unit}>{unit} ({orgUnitCounts[unit] || 0})</SelectItem>
+                          ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                  <div className="w-full">
                     <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | 'all')}>

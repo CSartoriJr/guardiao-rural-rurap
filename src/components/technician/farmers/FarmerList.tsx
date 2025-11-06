@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import type { User } from '@/types';
@@ -19,7 +20,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities
     if (statusFilterDisplayName === 'Todos os Status') {
         message = hasSearchTerm 
             ? "Nenhum agricultor corresponde à sua busca."
-            : `Não foram encontrados agricultores ${assignedMunicipalities.length > 0 ? `para os seus municípios atribuídos.` : 'no sistema.'}`;
+            : `Não foram encontrados agricultores ${assignedMunicipalities.length > 0 ? `para as suas unidades organizacionais atribuídas.` : 'no sistema.'}`;
     }
 
     return (
@@ -44,7 +45,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities
                 <p className="flex items-start"><Home className="h-4 w-4 mr-2 mt-0.5 text-primary" /> {farmer.address}</p>
                 <p className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> {farmer.municipality}</p>
                 <p className="flex items-center"><Phone className="h-4 w-4 mr-2 text-primary" /> {farmer.phone}</p>
-                <p className="flex items-center"><Mail className="h-4 w-4 mr-2 text-primary" /> {farmer.email}</p>
+                {farmer.email && <p className="flex items-center"><Mail className="h-4 w-4 mr-2 text-primary" /> {farmer.email}</p>}
               </div>
             </CardContent>
             <div className="p-4 pt-0">
