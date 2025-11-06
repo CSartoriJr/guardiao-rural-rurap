@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import type { User as AppUserType, RegistrationStatus } from '@/types'; // Use AppUserType
@@ -494,8 +495,8 @@ export default function UserList({ users, onUserUpdate, onUserDelete, getRoleDis
                 
                 {watchedRole === 'technician' && (
                   <div className="space-y-1">
-                    <Label htmlFor="edit-assignedMunicipalities">Municípios Atribuídos</Label>
-                     <p className="text-xs text-muted-foreground">O técnico só verá as solicitações dos municípios selecionados. Se nenhum for selecionado, ele verá todos.</p>
+                    <Label htmlFor="edit-assignedMunicipalities">Unidades Organizacionais Atribuídas</Label>
+                     <p className="text-xs text-muted-foreground">O técnico só verá as solicitações das unidades selecionadas. Se nenhuma for selecionada, ele verá todas.</p>
                     <Controller
                       name="assignedMunicipalities"
                       control={control}
@@ -505,7 +506,7 @@ export default function UserList({ users, onUserUpdate, onUserDelete, getRoleDis
                           selected={field.value || []}
                           onChange={field.onChange}
                           className={cn(isReadOnly && "pointer-events-none opacity-50")}
-                          placeholder="Selecione os municípios..."
+                          placeholder="Selecione as unidades..."
                         />
                       )}
                     />
