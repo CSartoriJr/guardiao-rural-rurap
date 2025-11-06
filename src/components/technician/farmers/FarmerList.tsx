@@ -1,26 +1,38 @@
 
 'use client';
 import React from 'react';
-import type { User } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, MapPin, Phone, Mail, Users } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Eye, Users, ListChecks } from 'lucide-react';
+import type { FarmerWithRequestCount } from '@/app/technician/farmers/page';
+import type { RegistrationStatus } from '@/types';
 
 interface FarmerListProps {
-  farmers: User[];
-  assignedMunicipalities: string[];
-  onSelect: (farmer: User) => void;
+  farmers: FarmerWithRequestCount[];
+  onSelect: (farmer: FarmerWithRequestCount) => void;
   statusFilterDisplayName: string;
   hasSearchTerm: boolean;
 }
 
-const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities, onSelect, statusFilterDisplayName, hasSearchTerm }) => {
+const RegistrationStatusBadge = ({ status }: { status?: RegistrationStatus }) => {
+    if (!status) return <Badge variant="secondary">Pendente</Badge>;
+    let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
+    if (status === 'Confirmado') variant = 'default';
+    if (status === 'Pendente') variant = 'secondary';
+    if (status === 'Inapto' || status === 'Excluir') variant = 'destructive';
+
+    return <Badge variant={variant}>{status}</Badge>;
+}
+
+const FarmerList: React.FC<FarmerListProps> = ({ farmers, onSelect, statusFilterDisplayName, hasSearchTerm }) => {
   if (!Array.isArray(farmers) || farmers.length === 0) {
     let message = `Não foram encontrados agricultores com o status "${statusFilterDisplayName}".`;
-    if (statusFilterDisplayName === 'Todos os Status') {
-        message = hasSearchTerm 
-            ? "Nenhum agricultor corresponde à sua busca."
-            : `Não foram encontrados agricultores ${assignedMunicipalities.length > 0 ? `para as suas unidades organizacionais atribuídas.` : 'no sistema.'}`;
+    if (statusFilterDisplayName === 'Todos os Status' && !hasSearchTerm) {
+        message = `Não foram encontrados agricultores no sistema.`;
+    } else if (hasSearchTerm) {
+        message = "Nenhum agricultor corresponde à sua busca."
     }
 
     return (
@@ -33,28 +45,47 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, assignedMunicipalities
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {farmers.map(farmer => (
-          <Card key={farmer.id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle>{farmer.name}</CardTitle>
-              <CardDescription>CPF: {farmer.cpf}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p className="flex items-start"><Home className="h-4 w-4 mr-2 mt-0.5 text-primary" /> {farmer.address}</p>
-                <p className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> {farmer.municipality}</p>
-                <p className="flex items-center"><Phone className="h-4 w-4 mr-2 text-primary" /> {farmer.phone}</p>
-                {farmer.email && <p className="flex items-center"><Mail className="h-4 w-4 mr-2 text-primary" /> {farmer.email}</p>}
+    <Card className="shadow-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>CPF</TableHead>
+            <TableHead>Unidade Organizacional</TableHead>
+            <TableHead className="text-center">Status do Cadastro</TableHead>
+            <TableHead className="text-center">
+              <div className="flex items-center justify-center gap-1">
+                <ListChecks className="inline-block h-4 w-4" /> Solicitações
               </div>
-            </CardContent>
-            <div className="p-4 pt-0">
-              <Button onClick={() => onSelect(farmer)} className="w-full">Ver Detalhes</Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </TableHead>
+            <TableHead className="text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {farmers.map((farmer) => (
+            <TableRow key={farmer.id}>
+              <TableCell className="font-medium">{farmer.name}</TableCell>
+              <TableCell>{farmer.cpf}</TableCell>
+              <TableCell>{farmer.organizationalUnit || 'N/A'}</TableCell>
+              <TableCell className="text-center">
+                <RegistrationStatusBadge status={farmer.registrationStatus} />
+              </TableCell>
+              <TableCell className="text-center">
+                {farmer.requestCount !== undefined ? farmer.requestCount : '-'}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="outline" size="sm" onClick={() => onSelect(farmer)}>
+                  <Eye className="mr-2 h-4 w-4" /> Detalhes
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
   );
 };
 
 export default FarmerList;
+
+    

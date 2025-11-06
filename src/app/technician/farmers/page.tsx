@@ -6,8 +6,8 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Users, Search, MapPin, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Users, Search, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmersList } from '@/app/actions/farmerActions';
@@ -18,12 +18,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { getRequestsForFarmer from '@/services/requestService';
 
+export type FarmerWithRequestCount = User & { requestCount?: number };
 
 export default function TechnicianFarmersPage() {
   const { user, initializing } = useAuth();
   const { toast } = useToast();
-  const [farmers, setFarmers] = useState<User[]>([]);
+  const [farmers, setFarmers] = useState<FarmerWithRequestCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFarmer, setSelectedFarmer] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,8 +42,13 @@ export default function TechnicianFarmersPage() {
       const municipalitiesToFetch = user.role === 'technician' ? user.assignedMunicipalities : undefined;
 
       getFarmersList(municipalitiesToFetch)
-        .then(data => {
-          setFarmers(data);
+        .then(async (data) => {
+           const farmersWithCountsPromises = data.map(async (farmer) => {
+            const requests = await getRequestsForFarmer(farmer.id);
+            return { ...farmer, requestCount: requests.length };
+          });
+          const farmersWithCounts = await Promise.all(farmersWithCountsPromises);
+          setFarmers(farmersWithCounts);
         })
         .catch(error => {
           console.error("Falha ao buscar agricultores:", error);
@@ -114,14 +121,12 @@ export default function TechnicianFarmersPage() {
         <div className="space-y-6">
           <Skeleton className="h-10 w-1/3" />
           <Skeleton className="h-8 w-2/5" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-1/2 mt-2" /></CardHeader>
-                <CardContent className="space-y-3"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></CardContent>
-                <div className="p-4 pt-0"><Skeleton className="h-10 w-full" /></div>
-              </Card>
-            ))}
+           <div className="space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
           </div>
         </div>
       </PageWrapper>
@@ -238,7 +243,6 @@ export default function TechnicianFarmersPage() {
 
         <FarmerList 
             farmers={filteredFarmers} 
-            assignedMunicipalities={assignedMunicipalities} 
             onSelect={setSelectedFarmer}
             statusFilterDisplayName={getStatusFilterDisplayName(statusFilter)}
             hasSearchTerm={searchTerm.length > 0}
@@ -296,3 +300,5 @@ export default function TechnicianFarmersPage() {
     </PageWrapper>
   );
 }
+
+    
