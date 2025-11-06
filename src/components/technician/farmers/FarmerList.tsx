@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import { Card } from '@/components/ui/card';
@@ -51,6 +50,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, onSelect, statusFilter
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>CPF</TableHead>
+            <TableHead>Município</TableHead>
             <TableHead>Unidade Organizacional</TableHead>
             <TableHead className="text-center">Status do Cadastro</TableHead>
             <TableHead className="text-center">
@@ -66,6 +66,7 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, onSelect, statusFilter
             <TableRow key={farmer.id}>
               <TableCell className="font-medium">{farmer.name}</TableCell>
               <TableCell>{farmer.cpf}</TableCell>
+              <TableCell>{farmer.municipality || 'N/A'}</TableCell>
               <TableCell>{farmer.organizationalUnit || 'N/A'}</TableCell>
               <TableCell className="text-center">
                 <RegistrationStatusBadge status={farmer.registrationStatus} />
@@ -87,5 +88,3 @@ const FarmerList: React.FC<FarmerListProps> = ({ farmers, onSelect, statusFilter
 };
 
 export default FarmerList;
-
-    
