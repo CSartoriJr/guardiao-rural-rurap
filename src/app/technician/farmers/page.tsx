@@ -6,7 +6,7 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Users, Search, MapPin, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
