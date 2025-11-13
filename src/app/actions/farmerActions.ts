@@ -2,7 +2,7 @@
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getUserDocumentSafely } from '@/services/userService';
-import type { User, RegistrationStatus } from '@/types';
+import type { User, AgriRequest, RegistrationStatus } from '@/types';
 import { cookies } from 'next/headers';
 
 async function getCurrentUser(): Promise<User | null> {
@@ -58,13 +58,29 @@ export async function getFarmers(municipalities?: string[]): Promise<User[]> {
 };
 
 
-export async function getFarmersList(municipalities?: string[]): Promise<User[]> {
+export async function getFarmersListWithRequestCounts(municipalities?: string[]): Promise<(User & { requestCount: number })[]> {
   try {
-    const farmers = await getFarmers(municipalities);
-    return farmers;
+    const [farmers, allRequests] = await Promise.all([
+      getFarmers(municipalities),
+      getDocs(collection(db, 'requests'))
+    ]);
+
+    const requestsByFarmer = allRequests.docs.reduce((acc, doc) => {
+      const request = doc.data() as AgriRequest;
+      if (request.farmerId) {
+        acc[request.farmerId] = (acc[request.farmerId] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    return farmers.map(farmer => ({
+      ...farmer,
+      requestCount: requestsByFarmer[farmer.id] || 0
+    }));
+
   } catch (error) {
-    console.error('Failed to get farmers list via server action:', error);
-    return []; 
+    console.error('Failed to get farmers list with counts via server action:', error);
+    return [];
   }
 }
 

@@ -6,11 +6,11 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Users, Search, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getFarmersList } from '@/app/actions/farmerActions';
+import { getFarmersListWithRequestCounts } from '@/app/actions/farmerActions';
 import type { User, RegistrationStatus } from '@/types';
 import Link from 'next/link';
 import { APP_ROUTES } from '@/config/routes';
@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { getRequestsForFarmer } from '@/services/requestService';
+
 
 export type FarmerWithRequestCount = User & { requestCount?: number };
 
@@ -47,15 +47,8 @@ export default function TechnicianFarmersPage() {
       
       const municipalitiesToFetch = user.role === 'technician' ? user.assignedMunicipalities : undefined;
 
-      getFarmersList(municipalitiesToFetch)
-        .then(async (data) => {
-           const farmersWithCountsPromises = data.map(async (farmer) => {
-            const requests = await getRequestsForFarmer(farmer.id);
-            return { ...farmer, requestCount: requests.length };
-          });
-          const farmersWithCounts = await Promise.all(farmersWithCountsPromises);
-          setFarmers(farmersWithCounts);
-        })
+      getFarmersListWithRequestCounts(municipalitiesToFetch)
+        .then(setFarmers)
         .catch(error => {
           console.error("Falha ao buscar agricultores:", error);
           toast({ title: "Erro ao Carregar", description: "Não foi possível buscar a lista de agricultores.", variant: "destructive" });
