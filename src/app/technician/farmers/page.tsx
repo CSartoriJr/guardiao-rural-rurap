@@ -6,8 +6,8 @@ import FarmerList from '@/components/technician/farmers/FarmerList';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Users, Search, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Users, Search, ListFilter, TractorIcon, UserPlus, UserCheck, Clock, UserX, Building, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFarmersList } from '@/app/actions/farmerActions';
@@ -28,9 +28,15 @@ export default function TechnicianFarmersPage() {
   const [farmers, setFarmers] = useState<FarmerWithRequestCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFarmer, setSelectedFarmer] = useState<User | null>(null);
+  
+  // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
   const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   
   const assignedMunicipalities = useMemo(() => user?.assignedMunicipalities || [], [user]);
 
@@ -54,9 +60,7 @@ export default function TechnicianFarmersPage() {
           console.error("Falha ao buscar agricultores:", error);
           toast({ title: "Erro ao Carregar", description: "Não foi possível buscar a lista de agricultores.", variant: "destructive" });
         })
-        .finally(() => {
-          setIsLoading(false);
-        });
+        .finally(() => setIsLoading(false));
     } else if (!initializing) {
         setIsLoading(false);
     }
@@ -89,6 +93,8 @@ export default function TechnicianFarmersPage() {
         (farmer.cpf && farmer.cpf.includes(searchTerm))
       );
     }
+    
+    setCurrentPage(1); // Reset to first page on filter change
 
     const counts = {
       confirmed: farmers.filter(f => f.registrationStatus === 'Confirmado').length,
@@ -106,6 +112,14 @@ export default function TechnicianFarmersPage() {
   
   const totalFarmerCount = useMemo(() => farmers.length, [farmers]);
 
+  const paginatedFarmers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredFarmers.slice(startIndex, endIndex);
+  }, [filteredFarmers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredFarmers.length / itemsPerPage);
+
   const getStatusFilterDisplayName = (status: RegistrationStatus | 'all') => {
     switch (status) {
         case 'Confirmado': return 'Confirmados';
@@ -114,6 +128,32 @@ export default function TechnicianFarmersPage() {
         default: return 'Todos os Status';
     }
   }
+  
+  const PaginationControls = () => (
+    <div className="flex items-center justify-between mt-4">
+        <span className="text-sm text-muted-foreground">
+            Exibindo {paginatedFarmers.length} de {filteredFarmers.length} agricultores.
+        </span>
+        <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+                <ChevronsRight className="h-4 w-4" />
+            </Button>
+        </div>
+    </div>
+  );
+
 
   if (isLoading || initializing) {
     return (
@@ -145,14 +185,32 @@ export default function TechnicianFarmersPage() {
                 <h1 className="text-3xl font-headline text-gray-800">Agricultores</h1>
                 <p className="text-muted-foreground">Visualize e cadastre agricultores.</p>
             </div>
-            {user?.role === 'technician' && (
-              <Button asChild className="bg-success text-success-foreground hover:bg-success/90">
-                  <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Cadastrar Agricultor
-                  </Link>
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2">
+                    <Label htmlFor="items-per-page" className="text-sm font-medium whitespace-nowrap">Exibidos por página</Label>
+                    <Select
+                        value={String(itemsPerPage)}
+                        onValueChange={(value) => setItemsPerPage(Number(value))}
+                    >
+                        <SelectTrigger id="items-per-page" className="w-24">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[10, 50, 100, 200, 500, 1000].map(val => (
+                                <SelectItem key={val} value={String(val)}>{val}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                 </div>
+                {user?.role === 'technician' && (
+                <Button asChild className="bg-success text-success-foreground hover:bg-success/90">
+                    <Link href={APP_ROUTES.TECHNICIAN_REGISTER_FARMER}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Cadastrar Agricultor
+                    </Link>
+                </Button>
+                )}
+            </div>
         </div>
         
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -246,11 +304,13 @@ export default function TechnicianFarmersPage() {
         </div>
 
         <FarmerList 
-            farmers={filteredFarmers} 
+            farmers={paginatedFarmers} 
             onSelect={setSelectedFarmer}
             statusFilterDisplayName={getStatusFilterDisplayName(statusFilter)}
             hasSearchTerm={searchTerm.length > 0}
         />
+        
+        <PaginationControls />
 
         <DialogContent>
             <DialogHeader>
