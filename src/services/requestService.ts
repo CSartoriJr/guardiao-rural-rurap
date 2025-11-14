@@ -178,7 +178,7 @@ export const getRequestsForMunicipalities = async (municipalities: string[]): Pr
 
 export const getAllRequestsForAdmin = async (): Promise<AgriRequest[]> => {
   ensureFirebaseInitialized();
-  const q = query(collection(db!, REQUESTS_COLLECTION), orderBy('submissionDate', 'desc'));
+  const q = query(collection(db!, REQUESTS_COLLECTION), orderBy('submissionDate', 'asc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(requestFromFirestore);
 };

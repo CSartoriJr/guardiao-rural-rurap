@@ -36,7 +36,7 @@ export default function TechnicianDashboard() {
   const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
   const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
-  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatus | 'all'>('all');
+  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatus | 'all'>('Pending');
 
 
   useEffect(() => {
