@@ -17,7 +17,13 @@ async function getCurrentUser(): Promise<User | null> {
 
 export async function getFarmers(municipalities?: string[]): Promise<User[]> {
   const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('role', '==', 'farmer'));
+  let q = query(usersRef, where('role', '==', 'farmer'));
+
+  // If specific municipalities are provided, filter by them.
+  if (municipalities && municipalities.length > 0) {
+      q = query(usersRef, where('role', '==', 'farmer'), where('municipality', 'in', municipalities));
+  }
+
 
   try {
     const querySnapshot = await getDocs(q);
@@ -44,18 +50,25 @@ export async function getFarmers(municipalities?: string[]): Promise<User[]> {
         return acc;
     }, [] as User[]);
 
-    const filteredFarmers = (municipalities && municipalities.length > 0)
-      ? allFarmers.filter(farmer => farmer.municipality && municipalities.includes(farmer.municipality))
-      : allFarmers;
-
-    filteredFarmers.sort((a, b) => a.name.localeCompare(b.name));
-    return filteredFarmers;
+    allFarmers.sort((a, b) => a.name.localeCompare(b.name));
+    return allFarmers;
 
   } catch (error) {
     console.error("[FarmerActions] Error fetching farmers:", error);
     return [];
   }
 };
+
+
+export async function getFarmersList(municipalities?: string[]): Promise<User[]> {
+  try {
+    const farmers = await getFarmers(municipalities);
+    return farmers;
+  } catch (error) {
+    console.error('Failed to get farmers list via server action:', error);
+    return [];
+  }
+}
 
 
 export async function getFarmersListWithRequestCounts(municipalities?: string[]): Promise<(User & { requestCount: number })[]> {
