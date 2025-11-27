@@ -47,7 +47,12 @@ export default function TechnicianDashboard() {
         getAllRequestsSystemWide(),
         fetchAllUsers()
       ]).then(([requestsData, usersData]) => {
-          setAllRequests(requestsData);
+          const usersMap = new Map(usersData.map(u => [u.id, u]));
+          const enrichedRequests = requestsData.map(req => ({
+            ...req,
+            farmerRegistrationStatus: usersMap.get(req.farmerId)?.registrationStatus,
+          }));
+          setAllRequests(enrichedRequests);
           setAllUsers(usersData);
       }).catch(error => {
           console.error("Falha ao buscar dados para o painel do técnico:", error);
@@ -68,20 +73,13 @@ export default function TechnicianDashboard() {
   const technicianBaseRequests = useMemo(() => {
     if (!user) return [];
     
-    const enrichedRequests = allRequests.map(req => {
-        const farmer = allUsers.find(u => u.id === req.farmerId);
-        return {
-            ...req,
-            farmerRegistrationStatus: farmer?.registrationStatus,
-        };
-    });
-
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
+
     if (hasAssignedMunicipalities) {
-      return enrichedRequests.filter(req => req.municipality && user.assignedMunicipalities!.includes(req.municipality));
+      return allRequests.filter(req => req.municipality && user.assignedMunicipalities!.includes(req.municipality));
     }
-    return enrichedRequests;
-  }, [allRequests, allUsers, user]);
+    return allRequests;
+  }, [allRequests, user]);
   
   const { 
     technicianVisibleRequests, 
@@ -94,72 +92,82 @@ export default function TechnicianDashboard() {
   } = useMemo(() => {
     
     const initialResult = { 
-        technicianVisibleRequests: [], 
+        technicianVisibleRequests: [] as AgriRequest[],
         registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0, Excluir: 0 },
         requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
         municipalityCounts: {} as Record<string, number>,
         orgUnitCounts: {} as Record<string, number>,
-        availableMunicipalities: [] as string[],
-        availableOrganizationalUnits: [] as string[]
+        availableMunicipalities: new Set<string>(),
+        availableOrganizationalUnits: new Set<string>()
     };
 
     if (!user || technicianBaseRequests.length === 0) {
-      return initialResult;
+      return { ...initialResult, availableMunicipalities: [], availableOrganizationalUnits: [] };
     }
 
-    // --- Independent Count Calculations ---
-    const availableMuniSet = new Set<string>();
-    const availableOrgUnitSet = new Set<string>();
+    let filteredForDisplay = technicianBaseRequests;
+    let baseForStatusCounts = technicianBaseRequests;
+    let baseForRequestStatusCounts = technicianBaseRequests;
 
-    technicianBaseRequests.forEach(req => {
-      // Municipality counts and availability
-      if(req.municipality) {
-        availableMuniSet.add(req.municipality);
-        initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
-      }
-      // Org Unit counts and availability
-      if(req.organizationalUnit) {
-        availableOrgUnitSet.add(req.organizationalUnit);
-        initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
-      }
-      // Request Status counts
-      initialResult.requestStatusCounts[req.status] = (initialResult.requestStatusCounts[req.status] || 0) + 1;
-      initialResult.requestStatusCounts.all += 1;
-
-      // Farmer Registration Status counts
-      if(req.farmerRegistrationStatus) {
-        initialResult.registrationStatusCounts[req.farmerRegistrationStatus] = (initialResult.registrationStatusCounts[req.farmerRegistrationStatus] || 0) + 1;
-      }
-    });
-
-    initialResult.registrationStatusCounts.all = technicianBaseRequests.length;
-    initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
-    initialResult.availableOrganizationalUnits = Array.from(availableOrgUnitSet).sort();
-
-    // --- Filtering for Display ---
-    let finalFilteredRequests = technicianBaseRequests;
-
+    // --- Filter for display ---
     if (organizationalUnitFilter !== 'all') {
-      finalFilteredRequests = finalFilteredRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      filteredForDisplay = filteredForDisplay.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      baseForStatusCounts = baseForStatusCounts.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      baseForRequestStatusCounts = baseForRequestStatusCounts.filter(req => req.organizationalUnit === organizationalUnitFilter);
     }
+    
     if (municipalityFilter !== 'all') {
-      finalFilteredRequests = finalFilteredRequests.filter(req => req.municipality === municipalityFilter);
+      filteredForDisplay = filteredForDisplay.filter(req => req.municipality === municipalityFilter);
+      baseForRequestStatusCounts = baseForRequestStatusCounts.filter(req => req.municipality === municipalityFilter);
     }
+
+    // --- Independent count calculations ---
+    technicianBaseRequests.forEach(req => {
+        if (req.municipality) initialResult.availableMunicipalities.add(req.municipality);
+        if (req.organizationalUnit) initialResult.availableOrganizationalUnits.add(req.organizationalUnit);
+        
+        if (req.municipality) {
+          initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
+        }
+        if (req.organizationalUnit) {
+           initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
+        }
+    });
+    
+    baseForStatusCounts.forEach(req => {
+        if (req.farmerRegistrationStatus === 'Confirmado') initialResult.registrationStatusCounts.Confirmed++;
+        if (req.farmerRegistrationStatus === 'Pendente') initialResult.registrationStatusCounts.Pending++;
+        if (req.farmerRegistrationStatus === 'Inapto') initialResult.registrationStatusCounts.Inapto++;
+    });
+    initialResult.registrationStatusCounts.all = baseForStatusCounts.length;
+
+    baseForRequestStatusCounts.forEach(req => {
+        initialResult.requestStatusCounts[req.status] = (initialResult.requestStatusCounts[req.status] || 0) + 1;
+    });
+    initialResult.requestStatusCounts.all = baseForRequestStatusCounts.length;
+
+    // --- Final filtering for display ---
     if (statusFilter !== 'all') {
-      finalFilteredRequests = finalFilteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+      filteredForDisplay = filteredForDisplay.filter(req => req.farmerRegistrationStatus === statusFilter);
     }
     if (requestStatusFilter !== 'all') {
-        finalFilteredRequests = finalFilteredRequests.filter(req => req.status === requestStatusFilter);
+        filteredForDisplay = filteredForDisplay.filter(req => req.status === requestStatusFilter);
     }
     if (searchQuery) {
-        finalFilteredRequests = finalFilteredRequests.filter(req => 
+        filteredForDisplay = filteredForDisplay.filter(req => 
             req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
 
-    initialResult.technicianVisibleRequests = finalFilteredRequests;
-
-    return initialResult;
+    return {
+      technicianVisibleRequests: filteredForDisplay,
+      registrationStatusCounts: initialResult.registrationStatusCounts,
+      requestStatusCounts: initialResult.requestStatusCounts,
+      municipalityCounts: initialResult.municipalityCounts,
+      orgUnitCounts: initialResult.orgUnitCounts,
+      availableMunicipalities: Array.from(initialResult.availableMunicipalities).sort(),
+      availableOrganizationalUnits: Array.from(initialResult.availableOrganizationalUnits).sort(),
+    };
 
   }, [technicianBaseRequests, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter, requestStatusFilter]);
 

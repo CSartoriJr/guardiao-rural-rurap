@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import PageWrapper from '@/components/shared/PageWrapper';
@@ -49,7 +48,12 @@ export default function AdminDashboard() {
         getAllRequestsForAdmin(),
         fetchAllUsers()
       ]).then(([requestsData, usersData]) => {
-          setAllRequests(requestsData);
+          const usersMap = new Map(usersData.map(u => [u.id, u]));
+          const enrichedRequests = requestsData.map(req => ({
+            ...req,
+            farmerRegistrationStatus: usersMap.get(req.farmerId)?.registrationStatus,
+          }));
+          setAllRequests(enrichedRequests);
           setAllUsers(usersData);
       }).catch(error => {
           console.error("Falha ao buscar dados para o painel de admin:", error);
@@ -71,95 +75,89 @@ export default function AdminDashboard() {
     return allUsers.filter(u => u.registrationStatus === 'Excluir');
   }, [allUsers]);
   
-  const { filteredRequests, registrationStatusCounts, requestStatusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
+ const { filteredRequests, registrationStatusCounts, requestStatusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
     const initialResult = {
       filteredRequests: [] as AgriRequest[],
       registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0 },
       requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
       municipalityCounts: {} as Record<string, number>,
       orgUnitCounts: {} as Record<string, number>,
-      availableMunicipalities: [] as string[],
-      availableOrganizationalUnits: [] as string[]
+      availableMunicipalities: new Set<string>(),
+      availableOrganizationalUnits: new Set<string>()
     };
 
-    if (allRequests.length === 0 || allUsers.length === 0) {
-      return initialResult;
-    }
-    
-    const availableMuniSet = new Set<string>();
-    const availableOrgUnitSet = new Set<string>();
+    if (allRequests.length === 0) return { ...initialResult, availableMunicipalities: [], availableOrganizationalUnits: [] };
 
-    allRequests.forEach(req => {
-      const trimmedMunicipality = typeof req.municipality === 'string' ? req.municipality.trim() : null;
-      const trimmedOrgUnit = typeof req.organizationalUnit === 'string' ? req.organizationalUnit.trim() : null;
+    let filteredForDisplay = allRequests;
+    let baseForOrgUnitCounts = allRequests;
+    let baseForStatusCounts = allRequests;
+    let baseForRequestStatusCounts = allRequests;
 
-      if(trimmedMunicipality) {
-        availableMuniSet.add(trimmedMunicipality);
-        initialResult.municipalityCounts[trimmedMunicipality] = (initialResult.municipalityCounts[trimmedMunicipality] || 0) + 1;
-      }
-      if(trimmedOrgUnit) {
-        availableOrgUnitSet.add(trimmedOrgUnit);
-        initialResult.orgUnitCounts[trimmedOrgUnit] = (initialResult.orgUnitCounts[trimmedOrgUnit] || 0) + 1;
-      }
-    });
-
-    initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
-    initialResult.availableOrganizationalUnits = Array.from(availableOrgUnitSet).sort();
-
-    const usersMap = new Map(allUsers.map(u => [u.id, u]));
-
-    let enrichedRequests = allRequests.map(req => {
-      const farmer = usersMap.get(req.farmerId);
-      return {
-        ...req,
-        farmerRegistrationStatus: farmer?.registrationStatus,
-      };
-    });
-
+    // --- Filter for display ---
     if (organizationalUnitFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit?.trim() === organizationalUnitFilter);
+      filteredForDisplay = filteredForDisplay.filter(req => req.organizationalUnit?.trim() === organizationalUnitFilter);
+      baseForStatusCounts = baseForStatusCounts.filter(req => req.organizationalUnit?.trim() === organizationalUnitFilter);
+      baseForRequestStatusCounts = baseForRequestStatusCounts.filter(req => req.organizationalUnit?.trim() === organizationalUnitFilter);
     }
-
+    
     if (municipalityFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.municipality?.trim() === municipalityFilter);
-    }
-    
-    initialResult.registrationStatusCounts = {
-      all: enrichedRequests.length,
-      Confirmed: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
-      Pending: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
-      Inapto: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
-    };
-    
-    initialResult.requestStatusCounts = {
-        all: enrichedRequests.length,
-        'Pending': enrichedRequests.filter(req => req.status === 'Pending').length,
-        'Positive': enrichedRequests.filter(req => req.status === 'Positive').length,
-        'Negative': enrichedRequests.filter(req => req.status === 'Negative').length,
-        'Inconclusive': enrichedRequests.filter(req => req.status === 'Inconclusive').length,
-        'Suspeita de Infecção': enrichedRequests.filter(req => req.status === 'Suspeita de Infecção').length
+      filteredForDisplay = filteredForDisplay.filter(req => req.municipality?.trim() === municipalityFilter);
+      baseForRequestStatusCounts = baseForRequestStatusCounts.filter(req => req.municipality?.trim() === municipalityFilter);
     }
 
+    // --- Independent count calculations ---
+    allRequests.forEach(req => {
+        if (req.municipality) initialResult.availableMunicipalities.add(req.municipality);
+        if (req.organizationalUnit) initialResult.availableOrganizationalUnits.add(req.organizationalUnit);
+        
+        if (req.municipality) {
+          initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
+        }
+    });
 
-    let finalFilteredRequests = enrichedRequests;
+    baseForOrgUnitCounts.forEach(req => {
+        if(req.organizationalUnit) {
+            initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
+        }
+    });
+    
+    baseForStatusCounts.forEach(req => {
+        if (req.farmerRegistrationStatus === 'Confirmado') initialResult.registrationStatusCounts.Confirmed++;
+        if (req.farmerRegistrationStatus === 'Pendente') initialResult.registrationStatusCounts.Pending++;
+        if (req.farmerRegistrationStatus === 'Inapto') initialResult.registrationStatusCounts.Inapto++;
+    });
+    initialResult.registrationStatusCounts.all = baseForStatusCounts.length;
 
+    baseForRequestStatusCounts.forEach(req => {
+        initialResult.requestStatusCounts[req.status] = (initialResult.requestStatusCounts[req.status] || 0) + 1;
+    });
+    initialResult.requestStatusCounts.all = baseForRequestStatusCounts.length;
+
+
+    // --- Final filtering for display ---
     if (statusFilter !== 'all') {
-      finalFilteredRequests = finalFilteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
+      filteredForDisplay = filteredForDisplay.filter(req => req.farmerRegistrationStatus === statusFilter);
     }
     
     if (requestStatusFilter !== 'all') {
-        finalFilteredRequests = finalFilteredRequests.filter(req => req.status === requestStatusFilter);
+        filteredForDisplay = filteredForDisplay.filter(req => req.status === requestStatusFilter);
     }
 
     if (searchQuery) {
-      finalFilteredRequests = finalFilteredRequests.filter(req => 
+      filteredForDisplay = filteredForDisplay.filter(req => 
         req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    initialResult.filteredRequests = finalFilteredRequests;
-
-    return initialResult;
+    return {
+      filteredRequests: filteredForDisplay,
+      registrationStatusCounts: initialResult.registrationStatusCounts,
+      requestStatusCounts: initialResult.requestStatusCounts,
+      municipalityCounts: initialResult.municipalityCounts,
+      orgUnitCounts: initialResult.orgUnitCounts,
+      availableMunicipalities: Array.from(initialResult.availableMunicipalities).sort(),
+      availableOrganizationalUnits: Array.from(initialResult.availableOrganizationalUnits).sort(),
+    };
 
   }, [allRequests, allUsers, organizationalUnitFilter, municipalityFilter, statusFilter, requestStatusFilter, searchQuery]);
 
@@ -225,7 +223,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios ({Object.values(municipalityCounts).reduce((a, b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({allRequests.length})</SelectItem>
                         {availableMunicipalities.map(muni => (
                         <SelectItem key={muni} value={muni}>{muni} ({municipalityCounts[muni] || 0})</SelectItem>
                         ))}
@@ -320,6 +318,3 @@ const CardSkeleton = () => (
     </div>
   </div>
 );
-
-    
-
