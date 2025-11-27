@@ -107,7 +107,7 @@ export default function TechnicianDashboard() {
     
     const usersMap = new Map(allUsers.map(u => [u.id, u]));
     
-    let enrichedRequests = baseRequests.map(req => {
+    const enrichedRequests = baseRequests.map(req => {
       const farmer = usersMap.get(req.farmerId);
       return {
         ...req,
@@ -115,31 +115,31 @@ export default function TechnicianDashboard() {
       };
     });
 
+    let filteredForStatusCounts = enrichedRequests;
     if (organizationalUnitFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      filteredForStatusCounts = filteredForStatusCounts.filter(req => req.organizationalUnit === organizationalUnitFilter);
     }
-    
     if (municipalityFilter !== 'all') {
-      enrichedRequests = enrichedRequests.filter(req => req.municipality === municipalityFilter);
+      filteredForStatusCounts = filteredForStatusCounts.filter(req => req.municipality === municipalityFilter);
     }
-    
-    initialResult.registrationStatusCounts = {
-      all: enrichedRequests.length,
-      Confirmed: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
-      Pending: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
-      Inapto: enrichedRequests.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
-    };
     
     initialResult.requestStatusCounts = {
-        all: enrichedRequests.length,
-        'Pending': enrichedRequests.filter(req => req.status === 'Pending').length,
-        'Positive': enrichedRequests.filter(req => req.status === 'Positive').length,
-        'Negative': enrichedRequests.filter(req => req.status === 'Negative').length,
-        'Inconclusive': enrichedRequests.filter(req => req.status === 'Inconclusive').length,
-        'Suspeita de Infecção': enrichedRequests.filter(req => req.status === 'Suspeita de Infecção').length
+        all: filteredForStatusCounts.length,
+        'Pending': filteredForStatusCounts.filter(req => req.status === 'Pending').length,
+        'Positive': filteredForStatusCounts.filter(req => req.status === 'Positive').length,
+        'Negative': filteredForStatusCounts.filter(req => req.status === 'Negative').length,
+        'Inconclusive': filteredForStatusCounts.filter(req => req.status === 'Inconclusive').length,
+        'Suspeita de Infecção': filteredForStatusCounts.filter(req => req.status === 'Suspeita de Infecção').length
     }
 
-    let finalFilteredRequests = enrichedRequests;
+    initialResult.registrationStatusCounts = {
+      all: filteredForStatusCounts.length,
+      Confirmed: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
+      Pending: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
+      Inapto: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
+    };
+    
+    let finalFilteredRequests = filteredForStatusCounts;
 
     if (statusFilter !== 'all') {
       finalFilteredRequests = finalFilteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
