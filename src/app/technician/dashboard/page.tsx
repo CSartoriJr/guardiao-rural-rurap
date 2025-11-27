@@ -65,19 +65,37 @@ export default function TechnicianDashboard() {
     }
   }, [user, toast]);
 
-  const baseRequests = useMemo(() => {
+  const technicianBaseRequests = useMemo(() => {
     if (!user) return [];
+    
+    const enrichedRequests = allRequests.map(req => {
+        const farmer = allUsers.find(u => u.id === req.farmerId);
+        return {
+            ...req,
+            farmerRegistrationStatus: farmer?.registrationStatus,
+        };
+    });
+
     const hasAssignedMunicipalities = user.role === 'technician' && user.assignedMunicipalities && user.assignedMunicipalities.length > 0;
     if (hasAssignedMunicipalities) {
-      return allRequests.filter(req => req.municipality && user.assignedMunicipalities!.includes(req.municipality));
+      return enrichedRequests.filter(req => req.municipality && user.assignedMunicipalities!.includes(req.municipality));
     }
-    return allRequests;
-  }, [allRequests, user]);
+    return enrichedRequests;
+  }, [allRequests, allUsers, user]);
   
-  const { technicianVisibleRequests, registrationStatusCounts, requestStatusCounts, municipalityCounts, orgUnitCounts, availableMunicipalities, availableOrganizationalUnits } = useMemo(() => {
+  const { 
+    technicianVisibleRequests, 
+    registrationStatusCounts, 
+    requestStatusCounts, 
+    municipalityCounts, 
+    orgUnitCounts, 
+    availableMunicipalities, 
+    availableOrganizationalUnits 
+  } = useMemo(() => {
+    
     const initialResult = { 
         technicianVisibleRequests: [], 
-        registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0 },
+        registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0, Excluir: 0 },
         requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
         municipalityCounts: {} as Record<string, number>,
         orgUnitCounts: {} as Record<string, number>,
@@ -85,70 +103,54 @@ export default function TechnicianDashboard() {
         availableOrganizationalUnits: [] as string[]
     };
 
-    if (!user || baseRequests.length === 0 || allUsers.length === 0) {
+    if (!user || technicianBaseRequests.length === 0) {
       return initialResult;
     }
-    
+
+    // --- Independent Count Calculations ---
     const availableMuniSet = new Set<string>();
     const availableOrgUnitSet = new Set<string>();
-    baseRequests.forEach(req => {
+
+    technicianBaseRequests.forEach(req => {
+      // Municipality counts and availability
       if(req.municipality) {
         availableMuniSet.add(req.municipality);
         initialResult.municipalityCounts[req.municipality] = (initialResult.municipalityCounts[req.municipality] || 0) + 1;
       }
+      // Org Unit counts and availability
       if(req.organizationalUnit) {
         availableOrgUnitSet.add(req.organizationalUnit);
         initialResult.orgUnitCounts[req.organizationalUnit] = (initialResult.orgUnitCounts[req.organizationalUnit] || 0) + 1;
       }
+      // Request Status counts
+      initialResult.requestStatusCounts[req.status] = (initialResult.requestStatusCounts[req.status] || 0) + 1;
+      initialResult.requestStatusCounts.all += 1;
+
+      // Farmer Registration Status counts
+      if(req.farmerRegistrationStatus) {
+        initialResult.registrationStatusCounts[req.farmerRegistrationStatus] = (initialResult.registrationStatusCounts[req.farmerRegistrationStatus] || 0) + 1;
+      }
     });
 
+    initialResult.registrationStatusCounts.all = technicianBaseRequests.length;
     initialResult.availableMunicipalities = Array.from(availableMuniSet).sort();
     initialResult.availableOrganizationalUnits = Array.from(availableOrgUnitSet).sort();
-    
-    const usersMap = new Map(allUsers.map(u => [u.id, u]));
-    
-    const enrichedRequests = baseRequests.map(req => {
-      const farmer = usersMap.get(req.farmerId);
-      return {
-        ...req,
-        farmerRegistrationStatus: farmer?.registrationStatus,
-      };
-    });
 
-    let filteredForStatusCounts = enrichedRequests;
+    // --- Filtering for Display ---
+    let finalFilteredRequests = technicianBaseRequests;
+
     if (organizationalUnitFilter !== 'all') {
-      filteredForStatusCounts = filteredForStatusCounts.filter(req => req.organizationalUnit === organizationalUnitFilter);
+      finalFilteredRequests = finalFilteredRequests.filter(req => req.organizationalUnit === organizationalUnitFilter);
     }
     if (municipalityFilter !== 'all') {
-      filteredForStatusCounts = filteredForStatusCounts.filter(req => req.municipality === municipalityFilter);
+      finalFilteredRequests = finalFilteredRequests.filter(req => req.municipality === municipalityFilter);
     }
-    
-    initialResult.requestStatusCounts = {
-        all: filteredForStatusCounts.length,
-        'Pending': filteredForStatusCounts.filter(req => req.status === 'Pending').length,
-        'Positive': filteredForStatusCounts.filter(req => req.status === 'Positive').length,
-        'Negative': filteredForStatusCounts.filter(req => req.status === 'Negative').length,
-        'Inconclusive': filteredForStatusCounts.filter(req => req.status === 'Inconclusive').length,
-        'Suspeita de Infecção': filteredForStatusCounts.filter(req => req.status === 'Suspeita de Infecção').length
-    }
-
-    initialResult.registrationStatusCounts = {
-      all: filteredForStatusCounts.length,
-      Confirmed: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Confirmado').length,
-      Pending: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Pendente').length,
-      Inapto: filteredForStatusCounts.filter(req => req.farmerRegistrationStatus === 'Inapto').length,
-    };
-    
-    let finalFilteredRequests = filteredForStatusCounts;
-
     if (statusFilter !== 'all') {
       finalFilteredRequests = finalFilteredRequests.filter(req => req.farmerRegistrationStatus === statusFilter);
     }
-    
     if (requestStatusFilter !== 'all') {
         finalFilteredRequests = finalFilteredRequests.filter(req => req.status === requestStatusFilter);
     }
-    
     if (searchQuery) {
         finalFilteredRequests = finalFilteredRequests.filter(req => 
             req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -159,7 +161,7 @@ export default function TechnicianDashboard() {
 
     return initialResult;
 
-  }, [baseRequests, allUsers, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter, requestStatusFilter]);
+  }, [technicianBaseRequests, user, statusFilter, municipalityFilter, searchQuery, organizationalUnitFilter, requestStatusFilter]);
 
 
   return (
@@ -204,7 +206,7 @@ export default function TechnicianDashboard() {
                     <SelectValue placeholder="Filtrar unidade..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todas as Unidades ({baseRequests.length})</SelectItem>
+                        <SelectItem value="all">Todas as Unidades ({technicianBaseRequests.length})</SelectItem>
                         {availableOrganizationalUnits.map(unit => (
                         <SelectItem key={unit} value={unit}>{unit} ({orgUnitCounts[unit] || 0})</SelectItem>
                         ))}
@@ -219,7 +221,7 @@ export default function TechnicianDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios ({baseRequests.length})</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({technicianBaseRequests.length})</SelectItem>
                         {availableMunicipalities.map(muni => (
                         <SelectItem key={muni} value={muni}>{muni} ({municipalityCounts[muni] || 0})</SelectItem>
                         ))}
