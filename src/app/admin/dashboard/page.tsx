@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   const [organizationalUnitFilter, setOrganizationalUnitFilter] = useState<string | 'all'>('all');
   const [municipalityFilter, setMunicipalityFilter] = useState<string | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
-  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatus | 'all'>('Pending');
+  const [requestStatusFilter, setRequestStatusFilter] = useState<RequestStatus | 'all'>('all');
 
 
   useEffect(() => {
@@ -77,31 +77,29 @@ export default function AdminDashboard() {
   
   const { filteredRequests, counts } = useMemo(() => {
     const baseList = allRequests;
+    
+    // --- LISTS FOR CONTEXTUAL COUNTING ---
+    const searchFiltered = baseList.filter(req => !searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // --- CONTEXTUAL LISTS FOR COUNTING ---
-    const listForOrgUnitCounts = baseList.filter(req =>
+    const listForOrgUnitCounts = searchFiltered.filter(req =>
       (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
       (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-      (requestStatusFilter === 'all' || req.status === requestStatusFilter) &&
-      (!searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const listForMunicipalityCounts = baseList.filter(req =>
+    const listForMunicipalityCounts = searchFiltered.filter(req =>
       (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
       (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-      (requestStatusFilter === 'all' || req.status === requestStatusFilter) &&
-      (!searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const listForRegStatusCounts = baseList.filter(req =>
+    const listForRegStatusCounts = searchFiltered.filter(req =>
       (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
       (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
-      (requestStatusFilter === 'all' || req.status === requestStatusFilter) &&
-      (!searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const listForReqStatusCounts = baseList.filter(req =>
+    const listForReqStatusCounts = searchFiltered.filter(req =>
       (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
       (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
-      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-      (!searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter)
     );
 
     // --- CONTEXTUAL COUNTS ---
@@ -111,12 +109,11 @@ export default function AdminDashboard() {
     const requestStatusCounts = listForReqStatusCounts.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>);
 
     // --- FINAL FILTERED LIST FOR DISPLAY ---
-    const finalFilteredList = baseList.filter(req =>
+    const finalFilteredList = searchFiltered.filter(req =>
       (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
       (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
       (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-      (requestStatusFilter === 'all' || req.status === requestStatusFilter) &&
-      (!searchQuery || req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
 
     // Get available options from the original, unfiltered list to ensure all possible options are always shown
