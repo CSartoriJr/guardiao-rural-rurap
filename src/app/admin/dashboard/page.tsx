@@ -76,57 +76,69 @@ export default function AdminDashboard() {
   }, [allUsers]);
   
   const { filteredRequests, counts } = useMemo(() => {
-    // 1. Filter by search query first
+    // Start with the base list, filtered by search query
     const searchedList = searchQuery
-        ? allRequests.filter(req => req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
-        : allRequests;
+      ? allRequests.filter(req => req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+      : allRequests;
 
-    // 2. Calculate counts for each filter based on the *other* active filters
-    const baseForOrgUnitCount = searchedList.filter(req => 
-        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
-        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    // --- CONTEXTUAL COUNTS ---
+    // Calculate counts for each filter based on *other* active filters.
+
+    // For Org Unit Counts: filter by municipality, reg status, and req status
+    const forOrgUnitCountList = searchedList.filter(req =>
+      (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const orgUnitCounts = baseForOrgUnitCount.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const orgUnitCounts = forOrgUnitCountList.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>);
 
-    const baseForMunicipalityCount = searchedList.filter(req => 
-        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
-        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
-        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    // For Municipality Counts: filter by org unit, reg status, and req status
+    const forMunicipalityCountList = searchedList.filter(req =>
+      (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const municipalityCounts = baseForMunicipalityCount.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>);
-
-    const baseForRegStatusCount = searchedList.filter(req => 
-        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
-        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
-        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    const municipalityCounts = forMunicipalityCountList.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>);
+    
+    // For Registration Status Counts: filter by org unit, municipality, and req status
+    const forRegStatusCountList = searchedList.filter(req =>
+      (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+      (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
     );
-    const registrationStatusCounts = baseForRegStatusCount.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>);
+    const registrationStatusCounts = forRegStatusCountList.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>);
 
-    const baseForReqStatusCount = searchedList.filter(req => 
-        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
-        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
-        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter)
+    // For Request Status Counts: filter by org unit, municipality, and reg status
+    const forReqStatusCountList = searchedList.filter(req =>
+      (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+      (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter)
     );
-    const requestStatusCounts = baseForReqStatusCount.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>);
+    const requestStatusCounts = forReqStatusCountList.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>);
 
-    // 3. Apply all filters for the final displayed list
-    const finalFilteredList = baseForReqStatusCount.filter(req => requestStatusFilter === 'all' || req.status === requestStatusFilter);
+    // --- FINAL FILTERED LIST FOR DISPLAY ---
+    // Apply all active filters to the searched list
+    const finalFilteredList = searchedList.filter(req =>
+      (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+      (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+      (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
+      (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    );
 
-    // 4. Get available options based on the original list (or searched list for broader context)
+    // Get available options from the original, unfiltered list to ensure all possible options are always shown
     const availableMunicipalities = Array.from(new Set(allRequests.map(r => r.municipality).filter(Boolean as any))).sort();
     const availableOrganizationalUnits = Array.from(new Set(allRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort();
     
     return {
-        filteredRequests: finalFilteredList,
-        counts: {
-            orgUnitCounts,
-            municipalityCounts,
-            registrationStatusCounts,
-            requestStatusCounts,
-            availableMunicipalities,
-            availableOrganizationalUnits,
-        }
+      filteredRequests: finalFilteredList,
+      counts: {
+        orgUnitCounts,
+        municipalityCounts,
+        registrationStatusCounts,
+        requestStatusCounts,
+        availableMunicipalities,
+        availableOrganizationalUnits,
+      }
     };
   }, [allRequests, searchQuery, organizationalUnitFilter, municipalityFilter, statusFilter, requestStatusFilter]);
 
@@ -177,7 +189,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar unidade..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todas as Unidades ({Object.values(counts.orgUnitCounts).reduce((a, b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todas as Unidades ({forOrgUnitCountList.length})</SelectItem>
                         {counts.availableOrganizationalUnits.map(unit => (
                         <SelectItem key={unit} value={unit}>{unit} ({counts.orgUnitCounts[unit] || 0})</SelectItem>
                         ))}
@@ -192,7 +204,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios ({Object.values(counts.municipalityCounts).reduce((a, b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({forMunicipalityCountList.length})</SelectItem>
                         {counts.availableMunicipalities.map(muni => (
                         <SelectItem key={muni} value={muni}>{muni} ({counts.municipalityCounts[muni] || 0})</SelectItem>
                         ))}
@@ -207,7 +219,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar status..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Status ({Object.values(counts.registrationStatusCounts).reduce((a, b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todos os Status ({forRegStatusCountList.length})</SelectItem>
                         <SelectItem value="Confirmado">Confirmado ({counts.registrationStatusCounts.Confirmado || 0})</SelectItem>
                         <SelectItem value="Pendente">Pendente ({counts.registrationStatusCounts.Pendente || 0})</SelectItem>
                         <SelectItem value="Inapto">Inapto ({counts.registrationStatusCounts.Inapto || 0})</SelectItem>
@@ -222,7 +234,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar status..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Status ({Object.values(counts.requestStatusCounts).reduce((a, b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todos os Status ({forReqStatusCountList.length})</SelectItem>
                         <SelectItem value="Pending"><Clock className="mr-2 h-4 w-4 inline-block" />Pendente ({counts.requestStatusCounts.Pending || 0})</SelectItem>
                         <SelectItem value="Positive"><CheckCircle className="mr-2 h-4 w-4 inline-block text-green-600" />Positivo ({counts.requestStatusCounts.Positive || 0})</SelectItem>
                         <SelectItem value="Negative"><XCircle className="mr-2 h-4 w-4 inline-block text-red-600" />Possivelmente Negativo ({counts.requestStatusCounts.Negative || 0})</SelectItem>
