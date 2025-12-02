@@ -82,60 +82,69 @@ export default function TechnicianDashboard() {
   }, [allRequests, user]);
   
   const { filteredRequests, counts } = useMemo(() => {
+    // 1. Base filter for search query
     let baseFiltered = technicianBaseRequests;
-    
     if (searchQuery) {
-        baseFiltered = baseFiltered.filter(req => req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()));
+        baseFiltered = baseFiltered.filter(req => 
+            req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
     }
+  
+    // 2. Calculate counts for each filter dropdown, based on OTHER active filters
+    const calculateCounts = (
+      items: AgriRequest[],
+      activeFilters: { org?: string; muni?: string; reg?: string; req?: string }
+    ) => {
+        const count = (list: AgriRequest[]) => ({
+            orgUnitCounts: list.reduce((acc, req) => { if(req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>),
+            municipalityCounts: list.reduce((acc, req) => { if(req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>),
+            registrationStatusCounts: list.reduce((acc, req) => { if(req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>),
+            requestStatusCounts: list.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>),
+        });
+        
+        const orgContext = count(items.filter(i => (!activeFilters.muni || i.municipality === activeFilters.muni) && (!activeFilters.reg || i.farmerRegistrationStatus === activeFilters.reg) && (!activeFilters.req || i.status === activeFilters.req)));
+        const muniContext = count(items.filter(i => (!activeFilters.org || i.organizationalUnit === activeFilters.org) && (!activeFilters.reg || i.farmerRegistrationStatus === activeFilters.reg) && (!activeFilters.req || i.status === activeFilters.req)));
+        const regStatusContext = count(items.filter(i => (!activeFilters.org || i.organizationalUnit === activeFilters.org) && (!activeFilters.muni || i.municipality === activeFilters.muni) && (!activeFilters.req || i.status === activeFilters.req)));
+        const reqStatusContext = count(items.filter(i => (!activeFilters.org || i.organizationalUnit === activeFilters.org) && (!activeFilters.muni || i.municipality === activeFilters.muni) && (!activeFilters.reg || i.farmerRegistrationStatus === activeFilters.reg)));
 
-    const finalCounts = {
-        orgUnitCounts: {} as Record<string, number>,
-        municipalityCounts: {} as Record<string, number>,
-        registrationStatusCounts: { all: 0, Confirmed: 0, Pending: 0, Inapto: 0, Excluir: 0 },
-        requestStatusCounts: { all: 0, Pending: 0, Positive: 0, Negative: 0, Inconclusive: 0, 'Suspeita de Infecção': 0 },
-        availableMunicipalities: new Set<string>(),
-        availableOrganizationalUnits: new Set<string>()
+        return {
+            orgUnitCounts: orgContext.orgUnitCounts,
+            municipalityCounts: muniContext.municipalityCounts,
+            registrationStatusCounts: regStatusContext.registrationStatusCounts,
+            requestStatusCounts: reqStatusContext.requestStatusCounts,
+        };
     };
+    
+    const activeFiltersForCounts = {
+        org: organizationalUnitFilter !== 'all' ? organizationalUnitFilter : undefined,
+        muni: municipalityFilter !== 'all' ? municipalityFilter : undefined,
+        reg: statusFilter !== 'all' ? statusFilter : undefined,
+        req: requestStatusFilter !== 'all' ? requestStatusFilter : undefined,
+    };
+    
+    const calculatedCounts = calculateCounts(baseFiltered, activeFiltersForCounts);
 
-    technicianBaseRequests.forEach(req => {
-        if(req.municipality) finalCounts.availableMunicipalities.add(req.municipality);
-        if(req.organizationalUnit) finalCounts.availableOrganizationalUnits.add(req.organizationalUnit);
-    });
-
-    const countItems = (list: AgriRequest[]) => ({
-        orgs: list.reduce((acc, req) => { if(req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>),
-        munis: list.reduce((acc, req) => { if(req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>),
-        regStatus: list.reduce((acc, req) => { if(req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>),
-        reqStatus: list.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>),
-    });
-
-    const orgContext = countItems(baseFiltered.filter(req => (municipalityFilter === 'all' || req.municipality === municipalityFilter) && (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) && (requestStatusFilter === 'all' || req.status === requestStatusFilter)));
-    const muniContext = countItems(baseFiltered.filter(req => (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) && (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) && (requestStatusFilter === 'all' || req.status === requestStatusFilter)));
-    const regStatusContext = countItems(baseFiltered.filter(req => (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) && (municipalityFilter === 'all' || req.municipality === municipalityFilter) && (requestStatusFilter === 'all' || req.status === requestStatusFilter)));
-    const reqStatusContext = countItems(baseFiltered.filter(req => (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) && (municipalityFilter === 'all' || req.municipality === municipalityFilter) && (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter)));
-
-    finalCounts.orgUnitCounts = orgContext.orgs;
-    finalCounts.municipalityCounts = muniContext.munis;
-    finalCounts.registrationStatusCounts = { ...finalCounts.registrationStatusCounts, ...regStatusContext.regStatus };
-    finalCounts.requestStatusCounts = { ...finalCounts.requestStatusCounts, ...reqStatusContext.reqStatus };
-    finalCounts.registrationStatusCounts.all = Object.values(regStatusContext.regStatus).reduce((a, b) => a + b, 0);
-    finalCounts.requestStatusCounts.all = Object.values(reqStatusContext.reqStatus).reduce((a, b) => a + b, 0);
-
+    // 3. Get the final list to display by applying ALL active filters
     let displayList = baseFiltered;
     if (organizationalUnitFilter !== 'all') displayList = displayList.filter(req => req.organizationalUnit === organizationalUnitFilter);
     if (municipalityFilter !== 'all') displayList = displayList.filter(req => req.municipality === municipalityFilter);
     if (statusFilter !== 'all') displayList = displayList.filter(req => req.farmerRegistrationStatus === statusFilter);
     if (requestStatusFilter !== 'all') displayList = displayList.filter(req => req.status === requestStatusFilter);
 
+    // 4. Get available options for dropdowns from the full dataset (not filtered)
+    const availableMunicipalities = Array.from(new Set(technicianBaseRequests.map(r => r.municipality).filter(Boolean as any))).sort();
+    const availableOrganizationalUnits = Array.from(new Set(technicianBaseRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort();
+
     return {
         filteredRequests: displayList,
         counts: {
-            ...finalCounts,
-            availableMunicipalities: Array.from(finalCounts.availableMunicipalities).sort(),
-            availableOrganizationalUnits: Array.from(finalCounts.availableOrganizationalUnits).sort(),
+            ...calculatedCounts,
+            registrationStatusCounts: { all: Object.values(calculatedCounts.registrationStatusCounts).reduce((a,b) => a+b, 0), ...calculatedCounts.registrationStatusCounts },
+            requestStatusCounts: { all: Object.values(calculatedCounts.requestStatusCounts).reduce((a,b) => a+b, 0), ...calculatedCounts.requestStatusCounts },
+            availableMunicipalities,
+            availableOrganizationalUnits,
         }
     };
-
   }, [technicianBaseRequests, searchQuery, organizationalUnitFilter, municipalityFilter, statusFilter, requestStatusFilter]);
 
 
@@ -212,8 +221,8 @@ export default function TechnicianDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos os Status ({counts.registrationStatusCounts.all})</SelectItem>
-                        <SelectItem value="Confirmado">Confirmado ({counts.registrationStatusCounts.Confirmed || 0})</SelectItem>
-                        <SelectItem value="Pendente">Pendente ({counts.registrationStatusCounts.Pending || 0})</SelectItem>
+                        <SelectItem value="Confirmado">Confirmado ({counts.registrationStatusCounts.Confirmado || 0})</SelectItem>
+                        <SelectItem value="Pendente">Pendente ({counts.registrationStatusCounts.Pendente || 0})</SelectItem>
                         <SelectItem value="Inapto">Inapto ({counts.registrationStatusCounts.Inapto || 0})</SelectItem>
                     </SelectContent>
                 </Select>
@@ -294,3 +303,5 @@ const CardSkeleton = () => (
     </div>
   </div>
 );
+
+    
