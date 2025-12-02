@@ -82,55 +82,35 @@ export default function TechnicianDashboard() {
   }, [allRequests, user]);
   
   const { filteredRequests, counts } = useMemo(() => {
-    let baseList = technicianBaseRequests;
+    const initialCounts = {
+        orgUnit: technicianBaseRequests.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>),
+        municipality: technicianBaseRequests.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>),
+        registrationStatus: technicianBaseRequests.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>),
+        requestStatus: technicianBaseRequests.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>),
+        availableMunicipalities: Array.from(new Set(technicianBaseRequests.map(r => r.municipality).filter(Boolean as any))).sort(),
+        availableOrganizationalUnits: Array.from(new Set(technicianBaseRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort(),
+    };
+
+    let displayList = technicianBaseRequests;
     if (searchQuery) {
-        baseList = baseList.filter(req => 
+        displayList = displayList.filter(req => 
             req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
-
-    const getCounts = (
-        items: AgriRequest[],
-        ignoreFilter?: 'org' | 'muni' | 'reg' | 'req'
-    ) => {
-        let contextFiltered = items;
-        if (ignoreFilter !== 'org' && organizationalUnitFilter !== 'all') contextFiltered = contextFiltered.filter(i => i.organizationalUnit === organizationalUnitFilter);
-        if (ignoreFilter !== 'muni' && municipalityFilter !== 'all') contextFiltered = contextFiltered.filter(i => i.municipality === municipalityFilter);
-        if (ignoreFilter !== 'reg' && statusFilter !== 'all') contextFiltered = contextFiltered.filter(i => i.farmerRegistrationStatus === statusFilter);
-        if (ignoreFilter !== 'req' && requestStatusFilter !== 'all') contextFiltered = contextFiltered.filter(i => i.status === requestStatusFilter);
-        
-        return {
-            orgUnit: contextFiltered.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>),
-            municipality: contextFiltered.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>),
-            registrationStatus: contextFiltered.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>),
-            requestStatus: contextFiltered.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>),
-        };
-    };
-
-    const orgUnitCounts = getCounts(baseList, 'org').orgUnit;
-    const municipalityCounts = getCounts(baseList, 'muni').municipality;
-    const registrationStatusCounts = getCounts(baseList, 'reg').registrationStatus;
-    const requestStatusCounts = getCounts(baseList, 'req').requestStatus;
-    
-    // Apply all filters for the final displayed list
-    let displayList = baseList;
     if (organizationalUnitFilter !== 'all') displayList = displayList.filter(req => req.organizationalUnit === organizationalUnitFilter);
     if (municipalityFilter !== 'all') displayList = displayList.filter(req => req.municipality === municipalityFilter);
     if (statusFilter !== 'all') displayList = displayList.filter(req => req.farmerRegistrationStatus === statusFilter);
     if (requestStatusFilter !== 'all') displayList = displayList.filter(req => req.status === requestStatusFilter);
 
-    const availableMunicipalities = Array.from(new Set(technicianBaseRequests.map(r => r.municipality).filter(Boolean as any))).sort();
-    const availableOrganizationalUnits = Array.from(new Set(technicianBaseRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort();
-
     return {
         filteredRequests: displayList,
         counts: {
-            orgUnitCounts,
-            municipalityCounts,
-            registrationStatusCounts: { all: Object.values(registrationStatusCounts).reduce((a, b) => a + b, 0), ...registrationStatusCounts },
-            requestStatusCounts: { all: Object.values(requestStatusCounts).reduce((a, b) => a + b, 0), ...requestStatusCounts },
-            availableMunicipalities,
-            availableOrganizationalUnits,
+            orgUnitCounts: initialCounts.orgUnit,
+            municipalityCounts: initialCounts.municipality,
+            registrationStatusCounts: { all: technicianBaseRequests.length, ...initialCounts.registrationStatus },
+            requestStatusCounts: { all: technicianBaseRequests.length, ...initialCounts.requestStatus },
+            availableMunicipalities: initialCounts.availableMunicipalities,
+            availableOrganizationalUnits: initialCounts.availableOrganizationalUnits,
         }
     };
   }, [technicianBaseRequests, searchQuery, organizationalUnitFilter, municipalityFilter, statusFilter, requestStatusFilter]);
@@ -291,5 +271,3 @@ const CardSkeleton = () => (
     </div>
   </div>
 );
-
-    
