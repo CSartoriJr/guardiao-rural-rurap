@@ -76,37 +76,56 @@ export default function AdminDashboard() {
   }, [allUsers]);
   
   const { filteredRequests, counts } = useMemo(() => {
-    // Calculate counts based on the total list of requests
-    const initialCounts = {
-        orgUnit: allRequests.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>),
-        municipality: allRequests.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>),
-        registrationStatus: allRequests.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>),
-        requestStatus: allRequests.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>),
-        availableMunicipalities: Array.from(new Set(allRequests.map(r => r.municipality).filter(Boolean as any))).sort(),
-        availableOrganizationalUnits: Array.from(new Set(allRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort(),
-    };
-    
-    // Apply all filters for the final displayed list
-    let displayList = allRequests;
-    if (searchQuery) {
-        displayList = displayList.filter(req => 
-            req.farmerName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }
-    if (organizationalUnitFilter !== 'all') displayList = displayList.filter(req => req.organizationalUnit === organizationalUnitFilter);
-    if (municipalityFilter !== 'all') displayList = displayList.filter(req => req.municipality === municipalityFilter);
-    if (statusFilter !== 'all') displayList = displayList.filter(req => req.farmerRegistrationStatus === statusFilter);
-    if (requestStatusFilter !== 'all') displayList = displayList.filter(req => req.status === requestStatusFilter);
+    // 1. Filter by search query first
+    const searchedList = searchQuery
+        ? allRequests.filter(req => req.farmerName.toLowerCase().includes(searchQuery.toLowerCase()))
+        : allRequests;
+
+    // 2. Calculate counts for each filter based on the *other* active filters
+    const baseForOrgUnitCount = searchedList.filter(req => 
+        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
+        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    );
+    const orgUnitCounts = baseForOrgUnitCount.reduce((acc, req) => { if (req.organizationalUnit) acc[req.organizationalUnit] = (acc[req.organizationalUnit] || 0) + 1; return acc; }, {} as Record<string, number>);
+
+    const baseForMunicipalityCount = searchedList.filter(req => 
+        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter) &&
+        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    );
+    const municipalityCounts = baseForMunicipalityCount.reduce((acc, req) => { if (req.municipality) acc[req.municipality] = (acc[req.municipality] || 0) + 1; return acc; }, {} as Record<string, number>);
+
+    const baseForRegStatusCount = searchedList.filter(req => 
+        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+        (requestStatusFilter === 'all' || req.status === requestStatusFilter)
+    );
+    const registrationStatusCounts = baseForRegStatusCount.reduce((acc, req) => { if (req.farmerRegistrationStatus) acc[req.farmerRegistrationStatus] = (acc[req.farmerRegistrationStatus] || 0) + 1; return acc; }, {} as Record<RegistrationStatus, number>);
+
+    const baseForReqStatusCount = searchedList.filter(req => 
+        (organizationalUnitFilter === 'all' || req.organizationalUnit === organizationalUnitFilter) &&
+        (municipalityFilter === 'all' || req.municipality === municipalityFilter) &&
+        (statusFilter === 'all' || req.farmerRegistrationStatus === statusFilter)
+    );
+    const requestStatusCounts = baseForReqStatusCount.reduce((acc, req) => { acc[req.status] = (acc[req.status] || 0) + 1; return acc; }, {} as Record<RequestStatus, number>);
+
+    // 3. Apply all filters for the final displayed list
+    const finalFilteredList = baseForReqStatusCount.filter(req => requestStatusFilter === 'all' || req.status === requestStatusFilter);
+
+    // 4. Get available options based on the original list (or searched list for broader context)
+    const availableMunicipalities = Array.from(new Set(allRequests.map(r => r.municipality).filter(Boolean as any))).sort();
+    const availableOrganizationalUnits = Array.from(new Set(allRequests.map(r => r.organizationalUnit).filter(Boolean as any))).sort();
     
     return {
-        filteredRequests: displayList,
+        filteredRequests: finalFilteredList,
         counts: {
-            orgUnitCounts: initialCounts.orgUnit,
-            municipalityCounts: initialCounts.municipality,
-            registrationStatusCounts: { all: allRequests.length, ...initialCounts.registrationStatus },
-            requestStatusCounts: { all: allRequests.length, ...initialCounts.requestStatus },
-            availableMunicipalities: initialCounts.availableMunicipalities,
-            availableOrganizationalUnits: initialCounts.availableOrganizationalUnits,
+            orgUnitCounts,
+            municipalityCounts,
+            registrationStatusCounts,
+            requestStatusCounts,
+            availableMunicipalities,
+            availableOrganizationalUnits,
         }
     };
   }, [allRequests, searchQuery, organizationalUnitFilter, municipalityFilter, statusFilter, requestStatusFilter]);
@@ -158,7 +177,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar unidade..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todas as Unidades ({Object.values(counts.orgUnitCounts).reduce((a,b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todas as Unidades ({Object.values(counts.orgUnitCounts).reduce((a, b) => a + b, 0)})</SelectItem>
                         {counts.availableOrganizationalUnits.map(unit => (
                         <SelectItem key={unit} value={unit}>{unit} ({counts.orgUnitCounts[unit] || 0})</SelectItem>
                         ))}
@@ -173,7 +192,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar município..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Municípios ({Object.values(counts.municipalityCounts).reduce((a,b) => a + b, 0)})</SelectItem>
+                        <SelectItem value="all">Todos os Municípios ({Object.values(counts.municipalityCounts).reduce((a, b) => a + b, 0)})</SelectItem>
                         {counts.availableMunicipalities.map(muni => (
                         <SelectItem key={muni} value={muni}>{muni} ({counts.municipalityCounts[muni] || 0})</SelectItem>
                         ))}
@@ -188,7 +207,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar status..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Status ({counts.registrationStatusCounts.all})</SelectItem>
+                        <SelectItem value="all">Todos os Status ({Object.values(counts.registrationStatusCounts).reduce((a, b) => a + b, 0)})</SelectItem>
                         <SelectItem value="Confirmado">Confirmado ({counts.registrationStatusCounts.Confirmado || 0})</SelectItem>
                         <SelectItem value="Pendente">Pendente ({counts.registrationStatusCounts.Pendente || 0})</SelectItem>
                         <SelectItem value="Inapto">Inapto ({counts.registrationStatusCounts.Inapto || 0})</SelectItem>
@@ -203,7 +222,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Filtrar status..." />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">Todos os Status ({counts.requestStatusCounts.all})</SelectItem>
+                        <SelectItem value="all">Todos os Status ({Object.values(counts.requestStatusCounts).reduce((a, b) => a + b, 0)})</SelectItem>
                         <SelectItem value="Pending"><Clock className="mr-2 h-4 w-4 inline-block" />Pendente ({counts.requestStatusCounts.Pending || 0})</SelectItem>
                         <SelectItem value="Positive"><CheckCircle className="mr-2 h-4 w-4 inline-block text-green-600" />Positivo ({counts.requestStatusCounts.Positive || 0})</SelectItem>
                         <SelectItem value="Negative"><XCircle className="mr-2 h-4 w-4 inline-block text-red-600" />Possivelmente Negativo ({counts.requestStatusCounts.Negative || 0})</SelectItem>
@@ -241,9 +260,7 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">
             {searchQuery 
                 ? `Nenhuma solicitação encontrada para "${searchQuery}".`
-                : statusFilter !== 'all' 
-                    ? `Não há solicitações com o status de cadastro "${statusFilter}".` 
-                    : 'Não há solicitações registradas no sistema com os filtros atuais.'}
+                : 'Não há solicitações registradas no sistema com os filtros atuais.'}
           </p>
         </div>
       )}
